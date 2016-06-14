@@ -103,20 +103,20 @@ public class UploadResource {
                         .build();
                 LOGGER.info("success size: {}", response.getSerializedSize());
                 response.writeDelimitedTo(outputStream);
+                return outputStream.toByteArray();
             }
-        } catch (IOException e) {
-            final Response.SpeechResponse response = Response.SpeechResponse.newBuilder()
-                    .setUrl("http://s3.amazonaws.com/hello-audio/voice/failure.raw")
-                    .setResult(Response.SpeechResponse.Result.REJECTED)
-                    .setText("Failed. Try again")
-                    .build();
-            LOGGER.info("size: {}", response.getSerializedSize());
-            response.writeDelimitedTo(outputStream);
-
         } catch (Exception e) {
             LOGGER.error("error={}", e.getMessage());
             throw new WebApplicationException(500);
         }
+
+        final Response.SpeechResponse response = Response.SpeechResponse.newBuilder()
+                .setUrl("http://s3.amazonaws.com/hello-audio/voice/failure.raw")
+                .setResult(Response.SpeechResponse.Result.REJECTED)
+                .setText("Failed. Try again")
+                .build();
+        LOGGER.info("size: {}", response.getSerializedSize());
+        response.writeDelimitedTo(outputStream);
 
         return outputStream.toByteArray();
     }
