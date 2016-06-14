@@ -1,0 +1,21 @@
+s3_bucket: "hello-firmware-public"
+
+server:
+  adminMinThreads: 1
+  adminMaxThreads: 5
+  adminContextPath: /
+  applicationContextPath: /
+  applicationConnectors:
+    - type: http
+      port: 8181
+  adminConnectors:
+    - type: http
+      port: 8182
+logging:
+  level: INFO
+  loggers:
+    com.hello.suripu: DEBUG
+    com.amazonaws: WARN
+  appenders:
+    - type: console
+      threshold: DEBUG
