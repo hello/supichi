@@ -1,0 +1,2 @@
+# supichi
+Speech server (スピーチ) 
