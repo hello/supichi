@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.util.Md5Utils;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import is.hello.speech.api.Response;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -18,13 +19,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Map;
 
 
 @Path("/upload")
@@ -37,6 +38,7 @@ public class UploadResource {
     private final String bucketName;
     private final AsyncSpeechClient asyncSpeechClient;
     private final BlockingSpeechClient blockingSpeechClient;
+
 
     public UploadResource(final AmazonS3 s3, final String bucketName, final AsyncSpeechClient asyncSpeechClient, final BlockingSpeechClient blockingSpeechClient) {
         this.s3 = s3;
@@ -92,28 +94,41 @@ public class UploadResource {
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] streaming(final InputStream inputStream, @DefaultValue("8000") @QueryParam("r") final Integer sampling) throws InterruptedException, IOException {
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
         try {
             final Optional<String> resp = asyncSpeechClient.stream(inputStream, sampling);
             if(resp.isPresent()) {
-                final Response.SpeechResponse response = Response.SpeechResponse.newBuilder()
-                        .setUrl("http://s3.amazonaws.com/hello-audio/voice/success.raw")
-                        .setText(resp.get())
-                        .setResult(Response.SpeechResponse.Result.OK)
-                        .build();
-                LOGGER.info("success size: {}", response.getSerializedSize());
-                response.writeDelimitedTo(outputStream);
-                return outputStream.toByteArray();
+                return response(Response.SpeechResponse.Result.OK, resp.get());
+            } else {
+                return response(Response.SpeechResponse.Result.TRY_AGAIN, "Did not understand");
             }
         } catch (Exception e) {
             LOGGER.error("error={}", e.getMessage());
-            throw new WebApplicationException(500);
         }
 
+        return response(Response.SpeechResponse.Result.REJECTED, "Failed. Try again");
+    }
+
+
+    /**
+     * Creates a protobuf response
+     * @param result
+     * @param text
+     * @return
+     * @throws IOException
+     */
+    private byte[] response(final Response.SpeechResponse.Result result, final String text) throws IOException {
+        Map<Response.SpeechResponse.Result, String> files = ImmutableMap.<Response.SpeechResponse.Result,String>builder()
+                .put(Response.SpeechResponse.Result.OK, "success.raw")
+                .put(Response.SpeechResponse.Result.REJECTED, "failure.raw")
+                .put(Response.SpeechResponse.Result.TRY_AGAIN, "did_not_understand.raw")
+                .build();
+
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         final Response.SpeechResponse response = Response.SpeechResponse.newBuilder()
-                .setUrl("http://s3.amazonaws.com/hello-audio/voice/failure.raw")
-                .setResult(Response.SpeechResponse.Result.REJECTED)
-                .setText("Failed. Try again")
+                .setUrl("http://s3.amazonaws.com/hello-audio/voice/" + files.get(result))
+                .setResult(result)
+                .setText(text)
                 .build();
         LOGGER.info("size: {}", response.getSerializedSize());
         response.writeDelimitedTo(outputStream);

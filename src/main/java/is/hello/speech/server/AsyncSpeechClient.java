@@ -195,7 +195,7 @@ public class AsyncSpeechClient {
             final InitialRecognizeRequest initial = InitialRecognizeRequest.newBuilder()
                     .setEncoding(AudioEncoding.LINEAR16)
                     .setSampleRate(samplingRate)
-                    .setInterimResults(false)
+                    .setInterimResults(true)
                     .build();
             final RecognizeRequest firstRequest = RecognizeRequest.newBuilder()
                     .setInitialRequest(initial)

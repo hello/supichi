@@ -27,6 +27,7 @@ public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, R
     @Override
     public void onNext(final RecognizeResponse response) {
         for(final SpeechRecognitionResult result : response.getResultsList()) {
+            logger.info("Received result: " +  TextFormat.printToString(result));
             if(result.getIsFinal()) {
                 logger.info("Received result: " +  TextFormat.printToString(result));
                 defaultValue = Optional.of(result.getAlternatives(0).getTranscript());
