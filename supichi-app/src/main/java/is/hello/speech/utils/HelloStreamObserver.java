@@ -1,4 +1,4 @@
-package is.hello.speech.server;
+package is.hello.speech.utils;
 
 import com.google.cloud.speech.v1.RecognizeResponse;
 import com.google.cloud.speech.v1.SpeechRecognitionResult;
@@ -6,6 +6,7 @@ import com.google.common.base.Optional;
 import com.google.protobuf.TextFormat;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import is.hello.speech.clients.AsyncSpeechClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

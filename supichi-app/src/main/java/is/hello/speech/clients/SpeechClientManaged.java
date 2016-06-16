@@ -1,4 +1,4 @@
-package is.hello.speech.server;
+package is.hello.speech.clients;
 
 import io.dropwizard.lifecycle.Managed;
 import org.slf4j.Logger;

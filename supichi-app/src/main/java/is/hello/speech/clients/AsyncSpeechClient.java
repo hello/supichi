@@ -1,4 +1,4 @@
-package is.hello.speech.server;
+package is.hello.speech.clients;
 
 /*
  * Copyright 2016 Google Inc. All Rights Reserved.
@@ -42,6 +42,7 @@ import io.grpc.auth.ClientAuthInterceptor;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import is.hello.speech.utils.HelloStreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

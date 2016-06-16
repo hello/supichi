@@ -1,4 +1,4 @@
-package is.hello.speech.server;
+package is.hello.speech;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
@@ -6,11 +6,15 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import is.hello.speech.clients.AsyncSpeechClient;
+import is.hello.speech.clients.SpeechClientManaged;
+import is.hello.speech.configuration.SpeechAppConfiguration;
+import is.hello.speech.resources.v1.UploadResource;
 
-public class SpeechApplication extends Application<SpeechConfiguration> {
+public class SpeechApp extends Application<SpeechAppConfiguration> {
 
     public static void main(String[] args) throws Exception {
-        new SpeechApplication().run(args);
+        new SpeechApp().run(args);
     }
 
     @Override
@@ -19,13 +23,13 @@ public class SpeechApplication extends Application<SpeechConfiguration> {
     }
 
     @Override
-    public void initialize(Bootstrap<SpeechConfiguration> bootstrap) {
+    public void initialize(Bootstrap<SpeechAppConfiguration> bootstrap) {
         // nothing to do yet
     }
 
 
     @Override
-    public void run(SpeechConfiguration speechConfiguration, Environment environment) throws Exception {
+    public void run(SpeechAppConfiguration speechAppConfiguration, Environment environment) throws Exception {
 
 
         final AWSCredentials awsCredentials = new AWSCredentials() {
@@ -48,10 +52,7 @@ public class SpeechApplication extends Application<SpeechConfiguration> {
                 new AsyncSpeechClient(host, port);
         final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
 
-        final BlockingSpeechClient blocking = new BlockingSpeechClient(host, port);
-
-
         environment.lifecycle().manage(speechClientManaged);
-        environment.jersey().register(new UploadResource(amazonS3, speechConfiguration.s3Bucket(), client, blocking));
+        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.s3Bucket(), client));
     }
 }
