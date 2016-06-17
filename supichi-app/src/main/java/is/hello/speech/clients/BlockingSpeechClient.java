@@ -1,4 +1,4 @@
-package is.hello.speech.server;
+package is.hello.speech.clients;
 
 /*
  * Copyright 2016 Google Inc. All Rights Reserved.

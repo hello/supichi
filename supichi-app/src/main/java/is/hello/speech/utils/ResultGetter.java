@@ -1,4 +1,4 @@
-package is.hello.speech.server;
+package is.hello.speech.utils;
 
 import com.google.common.base.Optional;
 

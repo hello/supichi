@@ -1,0 +1,35 @@
+s3_bucket:
+  bucket: hello-firmware-public
+  aws_access_key: AKIAIPS2RBLAWR6TNSPA # temp credentials
+  aws_secret_key: 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
+
+server:
+  adminMinThreads: 1
+  adminMaxThreads: 5
+  adminContextPath: /
+  applicationContextPath: /
+  applicationConnectors:
+    - type: http
+      port: 8181
+  adminConnectors:
+    - type: http
+      port: 8182
+logging:
+  level: INFO
+  loggers:
+    is.hello.supichi: DEBUG
+    com.amazonaws: WARN
+  appenders:
+    - type: console
+      threshold: DEBUG
+
+
+
+google_api_host: speech.googleapis.com
+google_api_port: 443
+
+audio_parameters:
+  interim_results: true
+  encoding: LINEAR16 # [ENCODING_UNSPECIFIED, LINEAR16, FLAC, MULAW, AMR, AMR_WB, UNRECOGNIZED]
+  buffer_size: 3200 # play around with this
+

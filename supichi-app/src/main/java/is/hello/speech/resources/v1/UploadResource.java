@@ -1,4 +1,4 @@
-package is.hello.speech.server;
+package is.hello.speech.resources.v1;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -7,6 +7,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import is.hello.speech.api.Response;
+import is.hello.speech.clients.AsyncSpeechClient;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -24,7 +25,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Map;
 
 
@@ -37,14 +37,12 @@ public class UploadResource {
     private final AmazonS3 s3;
     private final String bucketName;
     private final AsyncSpeechClient asyncSpeechClient;
-    private final BlockingSpeechClient blockingSpeechClient;
 
 
-    public UploadResource(final AmazonS3 s3, final String bucketName, final AsyncSpeechClient asyncSpeechClient, final BlockingSpeechClient blockingSpeechClient) {
+    public UploadResource(final AmazonS3 s3, final String bucketName, final AsyncSpeechClient asyncSpeechClient) {
         this.s3 = s3;
         this.bucketName = bucketName;
         this.asyncSpeechClient = asyncSpeechClient;
-        this.blockingSpeechClient = blockingSpeechClient;
     }
 
     @Path("{prefix}")
@@ -79,13 +77,6 @@ public class UploadResource {
 
         final Optional<String> resp = asyncSpeechClient.recognize(body, SAMPLING);
         return resp.or("failed");
-    }
-
-    @Path("/blocking")
-    @POST
-    @Timed
-    public String blocking(byte[] body) throws InterruptedException, IOException {
-        return blockingSpeechClient.recognize(body, SAMPLING);
     }
 
     @Path("/pb")
@@ -136,29 +127,4 @@ public class UploadResource {
         return outputStream.toByteArray();
     }
 
-    @POST
-    @Path("/foo")
-    public String foo(final InputStream in) {
-        try {
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            int totalBytes = 0;
-            while ((bytesRead = in.read(buffer)) != -1) {
-                LOGGER.debug("read " + bytesRead + " bytes from input stream");
-                final String content = new String(Arrays.copyOf(buffer, bytesRead), "ASCII");
-                totalBytes += bytesRead;
-                LOGGER.info("Uploading {} to Google", bytesRead);
-                LOGGER.info("Uploading {} to Google", content);
-//             To simulate real-time audio, sleep after sending each audio buffer.
-//             For 16000 Hz sample rate, sleep 100 milliseconds.
-//                Thread.sleep(samplingRate / 160);
-            }
-            LOGGER.info("Sent " + totalBytes + " bytes from audio");
-            return "OK";
-        } catch (IOException e) {
-            LOGGER.error(e.getMessage());
-        }
-
-        return "KO";
-    }
 }
