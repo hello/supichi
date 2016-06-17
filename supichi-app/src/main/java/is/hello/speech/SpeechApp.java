@@ -31,28 +31,20 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
     @Override
     public void run(SpeechAppConfiguration speechAppConfiguration, Environment environment) throws Exception {
 
-
         final AWSCredentials awsCredentials = new AWSCredentials() {
-
-            public String getAWSAccessKeyId() {
-                return "AKIAIPS2RBLAWR6TNSPA";
-            }
-
-            public String getAWSSecretKey() {
-                return "eQ56jKPGVYzSyuZ7AMD6cHkR84wswGGK7TtJ4qOL";
-            }
+            public String getAWSAccessKeyId() { return speechAppConfiguration.getS3Configuration().getAwsAccessKey(); }
+            public String getAWSSecretKey() { return speechAppConfiguration.getS3Configuration().getAwsSecretKey(); }
         };
 
         final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentials);
 
-        String host = "speech.googleapis.com";
-        Integer port = 443;
+        final AsyncSpeechClient client = new AsyncSpeechClient(
+                speechAppConfiguration.getGoogleAPIHost(),
+                speechAppConfiguration.getGoogleAPIPort());
 
-        final AsyncSpeechClient client =
-                new AsyncSpeechClient(host, port);
         final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
 
         environment.lifecycle().manage(speechClientManaged);
-        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.s3Bucket(), client));
+        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client));
     }
 }
