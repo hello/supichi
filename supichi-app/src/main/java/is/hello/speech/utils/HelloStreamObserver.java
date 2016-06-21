@@ -7,6 +7,8 @@ import com.google.protobuf.TextFormat;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import is.hello.speech.clients.AsyncSpeechClient;
+import is.hello.speech.core.models.ResultGetter;
+import is.hello.speech.core.models.SpeechResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +19,8 @@ public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, R
     private static final Logger logger =
             LoggerFactory.getLogger(AsyncSpeechClient.class.getName());
 
-    private volatile Optional<String> defaultValue = Optional.absent();
+    private SpeechResult speechResult = new SpeechResult();
+
 
     private final CountDownLatch finishLatch;
 
@@ -29,12 +32,18 @@ public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, R
     public void onNext(final RecognizeResponse response) {
         for(final SpeechRecognitionResult result : response.getResultsList()) {
             logger.info("Received result: " +  TextFormat.printToString(result));
+
+            speechResult.setStability(result.getStability());
+            speechResult.setConfidence(result.getAlternatives(0).getConfidence());
+            speechResult.setTranscript(Optional.of(result.getAlternatives(0).getTranscript()));
+            logger.debug("Interim Result Resp: {}", speechResult);
+
             if(result.getIsFinal()) {
-                logger.info("Received result: " +  TextFormat.printToString(result));
-                defaultValue = Optional.of(result.getAlternatives(0).getTranscript());
-                logger.info("resp: {}", defaultValue);
+                speechResult.setFinal(true);
+                logger.info("Final Result Resp: {}", speechResult);
                 finishLatch.countDown();
             }
+
         }
     }
 
@@ -52,7 +61,7 @@ public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, R
     }
 
     @Override
-    public Optional<String> result() {
-        return defaultValue;
+    public SpeechResult result() {
+        return speechResult;
     }
 }

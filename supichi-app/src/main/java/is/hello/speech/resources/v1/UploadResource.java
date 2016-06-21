@@ -8,6 +8,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import is.hello.speech.api.Response;
 import is.hello.speech.clients.AsyncSpeechClient;
+import is.hello.speech.core.handlers.BaseHandler;
+import is.hello.speech.core.handlers.HandlerFactory;
+import is.hello.speech.core.models.SpeechResult;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -38,11 +41,13 @@ public class UploadResource {
     private final String bucketName;
     private final AsyncSpeechClient asyncSpeechClient;
 
+    private final HandlerFactory handlerFactory;
 
-    public UploadResource(final AmazonS3 s3, final String bucketName, final AsyncSpeechClient asyncSpeechClient) {
+    public UploadResource(final AmazonS3 s3, final String bucketName, final AsyncSpeechClient asyncSpeechClient, final HandlerFactory factory) {
         this.s3 = s3;
         this.bucketName = bucketName;
         this.asyncSpeechClient = asyncSpeechClient;
+        this.handlerFactory = factory;
     }
 
     @Path("{prefix}")
@@ -84,12 +89,36 @@ public class UploadResource {
     @Timed
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public byte[] streaming(final InputStream inputStream, @DefaultValue("8000") @QueryParam("r") final Integer sampling) throws InterruptedException, IOException {
+    public byte[] streaming(final InputStream inputStream,
+                            @DefaultValue("8000") @QueryParam("r") final Integer sampling
+    ) throws InterruptedException, IOException {
 
         try {
-            final Optional<String> resp = asyncSpeechClient.stream(inputStream, sampling);
-            if(resp.isPresent()) {
-                return response(Response.SpeechResponse.Result.OK, resp.get());
+            final SpeechResult resp = asyncSpeechClient.stream(inputStream, sampling);
+
+            // try to execute command in transcript
+            Boolean executeResult = false;
+            if(resp.getTranscript().isPresent()) {
+                final String[] unigrams = resp.getTranscript().get().toLowerCase().split(" ");
+                for (int i = 0; i < (unigrams.length - 1); i++) {
+                    final String commandText = String.format("%s %s", unigrams[i], unigrams[i+1]);
+                    LOGGER.debug("action=transcribe-text-to-command command={}", commandText);
+
+                    final Optional<BaseHandler> optionalHandler = handlerFactory.getHandler(commandText);
+                    if (optionalHandler.isPresent()) {
+                        final BaseHandler handler = optionalHandler.get();
+                        LOGGER.debug("action=found-handler handler={}", handler.getClass().toString());
+
+                        executeResult = handler.executionCommand(commandText, "8AF6441AF72321F4");
+                        LOGGER.debug("action=execute-command result={}", executeResult);
+                        break;
+                    }
+
+                }
+            }
+
+            if (executeResult) {
+                return response(Response.SpeechResponse.Result.OK, resp.getTranscript().get());
             } else {
                 return response(Response.SpeechResponse.Result.TRY_AGAIN, "Did not understand");
             }

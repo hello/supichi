@@ -42,7 +42,9 @@ import io.grpc.auth.ClientAuthInterceptor;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import is.hello.speech.configuration.AudioConfiguration;
 import is.hello.speech.utils.HelloStreamObserver;
+import is.hello.speech.core.models.SpeechResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +64,7 @@ public class AsyncSpeechClient {
 
     private final String host;
     private final int port;
+    private final AudioConfiguration configuration;
 
     private static final Logger logger =
             LoggerFactory.getLogger(AsyncSpeechClient.class.getName());
@@ -76,9 +79,10 @@ public class AsyncSpeechClient {
     /**
      * Construct client connecting to Cloud Speech server at {@code host:port}.
      */
-    public AsyncSpeechClient(String host, int port) throws IOException {
+    public AsyncSpeechClient(String host, int port, AudioConfiguration configuration) throws IOException {
         this.host = host;
         this.port = port;
+        this.configuration = configuration;
 
         GoogleCredentials creds = GoogleCredentials.getApplicationDefault();
         creds = creds.createScoped(OAUTH2_SCOPES);
@@ -185,7 +189,7 @@ public class AsyncSpeechClient {
      * @throws InterruptedException
      * @throws IOException
      */
-    public Optional<String> stream(final InputStream in, int samplingRate) throws InterruptedException, IOException {
+    public SpeechResult stream(final InputStream in, int samplingRate) throws InterruptedException, IOException {
         final CountDownLatch finishLatch = new CountDownLatch(1);
 
 
@@ -194,9 +198,9 @@ public class AsyncSpeechClient {
         try {
             // Build and send a RecognizeRequest containing the parameters for processing the audio.
             final InitialRecognizeRequest initial = InitialRecognizeRequest.newBuilder()
-                    .setEncoding(AudioEncoding.LINEAR16)
+                    .setEncoding(configuration.getEncoding()) // AudioEncoding.LINEAR16
                     .setSampleRate(samplingRate)
-                    .setInterimResults(true)
+                    .setInterimResults(configuration.getInterimResultsPreference())
                     .build();
             final RecognizeRequest firstRequest = RecognizeRequest.newBuilder()
                     .setInitialRequest(initial)
@@ -206,11 +210,11 @@ public class AsyncSpeechClient {
             // Open audio file. Read and send sequential buffers of audio as additional RecognizeRequests.
             // FileInputStream in = new FileInputStream(new File(file));
             // For LINEAR16 at 16000 Hz sample rate, 3200 bytes corresponds to 100 milliseconds of audio.
-            byte[] buffer = new byte[2048];
+            byte[] buffer = new byte[configuration.getBufferSize()];
             int bytesRead;
             int totalBytes = 0;
             while ((bytesRead = in.read(buffer)) != -1) {
-                logger.debug("read " + bytesRead + " bytes from input stream");
+                logger.debug("Read " + bytesRead + " bytes from input stream");
 
                 totalBytes += bytesRead;
                 final AudioRequest audio = AudioRequest.newBuilder()

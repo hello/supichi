@@ -12,9 +12,9 @@ import javax.validation.constraints.NotNull;
 public class AudioConfiguration {
     @Valid
     @NotNull
-    @JsonProperty("interim_results")
-    private Boolean interimResults;
-    public Boolean getInterimResults() { return interimResults; }
+    @JsonProperty("interim_results_preference")
+    private Boolean interimResultsPreference;
+    public Boolean getInterimResultsPreference() { return interimResultsPreference; }
 
     @Valid
     @NotNull

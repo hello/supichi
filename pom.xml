@@ -21,6 +21,7 @@
     <modules>
         <module>google-api</module>
         <module>supichi-app</module>
+        <module>supichi-core</module>
     </modules>
 
     <!--<distributionManagement>-->

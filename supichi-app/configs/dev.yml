@@ -17,7 +17,7 @@ server:
 logging:
   level: INFO
   loggers:
-    is.hello.supichi: DEBUG
+    is.hello.speech: DEBUG
     com.amazonaws: WARN
   appenders:
     - type: console
@@ -29,7 +29,20 @@ google_api_host: speech.googleapis.com
 google_api_port: 443
 
 audio_parameters:
-  interim_results: true
+  interim_results_preference: false
   encoding: LINEAR16 # [ENCODING_UNSPECIFIED, LINEAR16, FLAC, MULAW, AMR, AMR_WB, UNRECOGNIZED]
-  buffer_size: 3200 # play around with this
+  buffer_size: 2048 # play around with this
+
+messeji_http_client:
+  endpoint: "http://internal-internal-messeji-dev-1279589514.us-east-1.elb.amazonaws.com:80"
+  http_client_config:
+    keepAlive: 0s
+
+dynamodb:
+  region: us-east-1
+  tables:
+    sleep_hmm: speech_commands
+
+  endpoints:
+    sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
 

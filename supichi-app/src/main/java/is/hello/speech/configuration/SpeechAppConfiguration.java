@@ -1,7 +1,12 @@
 package is.hello.speech.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
+import com.hello.suripu.coredw8.configuration.NewDynamoDBConfiguration;
 import io.dropwizard.Configuration;
+
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 
 public class SpeechAppConfiguration extends Configuration {
 
@@ -20,4 +25,18 @@ public class SpeechAppConfiguration extends Configuration {
     @JsonProperty("audio_parameters")
     private AudioConfiguration audioConfiguration;
     public AudioConfiguration getAudioConfiguration() { return audioConfiguration; }
+
+    @NotNull
+    @JsonProperty("messeji_http_client")
+    private MessejiHttpClientConfiguration messejiHttpClientConfiguration;
+    public MessejiHttpClientConfiguration getMessejiHttpClientConfiguration() { return messejiHttpClientConfiguration; }
+
+    @Valid
+    @NotNull
+    @JsonProperty("dynamodb")
+    private NewDynamoDBConfiguration dynamoDBConfiguration;
+    public NewDynamoDBConfiguration dynamoDBConfiguration(){
+        return dynamoDBConfiguration;
+    }
+
 }
