@@ -51,6 +51,16 @@ server:
   adminConnectors:
     - type: http
       port: 8182
+  requestLog:
+    timeZone: UTC
+    appenders:
+      - type: file
+        currentLogFilename: /var/log/speech-app/speech-app-access.log
+        threshold: ALL
+        archive: true
+        archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
+        archivedFileCount: 7
+
 logging:
   level: INFO
   loggers:
@@ -59,7 +69,11 @@ logging:
   appenders:
     - type: console
       threshold: DEBUG
-
+    - type: file
+      threshold: DEBUG
+      currentLogFilename: /var/log/speech-app/speech-app.log
+      archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
+      archivedFileCount: 7
 
 
 google_api_host: speech.googleapis.com

@@ -142,9 +142,9 @@ public class UploadResource {
      */
     private byte[] response(final Response.SpeechResponse.Result result, final String text) throws IOException {
         Map<Response.SpeechResponse.Result, String> files = ImmutableMap.<Response.SpeechResponse.Result,String>builder()
-                .put(Response.SpeechResponse.Result.OK, "success.raw")
-                .put(Response.SpeechResponse.Result.REJECTED, "failure.raw")
-                .put(Response.SpeechResponse.Result.TRY_AGAIN, "did_not_understand.raw")
+                .put(Response.SpeechResponse.Result.OK, "emma-16k.vox")
+                .put(Response.SpeechResponse.Result.REJECTED, "emma-16k.vox")
+                .put(Response.SpeechResponse.Result.TRY_AGAIN, "emma-16k.vox")
                 .build();
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
