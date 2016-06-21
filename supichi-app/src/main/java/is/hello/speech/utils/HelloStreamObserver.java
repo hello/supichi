@@ -31,16 +31,16 @@ public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, R
     @Override
     public void onNext(final RecognizeResponse response) {
         for(final SpeechRecognitionResult result : response.getResultsList()) {
-            logger.info("Received result: " +  TextFormat.printToString(result));
+            logger.info("action=received-api-result result={}", TextFormat.printToString(result));
 
             speechResult.setStability(result.getStability());
             speechResult.setConfidence(result.getAlternatives(0).getConfidence());
             speechResult.setTranscript(Optional.of(result.getAlternatives(0).getTranscript()));
-            logger.debug("Interim Result Resp: {}", speechResult);
+            logger.debug("action=get-interim-api-result result={}", speechResult);
 
             if(result.getIsFinal()) {
                 speechResult.setFinal(true);
-                logger.info("Final Result Resp: {}", speechResult);
+                logger.info("action=get-final-result result={}", speechResult);
                 finishLatch.countDown();
             }
 
@@ -50,13 +50,13 @@ public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, R
     @Override
     public void onError(Throwable throwable) {
         Status status = Status.fromThrowable(throwable);
-        logger.warn("stream recognize failed: {}", status);
+        logger.warn("warning=stream-recognize-failed status={}", status);
         finishLatch.countDown();
     }
 
     @Override
     public void onCompleted() {
-        logger.info("stream recognize completed.");
+        logger.info("action=stream-recognize-completed");
         finishLatch.countDown();
     }
 

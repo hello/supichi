@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.coredw8.configuration.NewDynamoDBConfiguration;
 import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -38,5 +39,14 @@ public class SpeechAppConfiguration extends Configuration {
     public NewDynamoDBConfiguration dynamoDBConfiguration(){
         return dynamoDBConfiguration;
     }
+
+    @Valid
+    @NotNull
+    @JsonProperty("common_db")
+    private DataSourceFactory commonDB = new DataSourceFactory();
+    public DataSourceFactory getCommonDB() {
+        return commonDB;
+    }
+
 
 }

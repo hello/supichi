@@ -86,12 +86,12 @@ public class AsyncSpeechClient {
 
         GoogleCredentials creds = GoogleCredentials.getApplicationDefault();
         creds = creds.createScoped(OAUTH2_SCOPES);
-        channel = NettyChannelBuilder.forAddress(host, port)
+        channel = NettyChannelBuilder.forAddress(this.host, this.port)
                 .negotiationType(NegotiationType.TLS)
                 .intercept(new ClientAuthInterceptor(creds, Executors.newSingleThreadExecutor()))
                 .build();
         stub = SpeechGrpc.newStub(channel);
-        logger.info("Created stub for " + host + ":" + port);
+        logger.info("action=created-stub host={} port={}", this.host, this.port);
     }
 
     public void shutdown() throws InterruptedException {
@@ -183,9 +183,9 @@ public class AsyncSpeechClient {
 
     /**
      *
-     * @param in
-     * @param samplingRate
-     * @return
+     * @param in input stream buffer
+     * @param samplingRate audio sampling rate
+     * @return transcribed speech result
      * @throws InterruptedException
      * @throws IOException
      */
@@ -214,7 +214,7 @@ public class AsyncSpeechClient {
             int bytesRead;
             int totalBytes = 0;
             while ((bytesRead = in.read(buffer)) != -1) {
-                logger.debug("Read " + bytesRead + " bytes from input stream");
+                logger.debug("action=read-bytes-from-input-stream bytes_read={}", bytesRead);
 
                 totalBytes += bytesRead;
                 final AudioRequest audio = AudioRequest.newBuilder()
@@ -225,7 +225,7 @@ public class AsyncSpeechClient {
                         .build();
                 requestObserver.onNext(request);
             }
-            logger.info("Sent " + totalBytes + " bytes from audio");
+            logger.info("action=sent-bytes-from-audio total_bytes={}", totalBytes);
         } catch (RuntimeException e) {
             // Cancel RPC.
             requestObserver.onError(e);

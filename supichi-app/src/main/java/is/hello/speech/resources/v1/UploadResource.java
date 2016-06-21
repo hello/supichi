@@ -99,19 +99,22 @@ public class UploadResource {
             // try to execute command in transcript
             Boolean executeResult = false;
             if(resp.getTranscript().isPresent()) {
+                // get bi-gram commands
                 final String[] unigrams = resp.getTranscript().get().toLowerCase().split(" ");
                 for (int i = 0; i < (unigrams.length - 1); i++) {
                     final String commandText = String.format("%s %s", unigrams[i], unigrams[i+1]);
-                    LOGGER.debug("action=transcribe-text-to-command command={}", commandText);
+                    LOGGER.debug("action=transcribed-command command={}", commandText);
 
                     final Optional<BaseHandler> optionalHandler = handlerFactory.getHandler(commandText);
                     if (optionalHandler.isPresent()) {
                         final BaseHandler handler = optionalHandler.get();
                         LOGGER.debug("action=found-handler handler={}", handler.getClass().toString());
 
-                        executeResult = handler.executionCommand(commandText, "8AF6441AF72321F4");
+                        executeResult = handler.executionCommand(commandText, "8AF6441AF72321F4", 2095L);
                         LOGGER.debug("action=execute-command result={}", executeResult);
                         break;
+                    } else {
+                        LOGGER.info("action=no-handler-found-for-command command={}", commandText);
                     }
 
                 }
@@ -132,9 +135,9 @@ public class UploadResource {
 
     /**
      * Creates a protobuf response
-     * @param result
-     * @param text
-     * @return
+     * @param result transciption result
+     * @param text text to return to Sense
+     * @return bytes
      * @throws IOException
      */
     private byte[] response(final Response.SpeechResponse.Result result, final String text) throws IOException {
