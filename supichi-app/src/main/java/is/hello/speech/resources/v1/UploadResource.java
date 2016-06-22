@@ -6,6 +6,7 @@ import com.amazonaws.util.Md5Utils;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
+import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.api.Response;
 import is.hello.speech.clients.AsyncSpeechClient;
 import is.hello.speech.core.handlers.BaseHandler;
@@ -16,6 +17,7 @@ import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
@@ -23,6 +25,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -42,6 +45,9 @@ public class UploadResource {
     private final AsyncSpeechClient asyncSpeechClient;
 
     private final HandlerFactory handlerFactory;
+
+    @Context
+    HttpServletRequest request;
 
     public UploadResource(final AmazonS3 s3, final String bucketName, final AsyncSpeechClient asyncSpeechClient, final HandlerFactory factory) {
         this.s3 = s3;
@@ -93,6 +99,12 @@ public class UploadResource {
                             @DefaultValue("8000") @QueryParam("r") final Integer sampling
     ) throws InterruptedException, IOException {
 
+        final String debugSenseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
+        final String senseId = (debugSenseId == null) ? "8AF6441AF72321F4" : debugSenseId;
+        final Long accountId = 2095L; // TODO: get from account_device_map
+
+        LOGGER.debug("action=get-speech-audio sense_id={} account_id={}", senseId, accountId);
+
         try {
             final SpeechResult resp = asyncSpeechClient.stream(inputStream, sampling);
 
@@ -103,18 +115,18 @@ public class UploadResource {
                 final String[] unigrams = resp.getTranscript().get().toLowerCase().split(" ");
                 for (int i = 0; i < (unigrams.length - 1); i++) {
                     final String commandText = String.format("%s %s", unigrams[i], unigrams[i+1]);
-                    LOGGER.debug("action=transcribed-command command={}", commandText);
+                    LOGGER.debug("action=get-transcribed-command text={}", commandText);
 
                     final Optional<BaseHandler> optionalHandler = handlerFactory.getHandler(commandText);
                     if (optionalHandler.isPresent()) {
                         final BaseHandler handler = optionalHandler.get();
-                        LOGGER.debug("action=found-handler handler={}", handler.getClass().toString());
+                        LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
 
-                        executeResult = handler.executionCommand(commandText, "8AF6441AF72321F4", 2095L);
+                        executeResult = handler.executionCommand(commandText, senseId, accountId);
                         LOGGER.debug("action=execute-command result={}", executeResult);
                         break;
                     } else {
-                        LOGGER.info("action=no-handler-found-for-command command={}", commandText);
+                        LOGGER.info("action=find-handler result=fail text=\"{}\"", commandText);
                     }
                 }
             }

@@ -9,12 +9,9 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.collect.ImmutableMap;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
-import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.FileInfoDAO;
 import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
-import com.hello.suripu.core.db.util.JodaArgumentFactory;
-import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredw8.clients.MessejiClient;
@@ -22,10 +19,6 @@ import com.hello.suripu.coredw8.clients.MessejiHttpClient;
 import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
-import io.dropwizard.jdbi.DBIFactory;
-import io.dropwizard.jdbi.ImmutableListContainerFactory;
-import io.dropwizard.jdbi.ImmutableSetContainerFactory;
-import io.dropwizard.jdbi.OptionalContainerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import is.hello.speech.clients.AsyncSpeechClient;
@@ -34,7 +27,6 @@ import is.hello.speech.configuration.SpeechAppConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.resources.v1.UploadResource;
-import org.skife.jdbi.v2.DBI;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
 
@@ -56,17 +48,17 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
     @Override
     public void run(final SpeechAppConfiguration speechAppConfiguration, Environment environment) throws Exception {
 
-        final DBIFactory factory = new DBIFactory();
-        final DBI commonDB = factory.build(environment, speechAppConfiguration.getCommonDB(), "commonDB");
-
-        commonDB.registerArgumentFactory(new JodaArgumentFactory());
-        commonDB.registerContainerFactory(new OptionalContainerFactory());
-        commonDB.registerArgumentFactory(new PostgresIntegerArrayArgumentFactory());
-        commonDB.registerContainerFactory(new ImmutableListContainerFactory());
-        commonDB.registerContainerFactory(new ImmutableSetContainerFactory());
-
-        final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
-        final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
+//        final DBIFactory factory = new DBIFactory();
+//        final DBI commonDB = factory.build(environment, speechAppConfiguration.getCommonDB(), "commonDB");
+//
+//        commonDB.registerArgumentFactory(new JodaArgumentFactory());
+//        commonDB.registerContainerFactory(new OptionalContainerFactory());
+//        commonDB.registerArgumentFactory(new PostgresIntegerArrayArgumentFactory());
+//        commonDB.registerContainerFactory(new ImmutableListContainerFactory());
+//        commonDB.registerContainerFactory(new ImmutableSetContainerFactory());
+//
+//        final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
+//        final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
 
 
         final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
@@ -88,6 +80,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         // TODO: add additional handler resources here
 
+        final FileInfoDAO fileInfoDAO = null; // TODO: remove for google compute engine
         final HandlerFactory handlerFactory = HandlerFactory.create(
                 speechCommandDAO,
                 messejiClient,

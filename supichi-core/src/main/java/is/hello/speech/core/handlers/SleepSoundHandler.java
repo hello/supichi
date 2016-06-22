@@ -21,6 +21,12 @@ public class SleepSoundHandler extends BaseHandler {
 
     // TODO: need to get these info from somewhere
     private static final Duration DEFAULT_SLEEP_SOUND_DURATION = Duration.create(2L, "30 Minutes", 1800);
+    private static final Sound DEFAULT_SOUND = Sound.create(20L,
+            "https://s3.amazonaws.com/hello-audio/sleep-tones-preview/Rainfall.mp3",
+            "Rainfall",
+            "/SLPTONES/ST006.RAW",
+            "s3://hello-audio/sleep-tones-raw/2016-04-01/ST006.raw"
+    );
     private static final long DEFAULT_SLEEP_SOUND_ID =  20L; //
     private static final Double SENSE_MAX_DECIBELS = 60.0;
     private static final int DEFAULT_SLEEP_SOUND_VOLUME_PERCENT = 70;
@@ -76,7 +82,8 @@ public class SleepSoundHandler extends BaseHandler {
     private Boolean playSleepSound(final String senseId, final Long accountId) {
 
         // TODO: get most recently played sleep_sound_id, order, volume, etc...
-        final Optional<Sound> soundOptional = sleepSoundsProcessor.getSound(senseId, DEFAULT_SLEEP_SOUND_ID);
+        // final Optional<Sound> soundOptional = sleepSoundsProcessor.getSound(senseId, DEFAULT_SLEEP_SOUND_ID);
+        final Optional<Sound> soundOptional = Optional.of(DEFAULT_SOUND);
         if (!soundOptional.isPresent()) {
             LOGGER.error("error=invalid-sound-id id={} sense_id={}", DEFAULT_SLEEP_SOUND_ID, senseId);
             return false;
