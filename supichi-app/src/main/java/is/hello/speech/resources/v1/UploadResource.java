@@ -116,7 +116,6 @@ public class UploadResource {
                     } else {
                         LOGGER.info("action=no-handler-found-for-command command={}", commandText);
                     }
-
                 }
             }
 

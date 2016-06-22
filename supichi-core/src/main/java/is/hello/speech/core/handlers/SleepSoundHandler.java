@@ -1,35 +1,23 @@
 package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredw8.clients.MessejiClient;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.SpeechCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Set;
 
 
 /**
  * Created by ksg on 6/17/16
  */
-public class SleepSoundHandler implements BaseHandler {
-    private enum SleepSoundCommand {
-        NONE("none"),
-        PLAY("play"),
-        STOP("stop");
-
-        private String value;
-
-        SleepSoundCommand(String value) {
-            this.value = value;
-        }
-    }
+public class SleepSoundHandler extends BaseHandler {
 
     // TODO: need to get these info from somewhere
     private static final Duration DEFAULT_SLEEP_SOUND_DURATION = Duration.create(2L, "30 Minutes", 1800);
@@ -46,59 +34,43 @@ public class SleepSoundHandler implements BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(SleepSoundHandler.class);
 
     private final MessejiClient messejiClient;
-    private final SpeechCommandDAO speechCommandDAO;
     private final SleepSoundsProcessor sleepSoundsProcessor;
-    private final ImmutableMap<String, SleepSoundCommand> commandMap;
 
     public SleepSoundHandler(final MessejiClient messejiClient, final SpeechCommandDAO speechCommandDAO, final SleepSoundsProcessor sleepSoundsProcessor) {
+        super("sleep_sound", speechCommandDAO, getAvailableActions());
         this.messejiClient = messejiClient;
-        this.speechCommandDAO = speechCommandDAO;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
-        this.commandMap =  ImmutableMap.copyOf(getAvailableActions());
     }
 
-    private static Map<String, SleepSoundCommand> getAvailableActions() {
+
+    private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
-        final Map<String, SleepSoundCommand> tempMap = Maps.newHashMap();
-        tempMap.put("okay play", SleepSoundCommand.PLAY);
-        tempMap.put("play sound", SleepSoundCommand.PLAY);
-        tempMap.put("play sleep sound", SleepSoundCommand.PLAY);
-        tempMap.put("play sleep", SleepSoundCommand.PLAY);
-        tempMap.put("stop", SleepSoundCommand.STOP);
-        tempMap.put("stop sound", SleepSoundCommand.STOP);
-        tempMap.put("stop sounds", SleepSoundCommand.STOP);
-        tempMap.put("stop sleep sounds", SleepSoundCommand.STOP);
-        tempMap.put("stop sleep sound", SleepSoundCommand.STOP);
-        tempMap.put("stopping sound", SleepSoundCommand.STOP);
+        final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
+        tempMap.put("okay play", SpeechCommand.SLEEP_SOUND_PLAY);
+        tempMap.put("play sound", SpeechCommand.SLEEP_SOUND_PLAY);
+        tempMap.put("play sleep sound", SpeechCommand.SLEEP_SOUND_PLAY);
+        tempMap.put("play sleep", SpeechCommand.SLEEP_SOUND_PLAY);
+
+        tempMap.put("stop", SpeechCommand.SLEEP_SOUND_STOP);
+        tempMap.put("stop sound", SpeechCommand.SLEEP_SOUND_STOP);
+        tempMap.put("stop sounds", SpeechCommand.SLEEP_SOUND_STOP);
+        tempMap.put("stop sleep sounds", SpeechCommand.SLEEP_SOUND_STOP);
+        tempMap.put("stop sleep sound", SpeechCommand.SLEEP_SOUND_STOP);
+        tempMap.put("stopping sound", SpeechCommand.SLEEP_SOUND_STOP);
         return tempMap;
     }
 
     @Override
-    public Set<String> getRelevantCommands() {
-        return this.commandMap.keySet();
-    }
-
-    @Override
     public Boolean executionCommand(final String text, final String senseId, final Long accountId) {
-        final SleepSoundCommand command = getCommand(text);
-
-        if (command.equals(SleepSoundCommand.NONE)) {
-            return false;
+        final Optional<SpeechCommand> command = getCommand(text);
+        if (command.isPresent()) {
+            if (command.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
+                return playSleepSound(senseId, accountId);
+            } else if (command.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
+                return stopSleepSound(senseId, accountId);
+            }
         }
-
-        if (command.equals(SleepSoundCommand.PLAY)) {
-            return playSleepSound(senseId, accountId);
-        }
-
-        return stopSleepSound(senseId, accountId);
-    }
-
-
-    private SleepSoundCommand getCommand(final String text) {
-        if (commandMap.containsKey(text)) {
-            return commandMap.get(text);
-        }
-        return SleepSoundCommand.NONE;
+        return false;
     }
 
     private Boolean playSleepSound(final String senseId, final Long accountId) {
@@ -145,8 +117,8 @@ public class SleepSoundHandler implements BaseHandler {
         }
     }
 
-    protected static Integer convertToSenseVolumePercent(final Double maxDecibels,
-                                                         final Integer volumePercent) {
+    private static Integer convertToSenseVolumePercent(final Double maxDecibels,
+                                                       final Integer volumePercent) {
         if (volumePercent > 100 || volumePercent < 0) {
             throw new IllegalArgumentException(String.format("volumePercent must be in the range [0, 100], not %s", volumePercent));
         } else if (volumePercent <= 1) {

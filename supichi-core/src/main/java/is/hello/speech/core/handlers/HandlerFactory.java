@@ -30,8 +30,13 @@ public class HandlerFactory {
         final Map<HandlerType, BaseHandler> handlerMap = Maps.newHashMap();
 
         // create handlers
+        // sleep sounds
         final SleepSoundHandler sleepSoundHandler = new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor);
         handlerMap.put(HandlerType.SLEEP_SOUNDS, sleepSoundHandler);
+
+        // Alarm
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO);
+        handlerMap.put(HandlerType.ALARM, alarmHandler);
 
         // map command text to handler
         final Map<String, HandlerType> commandToHandlerMap = Maps.newHashMap();
