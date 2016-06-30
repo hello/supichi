@@ -21,6 +21,7 @@ import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import is.hello.speech.cli.WatsonTextToSpeech;
 import is.hello.speech.clients.AsyncSpeechClient;
 import is.hello.speech.clients.SpeechClientManaged;
 import is.hello.speech.configuration.SpeechAppConfiguration;
@@ -42,6 +43,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
     @Override
     public void initialize(Bootstrap<SpeechAppConfiguration> bootstrap) {
         // nothing to do yet
+        bootstrap.addCommand(new WatsonTextToSpeech());
     }
 
 
