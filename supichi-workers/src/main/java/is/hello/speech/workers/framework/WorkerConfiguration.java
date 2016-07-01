@@ -3,6 +3,8 @@ package is.hello.speech.workers.framework;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
 import is.hello.speech.core.configuration.SQSConfiguration;
+import is.hello.speech.core.configuration.SaveAudioConfiguration;
+import is.hello.speech.core.configuration.WatsonConfiguration;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;

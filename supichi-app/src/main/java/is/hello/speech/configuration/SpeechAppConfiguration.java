@@ -6,6 +6,8 @@ import com.hello.suripu.coredw8.configuration.NewDynamoDBConfiguration;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 import is.hello.speech.core.configuration.SQSConfiguration;
+import is.hello.speech.core.configuration.SaveAudioConfiguration;
+import is.hello.speech.core.configuration.WatsonConfiguration;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -55,5 +57,16 @@ public class SpeechAppConfiguration extends Configuration {
     private SQSConfiguration sqsConfiguration = new SQSConfiguration();
     public SQSConfiguration getSqsConfiguration() { return sqsConfiguration; }
 
+    @Valid
+    @NotNull
+    @JsonProperty("watson")
+    private WatsonConfiguration watsonConfiguration;
+    public WatsonConfiguration getWatsonConfiguration() { return watsonConfiguration;}
+
+    @Valid
+    @NotNull
+    @JsonProperty("save_audio")
+    private SaveAudioConfiguration saveAudioConfiguration;
+    public SaveAudioConfiguration getSaveAudioConfiguration() { return saveAudioConfiguration;}
 
 }

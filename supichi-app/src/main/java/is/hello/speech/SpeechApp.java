@@ -22,21 +22,28 @@ import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.clients.MessejiHttpClient;
 import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
+import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import io.dropwizard.util.Duration;
 import is.hello.speech.cli.WatsonTextToSpeech;
 import is.hello.speech.clients.AsyncSpeechClient;
 import is.hello.speech.clients.SpeechClientManaged;
 import is.hello.speech.configuration.SpeechAppConfiguration;
 import is.hello.speech.core.configuration.SQSConfiguration;
+import is.hello.speech.core.configuration.WatsonConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
 import is.hello.speech.core.handlers.HandlerFactory;
+import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
 import is.hello.speech.resources.v1.QueueMessageResource;
 import is.hello.speech.resources.v1.UploadResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpeechApp.class);
@@ -113,6 +120,33 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         environment.jersey().register(new QueueMessageResource(sqsClient, sqsQueueUrl, sqsConfig));
 
+        // set up watson
+        final TextToSpeech watson = new TextToSpeech();
+        final WatsonConfiguration watsonConfiguration = speechAppConfiguration.getWatsonConfiguration();
+        watson.setUsernameAndPassword(watsonConfiguration.getUsername(), watsonConfiguration.getPassword());
+        final Map<String, String> headers = ImmutableMap.of("X-Watson-Learning-Opt-Out", "true");
+        watson.setDefaultHeaders(headers);
+
+        // set up S3
+        final ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.withConnectionTimeout(200); // in ms
+        clientConfiguration.withMaxErrorRetry(1);
+        final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
+
+        // set up text2speech consumer manager
+        final ExecutorService consumerExecutor = environment.lifecycle().executorService("queue_consumer")
+                .minThreads(1)
+                .maxThreads(2)
+                .keepAliveTime(Duration.seconds(2L)).build();
+
+        final Text2SpeechQueueConsumer consumer = new Text2SpeechQueueConsumer(
+                amazonS3, speechAppConfiguration.getSaveAudioConfiguration().getBucketName(),
+                speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefix(),
+                watson, watsonConfiguration.getVoiceName(),
+                sqsClient, sqsQueueUrl, speechAppConfiguration.getSqsConfiguration(),
+                consumerExecutor);
+
+        environment.lifecycle().manage(consumer);
 
         // Speech API
         final AWSCredentials awsCredentials = new AWSCredentials() {
@@ -120,7 +154,6 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
             public String getAWSSecretKey() { return speechAppConfiguration.getS3Configuration().getAwsSecretKey(); }
         };
 
-        final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentials);
         final AsyncSpeechClient client = new AsyncSpeechClient(
                 speechAppConfiguration.getGoogleAPIHost(),
                 speechAppConfiguration.getGoogleAPIPort(),

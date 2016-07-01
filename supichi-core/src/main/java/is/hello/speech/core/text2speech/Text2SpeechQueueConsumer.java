@@ -1,4 +1,4 @@
-package is.hello.speech.workers.text2speech;
+package is.hello.speech.core.text2speech;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -18,8 +18,6 @@ import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
 import io.dropwizard.lifecycle.Managed;
 import is.hello.speech.core.api.Text2SpeechQueue;
 import is.hello.speech.core.configuration.SQSConfiguration;
-import is.hello.speech.core.text2speech.Text2SpeechMessage;
-import is.hello.speech.core.text2speech.Text2SpeechUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,7 +154,7 @@ public class Text2SpeechQueueConsumer implements Managed {
                 }
             } else {
                 // no messages, sleep for a bit TODO use a scheduled thread?
-                Thread.sleep(1000L);
+                // Thread.sleep(1000L);
             }
 
         } while (isRunning);

@@ -1,4 +1,4 @@
-package is.hello.speech.workers.framework;
+package is.hello.speech.core.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
