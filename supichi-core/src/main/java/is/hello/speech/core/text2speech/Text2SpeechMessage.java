@@ -1,6 +1,7 @@
-package is.hello.speech.workers.text2speech;
+package is.hello.speech.core.text2speech;
 
 import com.google.common.base.Optional;
+import is.hello.speech.core.api.Text2SpeechQueue;
 
 /**
  * Created by ksg on 6/29/16

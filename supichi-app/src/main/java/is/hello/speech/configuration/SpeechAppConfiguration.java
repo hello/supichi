@@ -5,6 +5,7 @@ import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.coredw8.configuration.NewDynamoDBConfiguration;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
+import is.hello.speech.core.configuration.SQSConfiguration;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -47,6 +48,12 @@ public class SpeechAppConfiguration extends Configuration {
     public DataSourceFactory getCommonDB() {
         return commonDB;
     }
+
+    @Valid
+    @NotNull
+    @JsonProperty("sqs_configuration")
+    private SQSConfiguration sqsConfiguration = new SQSConfiguration();
+    public SQSConfiguration getSqsConfiguration() { return sqsConfiguration; }
 
 
 }

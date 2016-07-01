@@ -1,7 +1,5 @@
 package is.hello.speech.workers;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -9,17 +7,15 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
-import is.hello.speech.workers.framework.SQSConfiguration;
+import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.workers.framework.WatsonConfiguration;
 import is.hello.speech.workers.framework.WorkerConfiguration;
 import is.hello.speech.workers.text2speech.Text2SpeechQueueConsumer;
@@ -27,7 +23,6 @@ import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
@@ -66,15 +61,7 @@ public class SupichiWorker extends Application<WorkerConfiguration> {
         final Region region = Region.getRegion(Regions.US_EAST_1);
         sqsClient.setRegion(region);
 
-        // get SQS queue url
-        final Optional<String> optionalSqsQueueUrl = this.getSqsQueueUrl(sqsClient, sqsConfig.getSqsQueueName());
-        if (!optionalSqsQueueUrl.isPresent()) {
-            LOGGER.error("key=suripu-queue error=no-sqs-queue-found queue-name={}", sqsConfig.getSqsQueueName());
-            throw new Exception("Invalid queue name");
-        }
-
-        final String sqsQueueUrl = optionalSqsQueueUrl.get();
-
+        final String sqsQueueUrl = sqsConfig.getSqsQueueUrl();
 
         // set up watson
         final TextToSpeech watson = new TextToSpeech();
@@ -91,7 +78,8 @@ public class SupichiWorker extends Application<WorkerConfiguration> {
                 .keepAliveTime(Duration.seconds(2L)).build();
 
         final Text2SpeechQueueConsumer consumer = new Text2SpeechQueueConsumer(
-                amazonS3, workerConfiguration.getSaveAudioConfiguration(),
+                amazonS3, workerConfiguration.getSaveAudioConfiguration().getBucketName(),
+                workerConfiguration.getSaveAudioConfiguration().getAudioPrefix(),
                 watson, watsonConfiguration.getVoiceName(),
                 sqsClient, sqsQueueUrl, workerConfiguration.getSqsConfiguration(),
                 consumerExecutor);
@@ -101,20 +89,5 @@ public class SupichiWorker extends Application<WorkerConfiguration> {
     }
 
 
-    private Optional<String>  getSqsQueueUrl(final AmazonSQS client, final String queueName) {
-        try {
-            final List<String> queueUrls = client.listQueues().getQueueUrls();
-            for (final String url : queueUrls) {
-                if (url.contains(queueName)) {
-                    LOGGER.debug("action=found-sqs-url value={}", url);
-                    return Optional.of(url);
-                }
-            }
-        }  catch (AmazonServiceException ase) {
-            LOGGER.error("error=sqs-request-rejected reason={}", ase.getMessage()) ;
-        } catch (AmazonClientException ace) {
-            LOGGER.error("error=amazon-client-exception-internal-problem reason={}", ace.getMessage());
-        }
-        return Optional.absent();
-    }
+
 }

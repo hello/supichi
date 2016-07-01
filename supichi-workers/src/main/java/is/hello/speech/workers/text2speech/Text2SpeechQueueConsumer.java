@@ -1,6 +1,8 @@
 package is.hello.speech.workers.text2speech;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.DeleteMessageBatchRequest;
 import com.amazonaws.services.sqs.model.DeleteMessageBatchRequestEntry;
@@ -10,18 +12,18 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.AudioFormat;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
 import io.dropwizard.lifecycle.Managed;
-import is.hello.speech.workers.framework.SQSConfiguration;
-import is.hello.speech.workers.framework.SaveAudioConfiguration;
+import is.hello.speech.core.api.Text2SpeechQueue;
+import is.hello.speech.core.configuration.SQSConfiguration;
+import is.hello.speech.core.text2speech.Text2SpeechMessage;
+import is.hello.speech.core.text2speech.Text2SpeechUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -37,7 +39,8 @@ public class Text2SpeechQueueConsumer implements Managed {
     private static final AudioFormat DEFAULT_AUDIO_FORMAT = AudioFormat.WAV;
 
     private final AmazonS3 amazonS3;
-    private final SaveAudioConfiguration s3Config;
+    private final String s3Bucket;
+    private final String s3Prefix;
 
     private final TextToSpeech watson;
     private final Voice watsonVoice;
@@ -50,12 +53,13 @@ public class Text2SpeechQueueConsumer implements Managed {
 
     private boolean isRunning = false;
 
-    public Text2SpeechQueueConsumer(final AmazonS3 amazonS3, final SaveAudioConfiguration s3Config,
+    public Text2SpeechQueueConsumer(final AmazonS3 amazonS3, final String s3Bucket, final String s3Prefix,
                                     final TextToSpeech watson, final String voice,
                                     final AmazonSQSAsync sqsClient, final String sqsQueueUrl, final SQSConfiguration sqsConfiguration,
                                     final ExecutorService consumerExecutor) {
         this.amazonS3 = amazonS3;
-        this.s3Config = s3Config;
+        this.s3Bucket = s3Bucket;
+        this.s3Prefix = s3Prefix;
         this.watson = watson;
         this.watsonVoice = this.watson.getVoice(voice).execute();
         this.sqsClient = sqsClient;
@@ -98,44 +102,61 @@ public class Text2SpeechQueueConsumer implements Managed {
             final List<Text2SpeechMessage> messages = receiveMessages();
             final List<DeleteMessageBatchRequestEntry> processedHandlers = Lists.newArrayList();
 
-            for (final Text2SpeechMessage message : messages) {
-                if (message.synthesizeMessage.isPresent()) {
-                    final Text2SpeechQueue.SynthesizeMessage synthesizeMessage = message.synthesizeMessage.get();
-                    final String text = synthesizeMessage.getText();
+            if (!messages.isEmpty()) {
+                for (final Text2SpeechMessage message : messages) {
+                    if (message.synthesizeMessage.isPresent()) {
+                        final Text2SpeechQueue.SynthesizeMessage synthesizeMessage = message.synthesizeMessage.get();
+                        final String text = synthesizeMessage.getText();
 
-                    // text-to-speech conversion
-                    LOGGER.debug("action=synthesize-text service={} text={}", synthesizeMessage.getService().toString(), text);
+                        // text-to-speech conversion
+                        LOGGER.debug("action=synthesize-text service={} text={}", synthesizeMessage.getService().toString(), text);
 
-                    final InputStream stream = watson.synthesize(text, watsonVoice, DEFAULT_AUDIO_FORMAT).execute();
+                        final InputStream stream = watson.synthesize(text, watsonVoice, DEFAULT_AUDIO_FORMAT).execute();
 
-                    // construct filename
-                    final String parameterString = "whatever";
-                    String filename = String.format("/Users/kingshy/DEV/Hello/supichi/WATSON_RESULTS/%s_%s_%s_%s_%s_%s.wav",
-                            synthesizeMessage.getIntent().toString(),
-                            synthesizeMessage.getAction().toString(),
-                            synthesizeMessage.getCategory().toString(),
-                            parameterString,
-                            synthesizeMessage.getService().toString(),
-                            synthesizeMessage.getVoice().toString()
-                    );
+                        // construct filename
+                        String filename = String.format("%s-%s-%s-%s-%s-%s.wav",
+                                synthesizeMessage.getIntent().toString(),
+                                synthesizeMessage.getAction().toString(),
+                                synthesizeMessage.getCategory().toString(),
+                                synthesizeMessage.getParametersString(),
+                                synthesizeMessage.getService().toString(),
+                                synthesizeMessage.getVoice().toString()
+                        );
 
-                    LOGGER.debug("action=save-audio-to-file filename={}", filename);
+                        LOGGER.debug("action=save-audio-to-file filename={}", filename);
 
-                    // save to file
-                    final File file = new File(filename);
-                    ByteStreams.copy(stream, new FileOutputStream(file));
+                        // save to file
+//                        final String saveFilename = "/tmp/tmp.wav";
+//                        final File file = new File(saveFilename);
+//                        final FileOutputStream fileOutputStream = new FileOutputStream(file);
+//                        ByteStreams.copy(stream, fileOutputStream);
+//                        fileOutputStream.close();
 
-                    // TODO: save to S3
+                        // save to S3
+                        final ObjectMetadata metadata = new ObjectMetadata();
+                        metadata.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+
+                        // if we want to set content-length
+                        // byte[] bytes = IOUtils.toByteArray(stream);
+                        // final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+                        // metadata.setContentLength(bytes.length);
+
+                        final String s3Key = String.format("%s/%s", s3Bucket, s3Prefix);
+                        amazonS3.putObject(new PutObjectRequest(s3Key, filename, stream, metadata));
+                    }
+
+                    processedHandlers.add(new DeleteMessageBatchRequestEntry(message.messageId, message.messageHandler));
                 }
 
-                processedHandlers.add(new DeleteMessageBatchRequestEntry(message.messageId, message.messageHandler));
-            }
-
-            if (!processedHandlers.isEmpty()) {
-                LOGGER.debug("action=clearing-processed-messages-from-queue size={}", processedHandlers.size());
-                final DeleteMessageBatchResult deleteResult = sqsClient.deleteMessageBatch(
-                        new DeleteMessageBatchRequest(sqsQueueUrl, processedHandlers));
-                LOGGER.debug("action=delete-messages size={}", deleteResult.getSuccessful().size());
+                if (!processedHandlers.isEmpty()) {
+                    LOGGER.debug("action=clearing-processed-messages-from-queue size={}", processedHandlers.size());
+                    final DeleteMessageBatchResult deleteResult = sqsClient.deleteMessageBatch(
+                            new DeleteMessageBatchRequest(sqsQueueUrl, processedHandlers));
+                    LOGGER.debug("action=delete-messages size={}", deleteResult.getSuccessful().size());
+                }
+            } else {
+                // no messages, sleep for a bit TODO use a scheduled thread?
+                Thread.sleep(1000L);
             }
 
         } while (isRunning);
@@ -163,7 +184,7 @@ public class Text2SpeechQueueConsumer implements Managed {
                 decodedMessages.add(new Text2SpeechMessage(message.getReceiptHandle(), message.getMessageId(), Optional.of(synthesizeMessage)));
             } catch (IOException e) {
                 LOGGER.error("action=decode-sqs-message-fail message_id={}", message.getMessageId());
-                decodedMessages.add(new Text2SpeechMessage(message.getReceiptHandle(), message.getMessageId(), Optional.absent());
+                decodedMessages.add(new Text2SpeechMessage(message.getReceiptHandle(), message.getMessageId(), Optional.absent()));
             }
         }
 

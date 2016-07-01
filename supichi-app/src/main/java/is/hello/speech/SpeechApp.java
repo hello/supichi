@@ -4,9 +4,14 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
+import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
 import com.google.common.collect.ImmutableMap;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.FileInfoDAO;
@@ -25,11 +30,16 @@ import is.hello.speech.cli.WatsonTextToSpeech;
 import is.hello.speech.clients.AsyncSpeechClient;
 import is.hello.speech.clients.SpeechClientManaged;
 import is.hello.speech.configuration.SpeechAppConfiguration;
+import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
 import is.hello.speech.core.handlers.HandlerFactory;
+import is.hello.speech.resources.v1.QueueMessageResource;
 import is.hello.speech.resources.v1.UploadResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpeechApp.class);
 
     public static void main(String[] args) throws Exception {
         new SpeechApp().run(args);
@@ -88,15 +98,29 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 messejiClient,
                 SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO));
 
+        // setup SQS for QueueMessage API
+        final SQSConfiguration sqsConfig = speechAppConfiguration.getSqsConfiguration();
+        final int maxConnections = sqsConfig.getSqsMaxConnections();
+        final AmazonSQSAsync sqsClient = new AmazonSQSBufferedAsyncClient(
+                new AmazonSQSAsyncClient(awsCredentialsProvider, new ClientConfiguration()
+                        .withMaxConnections(maxConnections)
+                        .withConnectionTimeout(500)));
 
+        final Region region = Region.getRegion(Regions.US_EAST_1);
+        sqsClient.setRegion(region);
+
+        final String sqsQueueUrl = sqsConfig.getSqsQueueUrl();
+
+        environment.jersey().register(new QueueMessageResource(sqsClient, sqsQueueUrl, sqsConfig));
+
+
+        // Speech API
         final AWSCredentials awsCredentials = new AWSCredentials() {
             public String getAWSAccessKeyId() { return speechAppConfiguration.getS3Configuration().getAwsAccessKey(); }
             public String getAWSSecretKey() { return speechAppConfiguration.getS3Configuration().getAwsSecretKey(); }
         };
 
-
         final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentials);
-
         final AsyncSpeechClient client = new AsyncSpeechClient(
                 speechAppConfiguration.getGoogleAPIHost(),
                 speechAppConfiguration.getGoogleAPIPort(),

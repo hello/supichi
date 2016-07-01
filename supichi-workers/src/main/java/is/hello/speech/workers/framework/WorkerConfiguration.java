@@ -2,6 +2,7 @@ package is.hello.speech.workers.framework;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
+import is.hello.speech.core.configuration.SQSConfiguration;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -24,7 +25,7 @@ public class WorkerConfiguration extends Configuration {
 
     @Valid
     @NotNull
-    @JsonProperty("SQS_configuration")
+    @JsonProperty("sqs_configuration")
     private SQSConfiguration sqsConfiguration = new SQSConfiguration();
     public SQSConfiguration getSqsConfiguration() { return sqsConfiguration; }
 

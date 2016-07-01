@@ -1,6 +1,7 @@
-package is.hello.speech.workers.text2speech;
+package is.hello.speech.core.text2speech;
 
 
+import is.hello.speech.core.api.Text2SpeechQueue;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.IOException;
