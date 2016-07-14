@@ -1,7 +1,6 @@
 package is.hello.speech.core.text2speech;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.DeleteMessageBatchRequest;
@@ -12,6 +11,7 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.google.common.io.ByteStreams;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.AudioFormat;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
@@ -21,11 +21,13 @@ import is.hello.speech.core.configuration.SQSConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.core.MediaType;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by ksg on 6/28/16
@@ -36,9 +38,12 @@ public class Text2SpeechQueueConsumer implements Managed {
     private static final int MAX_RECEIVED_MESSAGES = 10;
     private static final AudioFormat DEFAULT_AUDIO_FORMAT = AudioFormat.WAV;
 
+    private static final String COMPRESS_PARAMS = "-r 16k -e ima-adpcm -b 4 -c 1";
+
     private final AmazonS3 amazonS3;
     private final String s3Bucket;
-    private final String s3Prefix;
+    private final String s3KeyRaw;
+    private final String s3KeyCompressed;
 
     private final TextToSpeech watson;
     private final Voice watsonVoice;
@@ -51,13 +56,15 @@ public class Text2SpeechQueueConsumer implements Managed {
 
     private boolean isRunning = false;
 
-    public Text2SpeechQueueConsumer(final AmazonS3 amazonS3, final String s3Bucket, final String s3Prefix,
+    public Text2SpeechQueueConsumer(final AmazonS3 amazonS3, final String s3Bucket,
+                                    final String s3PrefixRaw, final String s3PrefixCompressed,
                                     final TextToSpeech watson, final String voice,
                                     final AmazonSQSAsync sqsClient, final String sqsQueueUrl, final SQSConfiguration sqsConfiguration,
                                     final ExecutorService consumerExecutor) {
         this.amazonS3 = amazonS3;
         this.s3Bucket = s3Bucket;
-        this.s3Prefix = s3Prefix;
+        this.s3KeyRaw = String.format("%s/%s", s3Bucket, s3PrefixRaw);
+        this.s3KeyCompressed = String.format("%s/%s", s3Bucket, s3PrefixCompressed);
         this.watson = watson;
         this.watsonVoice = this.watson.getVoice(voice).execute();
         this.sqsClient = sqsClient;
@@ -112,7 +119,7 @@ public class Text2SpeechQueueConsumer implements Managed {
                         final InputStream stream = watson.synthesize(text, watsonVoice, DEFAULT_AUDIO_FORMAT).execute();
 
                         // construct filename
-                        String filename = String.format("%s-%s-%s-%s-%s-%s.wav",
+                        String keyname = String.format("%s-%s-%s-%s-%s-%s",
                                 synthesizeMessage.getIntent().toString(),
                                 synthesizeMessage.getAction().toString(),
                                 synthesizeMessage.getCategory().toString(),
@@ -121,26 +128,55 @@ public class Text2SpeechQueueConsumer implements Managed {
                                 synthesizeMessage.getVoice().toString()
                         );
 
-                        LOGGER.debug("action=save-audio-to-file filename={}", filename);
+                        LOGGER.debug("action=save-audio-to-file filename={}", keyname);
 
                         // save to file
-//                        final String saveFilename = "/tmp/tmp.wav";
-//                        final File file = new File(saveFilename);
-//                        final FileOutputStream fileOutputStream = new FileOutputStream(file);
-//                        ByteStreams.copy(stream, fileOutputStream);
-//                        fileOutputStream.close();
+                        final String rawFilename = "/tmp/tmp.wav";
+                        final File rawFile = new File(rawFilename);
+                        final FileOutputStream fileOutputStream = new FileOutputStream(rawFile);
+                        ByteStreams.copy(stream, fileOutputStream);
+                        fileOutputStream.close();
 
                         // save to S3
-                        final ObjectMetadata metadata = new ObjectMetadata();
-                        metadata.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-                        // if we want to set content-length
-                        // byte[] bytes = IOUtils.toByteArray(stream);
-                        // final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-                        // metadata.setContentLength(bytes.length);
+//                        // save directly from stream
+//                         final ObjectMetadata metadata = new ObjectMetadata();
+//                         metadata.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+//
+//                        // if we want to set content-length
+//                        // byte[] bytes = IOUtils.toByteArray(stream);
+//                        // final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+//                        // metadata.setContentLength(bytes.length);
+//
+//                         amazonS3.putObject(new PutObjectRequest(this.s3KeyRaw, filename, stream, metadata));
 
-                        final String s3Key = String.format("%s/%s", s3Bucket, s3Prefix);
-                        amazonS3.putObject(new PutObjectRequest(s3Key, filename, stream, metadata));
+
+                        // Save Raw data from tmp file
+                        amazonS3.putObject(new PutObjectRequest(this.s3KeyRaw, String.format("%s-raw.wav", keyname), rawFile));
+
+
+                        // convert to AD-PCM 16K 6-bit audio and save to a different s3 bucket
+                        // "sox test.wav -r 16k -e ima-adpcm -b 4 -c 1 output3.wav";
+                        final String compressedFilename = "/tmp/tmp_compressed.wav";
+                        final String compressCommand = String.format("sox %s %s %s", rawFilename, COMPRESS_PARAMS, compressedFilename);
+                        try {
+
+                            final Process process = Runtime.getRuntime().exec(compressCommand);
+//                            final Process process = new ProcessBuilder("/bin/bash", compressCommand).start();
+//                                .redirectError(ProcessBuilder.Redirect.INHERIT)
+//                                .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+//                                .start();
+                            final boolean returnCode = process.waitFor(5000L, TimeUnit.MILLISECONDS);
+                            LOGGER.debug("Return code is {}", returnCode);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        final File compressedFile = new File(compressedFilename);
+                        amazonS3.putObject(new PutObjectRequest(s3KeyCompressed, String.format("%s-compressed.wav", keyname), compressedFile));
+
                     }
 
                     processedHandlers.add(new DeleteMessageBatchRequestEntry(message.messageId, message.messageHandler));

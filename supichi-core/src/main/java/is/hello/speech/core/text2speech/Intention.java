@@ -36,7 +36,9 @@ public class Intention {
 
     public enum ActionType {
         PLAY_SOUND(1),
-        STOP_SOUND(2);
+        STOP_SOUND(2),
+        GET_CONDITION(3),
+        GET_SENSOR(4);
 
         protected int value;
 
@@ -67,7 +69,13 @@ public class Intention {
         DEFAULT(1),
         SOUND_NAME(2),
         SOUND_DURATION(3),
-        SOUND_NAME_DURATION(4);
+        SOUND_NAME_DURATION(4),
+        OVERALL_CONDITIONS(5),
+        TEMPERATURE(6),
+        HUMIDITY(7),
+        LIGHT(8),
+        AIR_QUALITY(9),
+        SOUND(10);
 
         protected int value;
 

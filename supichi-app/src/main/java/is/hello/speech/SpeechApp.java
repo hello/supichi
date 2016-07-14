@@ -34,9 +34,11 @@ import is.hello.speech.clients.SpeechClientManaged;
 import is.hello.speech.configuration.SpeechAppConfiguration;
 import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
+import is.hello.speech.core.db.DefaultResponseDAO;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
+import is.hello.speech.resources.v1.ParseResource;
 import is.hello.speech.resources.v1.QueueMessageResource;
 import is.hello.speech.resources.v1.UploadResource;
 import org.slf4j.Logger;
@@ -111,7 +113,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final AmazonSQSAsync sqsClient = new AmazonSQSBufferedAsyncClient(
                 new AmazonSQSAsyncClient(awsCredentialsProvider, new ClientConfiguration()
                         .withMaxConnections(maxConnections)
-                        .withConnectionTimeout(500)));
+                        .withConnectionTimeout(500)
+                        .withMaxErrorRetry(3)));
 
         final Region region = Region.getRegion(Regions.US_EAST_1);
         sqsClient.setRegion(region);
@@ -139,9 +142,11 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .maxThreads(2)
                 .keepAliveTime(Duration.seconds(2L)).build();
 
+        final String speechBucket = speechAppConfiguration.getSaveAudioConfiguration().getBucketName();
         final Text2SpeechQueueConsumer consumer = new Text2SpeechQueueConsumer(
-                amazonS3, speechAppConfiguration.getSaveAudioConfiguration().getBucketName(),
-                speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefix(),
+                amazonS3, speechBucket,
+                speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixRaw(),
+                speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixCompressed(),
                 watson, watsonConfiguration.getVoiceName(),
                 sqsClient, sqsQueueUrl, speechAppConfiguration.getSqsConfiguration(),
                 consumerExecutor);
@@ -160,8 +165,14 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 speechAppConfiguration.getAudioConfiguration());
 
         final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
-
         environment.lifecycle().manage(speechClientManaged);
-        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerFactory));
+
+        final DefaultResponseDAO defaultResponseDAO = DefaultResponseDAO.create(amazonS3,
+                String.format("%s/%s", speechBucket,
+                        speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixCompressed()));
+
+        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerFactory, defaultResponseDAO));
+
+        environment.jersey().register(new ParseResource());
     }
 }

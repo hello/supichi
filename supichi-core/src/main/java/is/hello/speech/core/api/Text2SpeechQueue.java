@@ -395,6 +395,18 @@ public final class Text2SpeechQueue {
        * <code>STOP_SOUND = 2;</code>
        */
       STOP_SOUND(1, 2),
+      /**
+       * <code>GET_CONDITION = 3;</code>
+       *
+       * <pre>
+       * overall condition
+       * </pre>
+       */
+      GET_CONDITION(2, 3),
+      /**
+       * <code>GET_SENSOR = 4;</code>
+       */
+      GET_SENSOR(3, 4),
       ;
 
       /**
@@ -405,6 +417,18 @@ public final class Text2SpeechQueue {
        * <code>STOP_SOUND = 2;</code>
        */
       public static final int STOP_SOUND_VALUE = 2;
+      /**
+       * <code>GET_CONDITION = 3;</code>
+       *
+       * <pre>
+       * overall condition
+       * </pre>
+       */
+      public static final int GET_CONDITION_VALUE = 3;
+      /**
+       * <code>GET_SENSOR = 4;</code>
+       */
+      public static final int GET_SENSOR_VALUE = 4;
 
 
       public final int getNumber() { return value; }
@@ -413,6 +437,8 @@ public final class Text2SpeechQueue {
         switch (value) {
           case 1: return PLAY_SOUND;
           case 2: return STOP_SOUND;
+          case 3: return GET_CONDITION;
+          case 4: return GET_SENSOR;
           default: return null;
         }
       }
@@ -485,6 +511,30 @@ public final class Text2SpeechQueue {
        * <code>SOUND_NAME_DURATION = 4;</code>
        */
       SOUND_NAME_DURATION(3, 4),
+      /**
+       * <code>OVERALL_CONDITIONS = 5;</code>
+       */
+      OVERALL_CONDITIONS(4, 5),
+      /**
+       * <code>TEMPERATURE = 6;</code>
+       */
+      TEMPERATURE(5, 6),
+      /**
+       * <code>HUMIDITY = 7;</code>
+       */
+      HUMIDITY(6, 7),
+      /**
+       * <code>LIGHT = 8;</code>
+       */
+      LIGHT(7, 8),
+      /**
+       * <code>AIR_QUALITY = 9;</code>
+       */
+      AIR_QUALITY(8, 9),
+      /**
+       * <code>SOUND = 10;</code>
+       */
+      SOUND(9, 10),
       ;
 
       /**
@@ -503,6 +553,30 @@ public final class Text2SpeechQueue {
        * <code>SOUND_NAME_DURATION = 4;</code>
        */
       public static final int SOUND_NAME_DURATION_VALUE = 4;
+      /**
+       * <code>OVERALL_CONDITIONS = 5;</code>
+       */
+      public static final int OVERALL_CONDITIONS_VALUE = 5;
+      /**
+       * <code>TEMPERATURE = 6;</code>
+       */
+      public static final int TEMPERATURE_VALUE = 6;
+      /**
+       * <code>HUMIDITY = 7;</code>
+       */
+      public static final int HUMIDITY_VALUE = 7;
+      /**
+       * <code>LIGHT = 8;</code>
+       */
+      public static final int LIGHT_VALUE = 8;
+      /**
+       * <code>AIR_QUALITY = 9;</code>
+       */
+      public static final int AIR_QUALITY_VALUE = 9;
+      /**
+       * <code>SOUND = 10;</code>
+       */
+      public static final int SOUND_VALUE = 10;
 
 
       public final int getNumber() { return value; }
@@ -513,6 +587,12 @@ public final class Text2SpeechQueue {
           case 2: return SOUND_NAME;
           case 3: return SOUND_DURATION;
           case 4: return SOUND_NAME_DURATION;
+          case 5: return OVERALL_CONDITIONS;
+          case 6: return TEMPERATURE;
+          case 7: return HUMIDITY;
+          case 8: return LIGHT;
+          case 9: return AIR_QUALITY;
+          case 10: return SOUND;
           default: return null;
         }
       }
@@ -1834,7 +1914,7 @@ public final class Text2SpeechQueue {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\025voice_responses.proto\"\217\006\n\021SynthesizeMe" +
+      "\n\025voice_responses.proto\"\221\007\n\021SynthesizeMe" +
       "ssage\022\031\n\021voice_response_id\030\001 \001(\003\022\014\n\004text" +
       "\030\002 \001(\t\022-\n\006intent\030\003 \001(\0162\035.SynthesizeMessa" +
       "ge.IntentType\022-\n\006action\030\004 \001(\0162\035.Synthesi" +
@@ -1846,16 +1926,19 @@ public final class Text2SpeechQueue {
       "onse_type\030\t \001(\0162\037.SynthesizeMessage.Resp",
       "onseType\"P\n\nIntentType\022\020\n\014SLEEP_SOUNDS\020\001" +
       "\022\t\n\005ALARM\020\002\022\020\n\014SLEEP_REPORT\020\003\022\023\n\017ROOM_CO" +
-      "NDITIONS\020\004\",\n\nActionType\022\016\n\nPLAY_SOUND\020\001" +
-      "\022\016\n\nSTOP_SOUND\020\002\"X\n\014CategoryType\022\013\n\007DEFA" +
-      "ULT\020\001\022\016\n\nSOUND_NAME\020\002\022\022\n\016SOUND_DURATION\020" +
-      "\003\022\027\n\023SOUND_NAME_DURATION\020\004\"\031\n\013ServiceTyp" +
-      "e\022\n\n\006WATSON\020\001\"%\n\tVoiceType\022\013\n\007ALLISON\020\001\022" +
-      "\013\n\007MICHAEL\020\002\"s\n\014ResponseType\022\013\n\007SUCCESS\020" +
-      "\001\022\013\n\007FAILURE\020\002\022\007\n\003IDK\020\003\022\013\n\007TIMEOUT\020\004\022\021\n\r" +
-      "NETWORK_ERROR\020\005\022\r\n\tAPI_ERROR\020\006\022\021\n\rUNKNOW",
-      "N_ERROR\020\007B,\n\030is.hello.speech.core.apiB\020T" +
-      "ext2SpeechQueue"
+      "NDITIONS\020\004\"O\n\nActionType\022\016\n\nPLAY_SOUND\020\001" +
+      "\022\016\n\nSTOP_SOUND\020\002\022\021\n\rGET_CONDITION\020\003\022\016\n\nG" +
+      "ET_SENSOR\020\004\"\266\001\n\014CategoryType\022\013\n\007DEFAULT\020" +
+      "\001\022\016\n\nSOUND_NAME\020\002\022\022\n\016SOUND_DURATION\020\003\022\027\n" +
+      "\023SOUND_NAME_DURATION\020\004\022\026\n\022OVERALL_CONDIT" +
+      "IONS\020\005\022\017\n\013TEMPERATURE\020\006\022\014\n\010HUMIDITY\020\007\022\t\n" +
+      "\005LIGHT\020\010\022\017\n\013AIR_QUALITY\020\t\022\t\n\005SOUND\020\n\"\031\n\013" +
+      "ServiceType\022\n\n\006WATSON\020\001\"%\n\tVoiceType\022\013\n\007",
+      "ALLISON\020\001\022\013\n\007MICHAEL\020\002\"s\n\014ResponseType\022\013" +
+      "\n\007SUCCESS\020\001\022\013\n\007FAILURE\020\002\022\007\n\003IDK\020\003\022\013\n\007TIM" +
+      "EOUT\020\004\022\021\n\rNETWORK_ERROR\020\005\022\r\n\tAPI_ERROR\020\006" +
+      "\022\021\n\rUNKNOWN_ERROR\020\007B,\n\030is.hello.speech.c" +
+      "ore.apiB\020Text2SpeechQueue"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

@@ -12,13 +12,19 @@ public class SaveAudioConfiguration {
     @Valid
     @NotNull
     @JsonProperty("s3_bucket_name")
-    private final String bucketName = "hello-audio";
+    private String bucketName;
     public String getBucketName() { return bucketName; }
 
     @Valid
     @NotNull
-    @JsonProperty("s3_audio_prefix")
-    private final String audioPrefix = "voice/watson-text2speech/raw";
-    public String getAudioPrefix() { return audioPrefix; }
+    @JsonProperty("s3_audio_prefix_raw")
+    private  String audioPrefixRaw;
+    public String getAudioPrefixRaw() { return audioPrefixRaw; }
+
+    @Valid
+    @NotNull
+    @JsonProperty("s3_audio_prefix_compressed")
+    private String audioPrefixCompressed;
+    public String getAudioPrefixCompressed() { return audioPrefixCompressed; }
 
 }

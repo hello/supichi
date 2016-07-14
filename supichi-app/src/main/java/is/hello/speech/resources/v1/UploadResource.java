@@ -5,10 +5,10 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.util.Md5Utils;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
 import com.hello.suripu.core.util.HelloHttpHeader;
-import is.hello.speech.api.Response;
 import is.hello.speech.clients.AsyncSpeechClient;
+import is.hello.speech.core.api.Response;
+import is.hello.speech.core.db.DefaultResponseDAO;
 import is.hello.speech.core.handlers.BaseHandler;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.models.SpeechResult;
@@ -31,7 +31,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 
 
 @Path("/upload")
@@ -46,14 +45,20 @@ public class UploadResource {
 
     private final HandlerFactory handlerFactory;
 
+    private final DefaultResponseDAO defaultResponseDAO;
+
     @Context
     HttpServletRequest request;
 
-    public UploadResource(final AmazonS3 s3, final String bucketName, final AsyncSpeechClient asyncSpeechClient, final HandlerFactory factory) {
+    public UploadResource(final AmazonS3 s3, final String bucketName,
+                          final AsyncSpeechClient asyncSpeechClient,
+                          final HandlerFactory factory,
+                          final DefaultResponseDAO defaultResponseDAO) {
         this.s3 = s3;
         this.bucketName = bucketName;
         this.asyncSpeechClient = asyncSpeechClient;
         this.handlerFactory = factory;
+        this.defaultResponseDAO = defaultResponseDAO;
     }
 
     @Path("{prefix}")
@@ -132,40 +137,44 @@ public class UploadResource {
             }
 
             if (executeResult) {
-                return response(Response.SpeechResponse.Result.OK, resp.getTranscript().get());
+                return response(Response.SpeechResponse.Result.OK);
             } else {
-                return response(Response.SpeechResponse.Result.TRY_AGAIN, "Did not understand");
+                return response(Response.SpeechResponse.Result.TRY_AGAIN);
             }
         } catch (Exception e) {
-            LOGGER.error("error={}", e.getMessage());
+            LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return response(Response.SpeechResponse.Result.REJECTED, "Failed. Try again");
+        return response(Response.SpeechResponse.Result.REJECTED);
     }
 
 
     /**
-     * Creates a protobuf response
-     * @param result transciption result
-     * @param text text to return to Sense
+     * Creates a response
+     * Format: [PB-size] + [response PB] + [audio-data]
+     * @param result transcription result
      * @return bytes
      * @throws IOException
      */
-    private byte[] response(final Response.SpeechResponse.Result result, final String text) throws IOException {
-        Map<Response.SpeechResponse.Result, String> files = ImmutableMap.<Response.SpeechResponse.Result,String>builder()
-                .put(Response.SpeechResponse.Result.OK, "emma-16k.vox")
-                .put(Response.SpeechResponse.Result.REJECTED, "emma-16k.vox")
-                .put(Response.SpeechResponse.Result.TRY_AGAIN, "emma-16k.vox")
-                .build();
+    private byte[] response(final Response.SpeechResponse.Result result) throws IOException {
+
+        LOGGER.debug("action=create-response result={}", result.toString());
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        final Response.SpeechResponse response = Response.SpeechResponse.newBuilder()
-                .setUrl("http://s3.amazonaws.com/hello-audio/voice/" + files.get(result))
-                .setResult(result)
-                .setText(text)
-                .build();
-        LOGGER.info("size: {}", response.getSerializedSize());
+
+        // TODO: return custom response. If not exist, return default response based on intent
+        final DefaultResponseDAO.DefaultResponse defaultResponse = defaultResponseDAO.getResponse(result);
+
+        final Response.SpeechResponse response = defaultResponse.response;
+        final Integer responsePBSize = response.getSerializedSize();
+        LOGGER.info("action=create-response response_size={}", responsePBSize);
+        outputStream.write(responsePBSize.byteValue());
+
         response.writeDelimitedTo(outputStream);
+
+        final byte [] audioData = defaultResponse.audio_bytes;
+        LOGGER.info("action=create-response audio_size={}", audioData.length);
+        outputStream.write(audioData);
 
         return outputStream.toByteArray();
     }
