@@ -31,6 +31,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 
 @Path("/upload")
@@ -39,6 +40,8 @@ public class UploadResource {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
     private final static Integer SAMPLING = 8000; // 16000;
+    private final int RAW_AUDIO_BYTES_START = 44;
+
     private final AmazonS3 s3;
     private final String bucketName;
     private final AsyncSpeechClient asyncSpeechClient;
@@ -168,13 +171,12 @@ public class UploadResource {
         final Response.SpeechResponse response = defaultResponse.response;
         final Integer responsePBSize = response.getSerializedSize();
         LOGGER.info("action=create-response response_size={}", responsePBSize);
-        outputStream.write(responsePBSize.byteValue());
 
         response.writeDelimitedTo(outputStream);
 
         final byte [] audioData = defaultResponse.audio_bytes;
         LOGGER.info("action=create-response audio_size={}", audioData.length);
-        outputStream.write(audioData);
+        outputStream.write(Arrays.copyOfRange(audioData, RAW_AUDIO_BYTES_START, audioData.length));
 
         return outputStream.toByteArray();
     }

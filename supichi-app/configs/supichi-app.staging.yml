@@ -102,7 +102,7 @@ dynamodb:
 sqs_configuration:
     sqs_queue_name: dev_text2speech
     sqs_queue_url: https://sqs.us-east-1.amazonaws.com/053216739513/dev_text2speech
-    sqs_max_connections: 1
+    sqs_max_connections: 5
     sqs_max_messages_read: 10
     sqs_wait_time_seconds: 10
     sqs_visibility_timeout_seconds: 30
@@ -114,5 +114,5 @@ watson:
 
 save_audio:
   s3_bucket_name: hello-audio
-  s3_audio_prefix: voice/watson-text2speech/raw
-
+  s3_audio_prefix_raw: voice/watson-text2speech/raw
+  s3_audio_prefix_compressed: voice/watson-text2speech/compressed
