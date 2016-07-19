@@ -40,7 +40,7 @@ public class UploadResource {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
     private final static Integer SAMPLING = 8000; // 16000;
-    private final int RAW_AUDIO_BYTES_START = 44;
+    private final int RAW_AUDIO_BYTES_START = 60;
 
     private final AmazonS3 s3;
     private final String bucketName;
@@ -176,7 +176,10 @@ public class UploadResource {
 
         final byte [] audioData = defaultResponse.audio_bytes;
         LOGGER.info("action=create-response audio_size={}", audioData.length);
-        outputStream.write(Arrays.copyOfRange(audioData, RAW_AUDIO_BYTES_START, audioData.length));
+
+        outputStream.write(audioData);
+
+        LOGGER.info("action=get-output-stream-size size={}", outputStream.size());
 
         return outputStream.toByteArray();
     }

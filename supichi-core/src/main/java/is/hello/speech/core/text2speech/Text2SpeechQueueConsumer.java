@@ -38,7 +38,7 @@ public class Text2SpeechQueueConsumer implements Managed {
     private static final int MAX_RECEIVED_MESSAGES = 10;
     private static final AudioFormat DEFAULT_AUDIO_FORMAT = AudioFormat.WAV;
 
-    private static final String COMPRESS_PARAMS = "-r 16k -e ima-adpcm -b 4 -c 1";
+    private static final String COMPRESS_PARAMS = "-r 16k -e ima-adpcm `";
 
     private final AmazonS3 amazonS3;
     private final String s3Bucket;

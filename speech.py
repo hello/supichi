@@ -5,6 +5,9 @@ import sys
 import struct
 from StringIO import StringIO
 
+import traceback
+import response_pb2
+
 class SlowUpload(object):
   def __init__(self, fp, verbose=False):
     self.f = open(fp, 'rb')
@@ -41,18 +44,61 @@ class SlowUpload(object):
     return self
 
 
+def decode_varint(value):
+    """Decodes a single Python integer from a VARINT.
+    Note that `value` may be a stream containing more than a single
+    encoded VARINT. Only the first VARINT will be decoded and returned. If
+    you expect to be handling multiple VARINTs in a stream you might want to
+    use the `decode_varint_stream` function directly.
+    """
+    return decode_varint_stream(value).next()
+
+
+def decode_varint_stream(stream):
+    """Lazily decodes a stream of VARINTs to Python integers."""
+    value = 0
+    base = 1
+    num_bytes = 0;
+    for raw_byte in stream:
+        val_byte = ord(raw_byte)
+        value += (val_byte & 0x7f) * base
+        num_bytes += 1
+        if (val_byte & 0x80):
+            # The MSB was set; increase the base and iterate again, continuing
+            # to calculate the value.
+            base *= 128
+        else:
+            # The MSB was not set; this was the last byte in the value.
+            yield value, num_bytes
+            value = 0
+            base = 1
 
 def get_message(body, msgtype):
     """ Read a message from a socket. msgtype is a subclass of
         of protobuf Message.
     """
-    a = bytearray(body)
-    msg_len = struct.unpack('>L', a)[0]
-    print "msg_len", msg_len
-    msg_buf = body[4:]
 
-    msg = msgtype()
-    msg.ParseFromString(msg_buf)
+    #janky msg_len = struct.unpack('I', body[0] + '\x00\x00\x00')[0]
+    msg_len, num_bytes = decode_varint(body);
+    print "msg_len:", msg_len
+    print "num_bytes:", num_bytes
+
+    pb_start = num_bytes
+    pb_end = num_bytes + msg_len
+
+    msg_buf = body[pb_start : pb_end]
+    msg = response_pb2.SpeechResponse()
+    try:
+        msg.ParseFromString(msg_buf)
+    except Exception as e:
+        print "Protobuf parsing error"
+        traceback.print_exc(file=sys.stdout)
+
+    audio_data = body[pb_end:]
+    fp = open('./tmp.raw', 'wb')
+    fp.write(audio_data)
+    fp.close()
+
     return msg
 
 if __name__ == '__main__':
@@ -82,5 +128,14 @@ if __name__ == '__main__':
     else:
       print "Failed", r.status_code
 
-    print "file: %s, time: %f, text: %s" % (sys.argv[1],  (t2-t1), r.text)
+
+
+
+    print "file: %s, time: %f" % (sys.argv[1],  (t2-t1))
+    print "response length: %d" % len(r.content)
+
+    msg = get_message(r.content, response_pb2.SpeechResponse)
+    print "protobuf:\n", msg
+
+
 

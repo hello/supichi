@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,7 +44,7 @@ public class DefaultResponseDAO {
 
         DefaultResponse(Response.SpeechResponse response, byte[] audio_bytes) {
             this.response = response;
-            this.audio_bytes = audio_bytes;
+            this.audio_bytes = audio_bytes; // without header
         }
     }
 
@@ -60,16 +61,21 @@ public class DefaultResponseDAO {
 
             try {
                 byte [] bytes = IOUtils.toByteArray(inputStream);
+
+                // remove wav header. see http://forum.doom9.org/archive/index.php/t-20481.html
+                final String audio = new String(bytes);
+                final int audioStartPosition = audio.indexOf("data") + 8;
+
                 final String text = DEFAULT_TEXT.get(result);
 
                 final Response.SpeechResponse response = Response.SpeechResponse.newBuilder()
                         .setUrl("http://s3.amazonaws.com/hello-audio/voice/" + keyname)
                         .setResult(result)
                         .setText(text)
-                        .setAudioStreamSize(bytes.length)
+                        .setAudioStreamSize(bytes.length - audioStartPosition)
                         .build();
 
-                tmpMap.put(result, new DefaultResponse(response, bytes));
+                tmpMap.put(result, new DefaultResponse(response, Arrays.copyOfRange(bytes, audioStartPosition, bytes.length)));
 
             } catch (IOException e) {
                 LOGGER.error("error=fail-to-convert-s3-stream-to-bytes error_msg={}", e.getMessage());
