@@ -29,9 +29,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
 
 @Path("/upload")
@@ -172,12 +172,15 @@ public class UploadResource {
         final Integer responsePBSize = response.getSerializedSize();
         LOGGER.info("action=create-response response_size={}", responsePBSize);
 
-        response.writeDelimitedTo(outputStream);
+        final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
+
+        dataOutputStream.writeInt(responsePBSize);
+        response.writeTo(dataOutputStream);
 
         final byte [] audioData = defaultResponse.audio_bytes;
         LOGGER.info("action=create-response audio_size={}", audioData.length);
 
-        outputStream.write(audioData);
+        dataOutputStream.write(audioData);
 
         LOGGER.info("action=get-output-stream-size size={}", outputStream.size());
 

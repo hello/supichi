@@ -78,15 +78,19 @@ def get_message(body, msgtype):
         of protobuf Message.
     """
 
-    #janky msg_len = struct.unpack('I', body[0] + '\x00\x00\x00')[0]
-    msg_len, num_bytes = decode_varint(body);
-    print "msg_len:", msg_len
-    print "num_bytes:", num_bytes
+    msg_len = struct.unpack('>I', body[:4])[0] # + '\x00\x00\x00')[0]
+    num_bytes = 4
+
+    # varint
+    # msg_len, num_bytes = decode_varint(body);
+    # print "msg_len:", msg_len
+    # print "num_bytes:", num_bytes
 
     pb_start = num_bytes
     pb_end = num_bytes + msg_len
 
     msg_buf = body[pb_start : pb_end]
+
     msg = response_pb2.SpeechResponse()
     try:
         msg.ParseFromString(msg_buf)
