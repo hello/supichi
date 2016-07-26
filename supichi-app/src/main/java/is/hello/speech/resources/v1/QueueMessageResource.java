@@ -54,6 +54,9 @@ public class QueueMessageResource {
                 .setVoice(Text2SpeechQueue.SynthesizeMessage.VoiceType.valueOf(voiceResponse.voiceType.getValue()))
                 .setResponseType(Text2SpeechQueue.SynthesizeMessage.ResponseType.valueOf(voiceResponse.responseType.getValue()))
                 .build();
+
+        LOGGER.debug("action=send-queue-message text={}", voiceResponse.text);
+
         final String messageBody = Text2SpeechUtils.encodeMessage(queueMessage);
         final String bodyMD5 = DigestUtils.md5Hex(messageBody);
 

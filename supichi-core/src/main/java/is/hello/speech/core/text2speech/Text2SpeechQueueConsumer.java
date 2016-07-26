@@ -152,7 +152,8 @@ public class Text2SpeechQueueConsumer implements Managed {
 
 
                         // Save Raw data from tmp file
-                        amazonS3.putObject(new PutObjectRequest(this.s3KeyRaw, String.format("%s-raw.wav", keyname), rawFile));
+                        final String s3RawBucket = String.format("%s/%s/%s", s3KeyRaw, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
+                        amazonS3.putObject(new PutObjectRequest(s3RawBucket, String.format("%s-raw.wav", keyname), rawFile));
 
 
                         // convert to AD-PCM 16K 6-bit audio and save to a different s3 bucket
@@ -173,8 +174,9 @@ public class Text2SpeechQueueConsumer implements Managed {
 
                         final File compressedFile = new File(compressedFilename);
                         final String S3Keyname = String.format("%s-compressed.ima", keyname);
-                        LOGGER.debug("action=upload-s3 bucket={} key={}", s3KeyCompressed, S3Keyname);
-                        amazonS3.putObject(new PutObjectRequest(s3KeyCompressed, S3Keyname, compressedFile));
+                        final String S3Bucket = String.format("%s/%s/%s", s3KeyCompressed, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
+                        LOGGER.debug("action=upload-s3 bucket={} key={}", S3Bucket, S3Keyname);
+                        amazonS3.putObject(new PutObjectRequest(S3Bucket, S3Keyname, compressedFile));
 
                     }
 
