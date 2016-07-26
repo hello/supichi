@@ -3,6 +3,7 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.SpeechCommand;
 
 import java.util.Map;
@@ -33,5 +34,5 @@ public abstract class BaseHandler {
         return Optional.absent();
     }
 
-    public abstract Boolean executionCommand(final String text, final String senseId, final Long accountId);
+    public abstract HandlerResult executionCommand(final String text, final String senseId, final Long accountId);
 }

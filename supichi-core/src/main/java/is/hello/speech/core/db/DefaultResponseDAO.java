@@ -64,7 +64,7 @@ public class DefaultResponseDAO {
 
                 // remove wav header. see http://forum.doom9.org/archive/index.php/t-20481.html
                 final String audio = new String(bytes);
-                final int audioStartPosition = audio.indexOf("data") + 8;
+                final int audioStartPosition = 44; // audio.indexOf("data") + 8;
 
                 final String text = DEFAULT_TEXT.get(result);
 
@@ -74,6 +74,7 @@ public class DefaultResponseDAO {
                         .setText(text)
                         .setAudioStreamSize(bytes.length - audioStartPosition)
                         .build();
+
 
                 tmpMap.put(result, new DefaultResponse(response, Arrays.copyOfRange(bytes, audioStartPosition, bytes.length)));
 

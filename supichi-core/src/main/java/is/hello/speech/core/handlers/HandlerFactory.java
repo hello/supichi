@@ -3,6 +3,10 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.hello.suripu.core.db.CalibrationDAO;
+import com.hello.suripu.core.db.DeviceDAO;
+import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
+import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredw8.clients.MessejiClient;
 import is.hello.speech.core.db.SpeechCommandDAO;
@@ -25,7 +29,14 @@ public class HandlerFactory {
         this.commandToHandlerMap = commandToHandlerMap;
     }
 
-    public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO, final MessejiClient messejiClient, final SleepSoundsProcessor sleepSoundsProcessor) {
+    public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
+                                        final MessejiClient messejiClient,
+                                        final SleepSoundsProcessor sleepSoundsProcessor,
+                                        final DeviceDataDAODynamoDB deviceDataDAODynamoDB,
+                                        final DeviceDAO deviceDAO,
+                                        final SenseColorDAO senseColorDAO,
+                                        final CalibrationDAO calibrationDAO
+        ) {
 
         final Map<HandlerType, BaseHandler> handlerMap = Maps.newHashMap();
 
@@ -33,6 +44,9 @@ public class HandlerFactory {
         // sleep sounds
         final SleepSoundHandler sleepSoundHandler = new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor);
         handlerMap.put(HandlerType.SLEEP_SOUNDS, sleepSoundHandler);
+
+        final RoomConditionsHandler roomConditionsHandler = new RoomConditionsHandler(speechCommandDAO, deviceDataDAODynamoDB, deviceDAO, senseColorDAO, calibrationDAO);
+        handlerMap.put(HandlerType.ROOM_CONDITIONS, roomConditionsHandler);
 
         // Alarm
         final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO);

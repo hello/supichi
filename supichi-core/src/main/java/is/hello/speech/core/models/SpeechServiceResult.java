@@ -7,7 +7,7 @@ import com.google.common.base.Optional;
 /**
  * Created by ksg on 6/17/16
  */
-public class SpeechResult {
+public class SpeechServiceResult {
     private Optional<String> transcript = Optional.absent();
     private float stability = 0.0f;
     private float confidence = 0.0f;
@@ -48,7 +48,7 @@ public class SpeechResult {
 
     @Override
     public String toString() {
-        return MoreObjects.toStringHelper(SpeechResult.class)
+        return MoreObjects.toStringHelper(SpeechServiceResult.class)
                 .add("transcript", (transcript.isPresent()) ? transcript.get() : "n/a")
                 .add("stability", stability)
                 .add("confidence", confidence)

@@ -14,9 +14,17 @@ import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
 import com.google.common.collect.ImmutableMap;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
+import com.hello.suripu.core.db.CalibrationDAO;
+import com.hello.suripu.core.db.CalibrationDynamoDB;
+import com.hello.suripu.core.db.DeviceDAO;
+import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.FileInfoDAO;
 import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
+import com.hello.suripu.core.db.colors.SenseColorDAO;
+import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
+import com.hello.suripu.core.db.util.JodaArgumentFactory;
+import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredw8.clients.MessejiClient;
@@ -25,6 +33,10 @@ import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
+import io.dropwizard.jdbi.DBIFactory;
+import io.dropwizard.jdbi.ImmutableListContainerFactory;
+import io.dropwizard.jdbi.ImmutableSetContainerFactory;
+import io.dropwizard.jdbi.OptionalContainerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
@@ -41,6 +53,7 @@ import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
 import is.hello.speech.resources.v1.ParseResource;
 import is.hello.speech.resources.v1.QueueMessageResource;
 import is.hello.speech.resources.v1.UploadResource;
+import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,16 +82,18 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
     @Override
     public void run(final SpeechAppConfiguration speechAppConfiguration, Environment environment) throws Exception {
 
-//        final DBIFactory factory = new DBIFactory();
-//        final DBI commonDB = factory.build(environment, speechAppConfiguration.getCommonDB(), "commonDB");
-//
-//        commonDB.registerArgumentFactory(new JodaArgumentFactory());
-//        commonDB.registerContainerFactory(new OptionalContainerFactory());
-//        commonDB.registerArgumentFactory(new PostgresIntegerArrayArgumentFactory());
-//        commonDB.registerContainerFactory(new ImmutableListContainerFactory());
-//        commonDB.registerContainerFactory(new ImmutableSetContainerFactory());
-//
-//        final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
+        final DBIFactory factory = new DBIFactory();
+        final DBI commonDB = factory.build(environment, speechAppConfiguration.getCommonDB(), "commonDB");
+
+        commonDB.registerArgumentFactory(new JodaArgumentFactory());
+        commonDB.registerContainerFactory(new OptionalContainerFactory());
+        commonDB.registerArgumentFactory(new PostgresIntegerArrayArgumentFactory());
+        commonDB.registerContainerFactory(new ImmutableListContainerFactory());
+        commonDB.registerContainerFactory(new ImmutableSetContainerFactory());
+
+        final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
+        final SenseColorDAO senseColorDAO = commonDB.onDemand(SenseColorDAOSQLImpl.class);
+
 //        final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
 
 
@@ -93,11 +108,18 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final AmazonDynamoDB fileManifestDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.FILE_MANIFEST);
         final FileManifestDAO fileManifestDAO = new FileManifestDynamoDB(fileManifestDynamoDBClient, tableNames.get(DynamoDBTableName.FILE_MANIFEST));
 
+        final AmazonDynamoDB deviceDataClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.DEVICE_DATA);
+        final DeviceDataDAODynamoDB deviceDataDAODynamoDB = new DeviceDataDAODynamoDB(deviceDataClient, tableNames.get(DynamoDBTableName.DEVICE_DATA));
+
+        final AmazonDynamoDB calibrationDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.CALIBRATION);
+        final CalibrationDAO calibrationDAO = CalibrationDynamoDB.create(calibrationDynamoDBClient, tableNames.get(DynamoDBTableName.CALIBRATION));
+
         // for sleep sound handler
         final MessejiHttpClientConfiguration messejiHttpClientConfiguration = speechAppConfiguration.getMessejiHttpClientConfiguration();
         final MessejiClient messejiClient = MessejiHttpClient.create(
                 new HttpClientBuilder(environment).using(messejiHttpClientConfiguration.getHttpClientConfiguration()).build("messeji"),
                 messejiHttpClientConfiguration.getEndpoint());
+
 
         // TODO: add additional handler resources here
 
@@ -105,7 +127,12 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final HandlerFactory handlerFactory = HandlerFactory.create(
                 speechCommandDAO,
                 messejiClient,
-                SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO));
+                SleepSoundsProcessor.create(fileInfoDAO, fileManifestDAO),
+                deviceDataDAODynamoDB,
+                deviceDAO,
+                senseColorDAO,
+                calibrationDAO
+                );
 
         // setup SQS for QueueMessage API
         final SQSConfiguration sqsConfig = speechAppConfiguration.getSqsConfiguration();

@@ -11,7 +11,9 @@ import is.hello.speech.core.api.Response;
 import is.hello.speech.core.db.DefaultResponseDAO;
 import is.hello.speech.core.handlers.BaseHandler;
 import is.hello.speech.core.handlers.HandlerFactory;
-import is.hello.speech.core.models.SpeechResult;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechServiceResult;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -40,7 +42,7 @@ public class UploadResource {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
     private final static Integer SAMPLING = 8000; // 16000;
-    private final int RAW_AUDIO_BYTES_START = 60;
+    private final int RAW_AUDIO_BYTES_START = 44; // 60;
 
     private final AmazonS3 s3;
     private final String bucketName;
@@ -98,13 +100,25 @@ public class UploadResource {
         return resp.or("failed");
     }
 
+    @Path("/audio")
+    @POST
+    @Timed
+    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public byte[] streamingAudio(final InputStream inputStream,
+                            @DefaultValue("8000") @QueryParam("r") final Integer sampling
+    ) throws InterruptedException, IOException {
+        return streaming(inputStream, sampling, false);
+    }
+
     @Path("/pb")
     @POST
     @Timed
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] streaming(final InputStream inputStream,
-                            @DefaultValue("8000") @QueryParam("r") final Integer sampling
+                            @DefaultValue("8000") @QueryParam("r") final Integer sampling,
+                            @DefaultValue("true") @QueryParam("pb") final boolean includeProtobuf
     ) throws InterruptedException, IOException {
 
         final String debugSenseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
@@ -114,10 +128,10 @@ public class UploadResource {
         LOGGER.debug("action=get-speech-audio sense_id={} account_id={}", senseId, accountId);
 
         try {
-            final SpeechResult resp = asyncSpeechClient.stream(inputStream, sampling);
+            final SpeechServiceResult resp = asyncSpeechClient.stream(inputStream, sampling);
 
             // try to execute command in transcript
-            Boolean executeResult = false;
+            HandlerResult executeResult = HandlerResult.emptyResult();
             if(resp.getTranscript().isPresent()) {
                 // get bi-gram commands
                 final String[] unigrams = resp.getTranscript().get().toLowerCase().split(" ");
@@ -125,6 +139,7 @@ public class UploadResource {
                     final String commandText = String.format("%s %s", unigrams[i], unigrams[i+1]);
                     LOGGER.debug("action=get-transcribed-command text={}", commandText);
 
+                    // TODO: command-parser
                     final Optional<BaseHandler> optionalHandler = handlerFactory.getHandler(commandText);
                     if (optionalHandler.isPresent()) {
                         final BaseHandler handler = optionalHandler.get();
@@ -139,16 +154,17 @@ public class UploadResource {
                 }
             }
 
-            if (executeResult) {
-                return response(Response.SpeechResponse.Result.OK);
+            // TODO: response-builder
+            if (!executeResult.handlerType.equals(HandlerType.NONE)) {
+                return response(Response.SpeechResponse.Result.OK, includeProtobuf);
             } else {
-                return response(Response.SpeechResponse.Result.TRY_AGAIN);
+                return response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf);
             }
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return response(Response.SpeechResponse.Result.REJECTED);
+        return response(Response.SpeechResponse.Result.REJECTED, includeProtobuf);
     }
 
 
@@ -159,7 +175,7 @@ public class UploadResource {
      * @return bytes
      * @throws IOException
      */
-    private byte[] response(final Response.SpeechResponse.Result result) throws IOException {
+    private byte[] response(final Response.SpeechResponse.Result result, final boolean includeProtobuf) throws IOException {
 
         LOGGER.debug("action=create-response result={}", result.toString());
 
@@ -172,17 +188,24 @@ public class UploadResource {
         final Integer responsePBSize = response.getSerializedSize();
         LOGGER.info("action=create-response response_size={}", responsePBSize);
 
-        final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
+        if (!includeProtobuf) {
+            LOGGER.debug("action=return-audio-only-response");
+            outputStream.write(defaultResponse.audio_bytes);
 
-        dataOutputStream.writeInt(responsePBSize);
-        response.writeTo(dataOutputStream);
+        } else {
 
-        final byte [] audioData = defaultResponse.audio_bytes;
-        LOGGER.info("action=create-response audio_size={}", audioData.length);
+            final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
 
-        dataOutputStream.write(audioData);
+            dataOutputStream.writeInt(responsePBSize);
+            response.writeTo(dataOutputStream);
 
-        LOGGER.info("action=get-output-stream-size size={}", outputStream.size());
+            final byte[] audioData = defaultResponse.audio_bytes;
+            LOGGER.info("action=create-response audio_size={}", audioData.length);
+
+            dataOutputStream.write(audioData);
+
+            LOGGER.info("action=get-output-stream-size size={}", outputStream.size());
+        }
 
         return outputStream.toByteArray();
     }

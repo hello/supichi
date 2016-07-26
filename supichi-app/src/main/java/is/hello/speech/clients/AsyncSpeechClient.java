@@ -43,11 +43,10 @@ import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import is.hello.speech.configuration.AudioConfiguration;
-import is.hello.speech.core.models.SpeechResult;
+import is.hello.speech.core.models.SpeechServiceResult;
 import is.hello.speech.utils.HelloStreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.util.logging.resources.logging;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -189,7 +188,7 @@ public class AsyncSpeechClient {
      * @throws InterruptedException
      * @throws IOException
      */
-    public SpeechResult stream(final InputStream in, int samplingRate) throws InterruptedException, IOException {
+    public SpeechServiceResult stream(final InputStream in, int samplingRate) throws InterruptedException, IOException {
         final CountDownLatch finishLatch = new CountDownLatch(1);
 
 

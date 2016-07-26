@@ -110,12 +110,18 @@ if __name__ == '__main__':
     sampling_rate = sys.argv[2]
     env = sys.argv[3]
 
+    pb = "true"
+    if len(sys.argv) == 5:
+        pb = sys.argv[4]
+
     su = SlowUpload(filename)
     headers = {"content-type": "application/octet-stream"} #, "X-Hello-Sense-Id": "8AF6441AF72321F4"}
     if env == 'local':
-        ENDPOINT = "http://localhost:8181/upload/pb?r=%s" % (sampling_rate)
+        ENDPOINT = "http://localhost:8181/upload/pb?r=%s&pb=%s" % (sampling_rate, pb)
+    elif env == 'audio':
+        ENDPOINT = "http://localhost:8181/upload/audio?r=%s" % (sampling_rate)
     elif env == 'dev':
-        ENDPOINT = "http://dev-speech.hello.is/upload/pb?r=%s" % (sampling_rate)
+        ENDPOINT = "http://dev-speech.hello.is/upload/pb?r=%s&pb=%s" % (sampling_rate, pb)
     elif env == 'goog':
         ENDPOINT = "http://8.34.219.91:8181/upload/pb?r=%s" % (sampling_rate)
     else:
@@ -133,13 +139,19 @@ if __name__ == '__main__':
       print "Failed", r.status_code
 
 
-
+    for k,v in r.headers.items():
+        print "head", k, v
 
     print "file: %s, time: %f" % (sys.argv[1],  (t2-t1))
     print "response length: %d" % len(r.content)
 
-    msg = get_message(r.content, response_pb2.SpeechResponse)
-    print "protobuf:\n", msg
+    if pb == 'true':
+        msg = get_message(r.content, response_pb2.SpeechResponse)
+        print "protobuf:\n", msg
+    else:
+        fp = open('./tmp1.raw', 'wb')
+        fp.write(r.content)
+        fp.close()
 
 
 

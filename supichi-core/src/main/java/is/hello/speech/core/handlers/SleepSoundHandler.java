@@ -7,6 +7,8 @@ import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredw8.clients.MessejiClient;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,16 +69,21 @@ public class SleepSoundHandler extends BaseHandler {
     }
 
     @Override
-    public Boolean executionCommand(final String text, final String senseId, final Long accountId) {
+    public HandlerResult executionCommand(final String text, final String senseId, final Long accountId) {
         final Optional<SpeechCommand> command = getCommand(text);
+        final Map<String, String> response = Maps.newHashMap();
+        boolean result = false;
         if (command.isPresent()) {
             if (command.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
-                return playSleepSound(senseId, accountId);
+                result = playSleepSound(senseId, accountId);
             } else if (command.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
-                return stopSleepSound(senseId, accountId);
+                result = stopSleepSound(senseId, accountId);
             }
         }
-        return false;
+
+        response.put("result", String.valueOf(result));
+        return new HandlerResult(HandlerType.SLEEP_SOUNDS, response);
+
     }
 
     private Boolean playSleepSound(final String senseId, final Long accountId) {

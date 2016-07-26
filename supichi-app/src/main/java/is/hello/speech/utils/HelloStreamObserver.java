@@ -8,7 +8,7 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import is.hello.speech.clients.AsyncSpeechClient;
 import is.hello.speech.core.models.ResultGetter;
-import is.hello.speech.core.models.SpeechResult;
+import is.hello.speech.core.models.SpeechServiceResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +19,7 @@ public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, R
     private static final Logger logger =
             LoggerFactory.getLogger(AsyncSpeechClient.class.getName());
 
-    private SpeechResult speechResult = new SpeechResult();
+    private SpeechServiceResult speechServiceResult = new SpeechServiceResult();
 
 
     private final CountDownLatch finishLatch;
@@ -33,14 +33,14 @@ public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, R
         for(final SpeechRecognitionResult result : response.getResultsList()) {
             logger.info("action=received-api-result result={}", TextFormat.printToString(result));
 
-            speechResult.setStability(result.getStability());
-            speechResult.setConfidence(result.getAlternatives(0).getConfidence());
-            speechResult.setTranscript(Optional.of(result.getAlternatives(0).getTranscript()));
-            logger.debug("action=get-interim-api-result result={}", speechResult);
+            speechServiceResult.setStability(result.getStability());
+            speechServiceResult.setConfidence(result.getAlternatives(0).getConfidence());
+            speechServiceResult.setTranscript(Optional.of(result.getAlternatives(0).getTranscript()));
+            logger.debug("action=get-interim-api-result result={}", speechServiceResult);
 
             if(result.getIsFinal()) {
-                speechResult.setFinal(true);
-                logger.info("action=get-final-result result={}", speechResult);
+                speechServiceResult.setFinal(true);
+                logger.info("action=get-final-result result={}", speechServiceResult);
                 finishLatch.countDown();
             }
 
@@ -61,7 +61,7 @@ public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, R
     }
 
     @Override
-    public SpeechResult result() {
-        return speechResult;
+    public SpeechServiceResult result() {
+        return speechServiceResult;
     }
 }
