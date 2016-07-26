@@ -99,7 +99,7 @@ def get_message(body, msgtype):
         traceback.print_exc(file=sys.stdout)
 
     audio_data = body[pb_end:]
-    fp = open('./tmp.raw', 'wb')
+    fp = open('./tmp.ima', 'wb')
     fp.write(audio_data)
     fp.close()
 
@@ -149,7 +149,7 @@ if __name__ == '__main__':
         msg = get_message(r.content, response_pb2.SpeechResponse)
         print "protobuf:\n", msg
     else:
-        fp = open('./tmp1.raw', 'wb')
+        fp = open('./tmp1.ima', 'wb')
         fp.write(r.content)
         fp.close()
 

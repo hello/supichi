@@ -157,17 +157,14 @@ public class Text2SpeechQueueConsumer implements Managed {
 
                         // convert to AD-PCM 16K 6-bit audio and save to a different s3 bucket
                         // "sox test.wav -r 16k -e ima-adpcm -b 4 -c 1 output3.wav";
-                        final String compressedFilename = "/tmp/tmp_compressed.wav";
-                        final String compressCommand = String.format("sox %s %s %s", rawFilename, COMPRESS_PARAMS, compressedFilename);
+                        final String compressedFilename = "/tmp/tmp_compressed.ima";
+                        final String compressCommand = String.format("sox -r 22050 -v 3.0 %s -r 16k -b 4 -c 1 -e ima-adpcm %s", rawFilename, compressedFilename);
                         try {
+                            LOGGER.debug("action=compressing-file command={}", compressCommand);
+                            final Process process2 = Runtime.getRuntime().exec(compressCommand);
+                            final boolean returnCode2 = process2.waitFor(5000L, TimeUnit.MILLISECONDS);
+                            LOGGER.debug("action=compression-success return_code={}", returnCode2);
 
-                            final Process process = Runtime.getRuntime().exec(compressCommand);
-//                            final Process process = new ProcessBuilder("/bin/bash", compressCommand).start();
-//                                .redirectError(ProcessBuilder.Redirect.INHERIT)
-//                                .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-//                                .start();
-                            final boolean returnCode = process.waitFor(5000L, TimeUnit.MILLISECONDS);
-                            LOGGER.debug("Return code is {}", returnCode);
                         } catch (IOException e) {
                             e.printStackTrace();
                         } catch (InterruptedException e) {
@@ -175,7 +172,9 @@ public class Text2SpeechQueueConsumer implements Managed {
                         }
 
                         final File compressedFile = new File(compressedFilename);
-                        amazonS3.putObject(new PutObjectRequest(s3KeyCompressed, String.format("%s-compressed.wav", keyname), compressedFile));
+                        final String S3Keyname = String.format("%s-compressed.ima", keyname);
+                        LOGGER.debug("action=upload-s3 bucket={} key={}", s3KeyCompressed, S3Keyname);
+                        amazonS3.putObject(new PutObjectRequest(s3KeyCompressed, S3Keyname, compressedFile));
 
                     }
 

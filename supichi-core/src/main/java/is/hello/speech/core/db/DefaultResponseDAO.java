@@ -23,10 +23,10 @@ public class DefaultResponseDAO {
     private final static Logger LOGGER = LoggerFactory.getLogger(DefaultResponseDAO.class);
 
     private final static Map<Response.SpeechResponse.Result, String> DEFAULT_KEYNAMES = new HashMap<Response.SpeechResponse.Result, String>() {{
-        put(Response.SpeechResponse.Result.OK, "default_ok.wav");
-        put(Response.SpeechResponse.Result.REJECTED, "default_rejected.wav");
-        put(Response.SpeechResponse.Result.TRY_AGAIN, "default_try_again.wav");
-        put(Response.SpeechResponse.Result.UNKNOWN, "default_unknown.wav");
+        put(Response.SpeechResponse.Result.OK, "ROOM_CONDITIONS-GET_SENSOR-SOUND-default_ok-WATSON-ALLISON-compressed.ima");
+        put(Response.SpeechResponse.Result.REJECTED, "default_rejected.ima");
+        put(Response.SpeechResponse.Result.TRY_AGAIN, "ROOM_CONDITIONS-GET_SENSOR-SOUND-default_try_again-WATSON-ALLISON-compressed.ima");
+        put(Response.SpeechResponse.Result.UNKNOWN, "default_unknown.ima");
     }};
 
     private final static Map<Response.SpeechResponse.Result, String> DEFAULT_TEXT = new HashMap<Response.SpeechResponse.Result, String>() {{
@@ -64,7 +64,7 @@ public class DefaultResponseDAO {
 
                 // remove wav header. see http://forum.doom9.org/archive/index.php/t-20481.html
                 final String audio = new String(bytes);
-                final int audioStartPosition = 44; // audio.indexOf("data") + 8;
+                final int audioStartPosition = 60; // audio.indexOf("data") + 8;
 
                 final String text = DEFAULT_TEXT.get(result);
 
