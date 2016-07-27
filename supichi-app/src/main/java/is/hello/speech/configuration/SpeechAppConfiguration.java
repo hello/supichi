@@ -69,4 +69,9 @@ public class SpeechAppConfiguration extends Configuration {
     private SaveAudioConfiguration saveAudioConfiguration;
     public SaveAudioConfiguration getSaveAudioConfiguration() { return saveAudioConfiguration;}
 
+    @JsonProperty("consumer_enabled")
+    private Boolean consumerEnabled = false;
+    public Boolean consumerEnabled() {
+        return consumerEnabled;
+    }
 }

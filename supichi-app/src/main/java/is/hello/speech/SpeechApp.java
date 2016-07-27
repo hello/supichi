@@ -50,6 +50,7 @@ import is.hello.speech.core.db.DefaultResponseDAO;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
+import is.hello.speech.resources.v1.PCMResource;
 import is.hello.speech.resources.v1.ParseResource;
 import is.hello.speech.resources.v1.QueueMessageResource;
 import is.hello.speech.resources.v1.UploadResource;
@@ -170,15 +171,17 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .keepAliveTime(Duration.seconds(2L)).build();
 
         final String speechBucket = speechAppConfiguration.getSaveAudioConfiguration().getBucketName();
-        final Text2SpeechQueueConsumer consumer = new Text2SpeechQueueConsumer(
-                amazonS3, speechBucket,
-                speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixRaw(),
-                speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixCompressed(),
-                watson, watsonConfiguration.getVoiceName(),
-                sqsClient, sqsQueueUrl, speechAppConfiguration.getSqsConfiguration(),
-                consumerExecutor);
+        if(speechAppConfiguration.consumerEnabled()) {
+            final Text2SpeechQueueConsumer consumer = new Text2SpeechQueueConsumer(
+                    amazonS3, speechBucket,
+                    speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixRaw(),
+                    speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixCompressed(),
+                    watson, watsonConfiguration.getVoiceName(),
+                    sqsClient, sqsQueueUrl, speechAppConfiguration.getSqsConfiguration(),
+                    consumerExecutor);
 
-        environment.lifecycle().manage(consumer);
+            environment.lifecycle().manage(consumer);
+        }
 
         // Speech API
         final AWSCredentials awsCredentials = new AWSCredentials() {
@@ -201,5 +204,6 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerFactory, defaultResponseDAO));
 
         environment.jersey().register(new ParseResource());
+        environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.getSaveAudioConfiguration().getBucketName()));
     }
 }

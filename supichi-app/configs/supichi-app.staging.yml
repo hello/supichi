@@ -120,3 +120,5 @@ save_audio:
   s3_bucket_name: hello-audio
   s3_audio_prefix_raw: voice/watson-text2speech/raw
   s3_audio_prefix_compressed: voice/watson-text2speech/compressed
+
+consumer_enabled: false
