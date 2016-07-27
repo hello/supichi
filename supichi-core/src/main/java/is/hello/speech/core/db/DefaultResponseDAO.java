@@ -23,10 +23,10 @@ public class DefaultResponseDAO {
     private final static Logger LOGGER = LoggerFactory.getLogger(DefaultResponseDAO.class);
 
     private final static Map<Response.SpeechResponse.Result, String> DEFAULT_KEYNAMES = new HashMap<Response.SpeechResponse.Result, String>() {{
-        put(Response.SpeechResponse.Result.OK, "ROOM_CONDITIONS-GET_SENSOR-SOUND-default_ok-WATSON-ALLISON-compressed.ima");
-        put(Response.SpeechResponse.Result.REJECTED, "default_rejected.ima");
-        put(Response.SpeechResponse.Result.TRY_AGAIN, "ROOM_CONDITIONS-GET_SENSOR-SOUND-default_try_again-WATSON-ALLISON-compressed.ima");
-        put(Response.SpeechResponse.Result.UNKNOWN, "default_unknown.ima");
+        put(Response.SpeechResponse.Result.OK, "default_ok-WATSON-MICHAEL-compressed.ima");
+        put(Response.SpeechResponse.Result.REJECTED, "default_rejected-WATSON-MICHAEL-compressed.ima");
+        put(Response.SpeechResponse.Result.TRY_AGAIN, "default_try_again-WATSON-MICHAEL-compressed.ima");
+        put(Response.SpeechResponse.Result.UNKNOWN, "default_unknown-WATSON-MICHAEL-compressed.ima");
     }};
 
     private final static Map<Response.SpeechResponse.Result, String> DEFAULT_TEXT = new HashMap<Response.SpeechResponse.Result, String>() {{
