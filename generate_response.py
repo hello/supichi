@@ -7,7 +7,7 @@ import sys
 import json
 
 
-VALID_SENSORS = ['TEMPERATURE', 'HUMIDITY', 'LIGHT', 'AIR_QUALITY', 'SOUND']
+VALID_SENSORS = ['TEMPERATURE', 'HUMIDITY', 'LIGHT', 'PARTICULATES', 'SOUND']
 def post_request(env, body):
     headers = {"content-type": "application/json"}
     url = "http://dev-speech.hello.is"
@@ -25,28 +25,28 @@ def post_request(env, body):
 
 def process_temperature(env, value, body):
     body["text"] = "It's currently %s degrees" % (value)
-    body["parameters"] = "value_%s-opt_1" % (value)
+    body["parameters"] = "value_%s_F-opt_1" % (value)
     r = post_request(env, body)
 
     body["text"] = "It's %s degrees" % (value)
-    body["parameters"] = "value_%s-opt_2" % (value)
+    body["parameters"] = "value_%s_F-opt_2" % (value)
     r = post_request(env, body)
 
     body["text"] = "It's currently %s ºF" % (value)
-    body["parameters"] = "value_%s-opt_3" % (value)
+    body["parameters"] = "value_%s_F-opt_3" % (value)
     r = post_request(env, body)
 
     body["text"] = "It's currently %s ºF" % (value)
-    body["parameters"] = "value_%s-opt_4" % (value)
+    body["parameters"] = "value_%s_F-opt_4" % (value)
     r = post_request(env, body)
 
 
 def process_humidity(env, value, body):
-    body["text"] = "The humidity is currently %s \%" % (value)
+    body["text"] = "The humidity is currently %s percent" % (value)
     body["parameters"] = "value_%s-opt_1" % (value)
     r = post_request(env, body)
 
-    body["text"] = "It's currently %s \%" % (value)
+    body["text"] = "It's currently %s percent" % (value)
     body["parameters"] = "value_%s-opt_2" % (value)
     r = post_request(env, body)
 
@@ -97,7 +97,7 @@ if __name__ == '__main__':
         "action":"GET_SENSOR",
         "category": sensor,
         "service_type":"WATSON",
-        "voice_type":"ALLISON",
+        "voice_type":"MICHAEL",
         "response_type":"SUCCESS",
         "parameters":""
     }
@@ -118,11 +118,9 @@ if __name__ == '__main__':
             process_light(env, value, body)
         elif sensor == 'SOUND':
             process_sound(env, value, body)
-        elif sensor == 'AIR_QUALITY':
+        elif sensor == 'PARTICULATES':
             process_air(env, value, body)
 
-        break
-            
     # additional
     if sensor == "LIGHT":
         body["text"] = "It's currently under 1 lux"

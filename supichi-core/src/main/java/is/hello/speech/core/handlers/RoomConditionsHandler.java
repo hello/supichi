@@ -11,6 +11,7 @@ import com.hello.suripu.core.models.CurrentRoomState;
 import com.hello.suripu.core.models.Device;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceData;
+import com.hello.suripu.core.models.Sensor;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -61,6 +62,7 @@ public class RoomConditionsHandler extends BaseHandler {
         tempMap.put("how bright", SpeechCommand.ROOM_LIGHT);
         tempMap.put("sound level", SpeechCommand.ROOM_SOUND);
         tempMap.put("how noisy", SpeechCommand.ROOM_SOUND);
+        tempMap.put("air quality", SpeechCommand.PARTICULATES);
         return tempMap;
     }
 
@@ -122,31 +124,37 @@ public class RoomConditionsHandler extends BaseHandler {
         final String sensorName;
         switch (command) {
             case ROOM_TEMPERATURE:
-                sensorName = "temperature";
+                sensorName = Sensor.TEMPERATURE.toString();
                 if (unit.equalsIgnoreCase("f")) {
-                    sensorUnit = "°F";
+                    sensorUnit = "ºF";
                     sensorValue = String.valueOf(celsiusToFahrenheit(roomState.temperature.value));
 
                 } else {
-                    sensorUnit = "°C";
+                    sensorUnit = "ºF";
                     sensorValue = String.valueOf(Math.round(roomState.temperature.value));
                 }
                 break;
             case ROOM_HUMIDITY:
-                sensorName = "humidity";
+                sensorName = Sensor.HUMIDITY.toString();
                 sensorValue = String.valueOf(Math.round(roomState.humidity.value));
-                sensorUnit = "%";
+                sensorUnit = "percent";
                 break;
             case ROOM_LIGHT:
-                sensorName = "light";
+                sensorName = Sensor.LIGHT.toString();
                 sensorValue = String.valueOf(Math.round(roomState.light.value));
                 sensorUnit = "lux";
                 break;
             case ROOM_SOUND:
-                sensorName = "sound";
+                sensorName = Sensor.SOUND.toString();
                 sensorValue = String.valueOf(Math.round(roomState.sound.value));
                 sensorUnit = "decibels";
                 break;
+            case PARTICULATES:
+                sensorName = Sensor.PARTICULATES.toString();
+                sensorValue = String.valueOf(Math.round(roomState.particulates.value));
+                sensorUnit = "micro grams per cubic meter";
+                break;
+
             default:
                 sensorName = "";
                 sensorValue = "";

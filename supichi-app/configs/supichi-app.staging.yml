@@ -114,7 +114,7 @@ sqs_configuration:
 watson:
   username: ce487881-c6f6-45cf-8aa5-585554de4941
   password: 8riFzRbKOd4c
-  voice: en-US_AllisonVoice
+  voice: en-US_MichaelVoice
 
 save_audio:
   s3_bucket_name: hello-audio
