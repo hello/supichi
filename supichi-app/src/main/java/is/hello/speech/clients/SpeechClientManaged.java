@@ -20,8 +20,8 @@ public class SpeechClientManaged implements Managed {
 
     @Override
     public void stop() throws Exception {
-        LOGGER.warn("Shutting down");
+        LOGGER.warn("warning=shutting-down");
         asyncSpeechClient.shutdown();
-        LOGGER.warn("Done.");
+        LOGGER.warn("warning=shut-down-done.");
     }
 }

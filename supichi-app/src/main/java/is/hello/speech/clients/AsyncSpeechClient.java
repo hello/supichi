@@ -42,6 +42,8 @@ import io.grpc.auth.ClientAuthInterceptor;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import is.hello.speech.configuration.AudioConfiguration;
+import is.hello.speech.core.models.SpeechServiceResult;
 import is.hello.speech.utils.HelloStreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,11 +62,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class AsyncSpeechClient {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AsyncSpeechClient.class.getName());
+
     private final String host;
     private final int port;
-
-    private static final Logger logger =
-            LoggerFactory.getLogger(AsyncSpeechClient.class.getName());
+    private final AudioConfiguration configuration;
 
     private final ManagedChannel channel;
 
@@ -76,18 +78,19 @@ public class AsyncSpeechClient {
     /**
      * Construct client connecting to Cloud Speech server at {@code host:port}.
      */
-    public AsyncSpeechClient(String host, int port) throws IOException {
+    public AsyncSpeechClient(String host, int port, AudioConfiguration configuration) throws IOException {
         this.host = host;
         this.port = port;
+        this.configuration = configuration;
 
         GoogleCredentials creds = GoogleCredentials.getApplicationDefault();
         creds = creds.createScoped(OAUTH2_SCOPES);
-        channel = NettyChannelBuilder.forAddress(host, port)
+        channel = NettyChannelBuilder.forAddress(this.host, this.port)
                 .negotiationType(NegotiationType.TLS)
                 .intercept(new ClientAuthInterceptor(creds, Executors.newSingleThreadExecutor()))
                 .build();
         stub = SpeechGrpc.newStub(channel);
-        logger.info("Created stub for " + host + ":" + port);
+        LOGGER.info("action=created-stub host={} port={}", this.host, this.port);
     }
 
     public void shutdown() throws InterruptedException {
@@ -103,13 +106,13 @@ public class AsyncSpeechClient {
         StreamObserver<RecognizeResponse> responseObserver = new StreamObserver<RecognizeResponse>() {
             @Override
             public void onNext(RecognizeResponse response) {
-                logger.info("Received result: " +  TextFormat.printToString(response));
+                LOGGER.info("Received result: " +  TextFormat.printToString(response));
                 for(final SpeechRecognitionResult result : response.getResultsList()) {
-                    logger.info("resp: {}", result);
+                    LOGGER.info("resp: {}", result);
                     if(result.getIsFinal()) {
-                        logger.info("Received result: " +  TextFormat.printToString(result));
+                        LOGGER.info("Received result: " +  TextFormat.printToString(result));
                         resp[0] = result.getAlternatives(0).getTranscript();
-                        logger.info("resp: {}", resp[0]);
+                        LOGGER.info("resp: {}", resp[0]);
                         finishLatch.countDown();
                     }
                 }
@@ -118,13 +121,13 @@ public class AsyncSpeechClient {
             @Override
             public void onError(Throwable error) {
                 Status status = Status.fromThrowable(error);
-                logger.warn("recognize failed: {}", status);
+                LOGGER.warn("recognize failed: {}", status);
                 finishLatch.countDown();
             }
 
             @Override
             public void onCompleted() {
-                logger.info("recognize completed.");
+                LOGGER.info("recognize completed.");
                 finishLatch.countDown();
             }
         };
@@ -162,7 +165,7 @@ public class AsyncSpeechClient {
                 // For 16000 Hz sample rate, sleep 100 milliseconds.
 //                Thread.sleep(samplingRate / 160);
             }
-            logger.info("Sent " + totalBytes + " bytes from audio");
+            LOGGER.info("Sent " + totalBytes + " bytes from audio");
         } catch (RuntimeException e) {
             // Cancel RPC.
             requestObserver.onError(e);
@@ -179,13 +182,13 @@ public class AsyncSpeechClient {
 
     /**
      *
-     * @param in
-     * @param samplingRate
-     * @return
+     * @param in input stream buffer
+     * @param samplingRate audio sampling rate
+     * @return transcribed speech result
      * @throws InterruptedException
      * @throws IOException
      */
-    public Optional<String> stream(final InputStream in, int samplingRate) throws InterruptedException, IOException {
+    public SpeechServiceResult stream(final InputStream in, int samplingRate) throws InterruptedException, IOException {
         final CountDownLatch finishLatch = new CountDownLatch(1);
 
 
@@ -194,10 +197,11 @@ public class AsyncSpeechClient {
         try {
             // Build and send a RecognizeRequest containing the parameters for processing the audio.
             final InitialRecognizeRequest initial = InitialRecognizeRequest.newBuilder()
-                    .setEncoding(AudioEncoding.LINEAR16)
+                    .setEncoding(configuration.getEncoding()) // AudioEncoding.LINEAR16
                     .setSampleRate(samplingRate)
-                    .setInterimResults(true)
+                    .setInterimResults(configuration.getInterimResultsPreference())
                     .build();
+
             final RecognizeRequest firstRequest = RecognizeRequest.newBuilder()
                     .setInitialRequest(initial)
                     .build();
@@ -206,11 +210,11 @@ public class AsyncSpeechClient {
             // Open audio file. Read and send sequential buffers of audio as additional RecognizeRequests.
             // FileInputStream in = new FileInputStream(new File(file));
             // For LINEAR16 at 16000 Hz sample rate, 3200 bytes corresponds to 100 milliseconds of audio.
-            byte[] buffer = new byte[2048];
+            byte[] buffer = new byte[configuration.getBufferSize()];
             int bytesRead;
             int totalBytes = 0;
             while ((bytesRead = in.read(buffer)) != -1) {
-                logger.debug("read " + bytesRead + " bytes from input stream");
+                LOGGER.debug("action=read-bytes-from-input-stream bytes_read={}", bytesRead);
 
                 totalBytes += bytesRead;
                 final AudioRequest audio = AudioRequest.newBuilder()
@@ -221,12 +225,14 @@ public class AsyncSpeechClient {
                         .build();
                 requestObserver.onNext(request);
             }
-            logger.info("Sent " + totalBytes + " bytes from audio");
+            LOGGER.info("action=sent-bytes-from-audio total_bytes={}", totalBytes);
         } catch (RuntimeException e) {
             // Cancel RPC.
+            LOGGER.error("error=stream-audio-fail");
             requestObserver.onError(e);
             throw e;
         }
+
         // Mark the end of requests.
         requestObserver.onCompleted();
 
