@@ -54,6 +54,7 @@ import is.hello.speech.resources.v1.PCMResource;
 import is.hello.speech.resources.v1.ParseResource;
 import is.hello.speech.resources.v1.QueueMessageResource;
 import is.hello.speech.resources.v1.UploadResource;
+import is.hello.speech.utils.ResponseBuilder;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -197,11 +198,12 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
         environment.lifecycle().manage(speechClientManaged);
 
-        final DefaultResponseDAO defaultResponseDAO = DefaultResponseDAO.create(amazonS3,
-                String.format("%s/%s", speechBucket,
-                        speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixCompressed()));
+        final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixCompressed());
 
-        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerFactory, defaultResponseDAO));
+        final DefaultResponseDAO defaultResponseDAO = DefaultResponseDAO.create(amazonS3, s3ResponseBucket);
+
+        final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, defaultResponseDAO, "WATSON", watsonConfiguration.getVoiceName());
+        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerFactory, deviceDAO, responseBuilder));
 
         environment.jersey().register(new ParseResource());
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.getSaveAudioConfiguration().getBucketName()));

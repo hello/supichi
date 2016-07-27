@@ -15,7 +15,9 @@ public enum SpeechCommand {
     ROOM_TEMPERATURE("room_temperature", RoomConditionsHandler.class),
     ROOM_HUMIDITY("room_humidity", RoomConditionsHandler.class),
     ROOM_LIGHT("room_light", RoomConditionsHandler.class),
-    ROOM_SOUND("room_sound", RoomConditionsHandler.class);
+    ROOM_SOUND("room_sound", RoomConditionsHandler.class),
+    PARTICULATES("particulates", RoomConditionsHandler.class);
+
 
     private String value;
     private Class commandClass;

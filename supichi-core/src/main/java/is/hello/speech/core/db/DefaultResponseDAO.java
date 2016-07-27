@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import is.hello.speech.core.api.Response;
+import is.hello.speech.core.models.UploadResponse;
 import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,8 @@ import java.util.Map;
 public class DefaultResponseDAO {
     private final static Logger LOGGER = LoggerFactory.getLogger(DefaultResponseDAO.class);
 
+    private final static int HEADER_SIZE = 44;
+
     private final static Map<Response.SpeechResponse.Result, String> DEFAULT_KEYNAMES = new HashMap<Response.SpeechResponse.Result, String>() {{
         put(Response.SpeechResponse.Result.OK, "default_ok-WATSON-MICHAEL-compressed.ima");
         put(Response.SpeechResponse.Result.REJECTED, "default_rejected-WATSON-MICHAEL-compressed.ima");
@@ -36,21 +39,11 @@ public class DefaultResponseDAO {
         put(Response.SpeechResponse.Result.UNKNOWN, "Sorry, we've encountered an error. Please try again later.");
     }};
 
-    private Map<Response.SpeechResponse.Result, DefaultResponse> responses;
-
-    public static class DefaultResponse {
-        public final Response.SpeechResponse response;
-        public final byte [] audio_bytes;
-
-        DefaultResponse(Response.SpeechResponse response, byte[] audio_bytes) {
-            this.response = response;
-            this.audio_bytes = audio_bytes; // without header
-        }
-    }
+    private Map<Response.SpeechResponse.Result, UploadResponse> responses;
 
     public static DefaultResponseDAO create(final AmazonS3 s3, final String bucket) {
 
-        final Map<Response.SpeechResponse.Result, DefaultResponse> tmpMap = Maps.newHashMap();
+        final Map<Response.SpeechResponse.Result, UploadResponse> tmpMap = Maps.newHashMap();
 
         for (Map.Entry<Response.SpeechResponse.Result, String> entry : DEFAULT_KEYNAMES.entrySet()) {
             final String keyname = entry.getValue();
@@ -63,8 +56,8 @@ public class DefaultResponseDAO {
                 byte [] bytes = IOUtils.toByteArray(inputStream);
 
                 // remove wav header. see http://forum.doom9.org/archive/index.php/t-20481.html
-                final String audio = new String(bytes);
-                final int audioStartPosition = 60; // audio.indexOf("data") + 8;
+                // final String audio = new String(bytes);  // audio.indexOf("data") + 8;
+                final int audioStartPosition = HEADER_SIZE;
 
                 final String text = DEFAULT_TEXT.get(result);
 
@@ -76,7 +69,7 @@ public class DefaultResponseDAO {
                         .build();
 
 
-                tmpMap.put(result, new DefaultResponse(response, Arrays.copyOfRange(bytes, audioStartPosition, bytes.length)));
+                tmpMap.put(result, new UploadResponse(response, Arrays.copyOfRange(bytes, audioStartPosition, bytes.length)));
 
             } catch (IOException e) {
                 LOGGER.error("error=fail-to-convert-s3-stream-to-bytes error_msg={}", e.getMessage());
@@ -85,11 +78,11 @@ public class DefaultResponseDAO {
         return new DefaultResponseDAO(tmpMap);
     }
 
-    private DefaultResponseDAO(final Map<Response.SpeechResponse.Result, DefaultResponse> defaultResponseText) {
+    private DefaultResponseDAO(final Map<Response.SpeechResponse.Result, UploadResponse> defaultResponseText) {
         this.responses = ImmutableMap.copyOf(defaultResponseText);
     }
 
-    public DefaultResponse getResponse(Response.SpeechResponse.Result result) {
+    public UploadResponse getResponse(Response.SpeechResponse.Result result) {
         if (this.responses.containsKey(result)) {
             return this.responses.get(result);
         }

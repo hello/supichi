@@ -5,15 +5,18 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.util.Md5Utils;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.hello.suripu.core.db.DeviceDAO;
+import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.clients.AsyncSpeechClient;
 import is.hello.speech.core.api.Response;
-import is.hello.speech.core.db.DefaultResponseDAO;
 import is.hello.speech.core.handlers.BaseHandler;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
+import is.hello.speech.utils.ResponseBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -30,8 +33,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -50,7 +51,9 @@ public class UploadResource {
 
     private final HandlerFactory handlerFactory;
 
-    private final DefaultResponseDAO defaultResponseDAO;
+    private final DeviceDAO deviceDAO;
+
+    private final ResponseBuilder responseBuilder;
 
     @Context
     HttpServletRequest request;
@@ -58,12 +61,14 @@ public class UploadResource {
     public UploadResource(final AmazonS3 s3, final String bucketName,
                           final AsyncSpeechClient asyncSpeechClient,
                           final HandlerFactory factory,
-                          final DefaultResponseDAO defaultResponseDAO) {
+                          final DeviceDAO deviceDAO,
+                          final ResponseBuilder responseBuilder) {
         this.s3 = s3;
         this.bucketName = bucketName;
         this.asyncSpeechClient = asyncSpeechClient;
         this.handlerFactory = factory;
-        this.defaultResponseDAO = defaultResponseDAO;
+        this.deviceDAO = deviceDAO;
+        this.responseBuilder = responseBuilder;
     }
 
     @Path("{prefix}")
@@ -121,26 +126,41 @@ public class UploadResource {
                             @DefaultValue("true") @QueryParam("pb") final boolean includeProtobuf
     ) throws InterruptedException, IOException {
 
+        HandlerResult executeResult = HandlerResult.emptyResult();
+
         final String debugSenseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
         final String senseId = (debugSenseId == null) ? "8AF6441AF72321F4" : debugSenseId;
-        final Long accountId = 2095L; // TODO: get from account_device_map
+        final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(senseId);
+
+        if (accounts.isEmpty()) {
+            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult);
+        }
+
+        // TODO: for now, pick the smallest account-id as the primary id
+        Long accountId = accounts.get(0).accountId;
+        for (final DeviceAccountPair accountPair : accounts) {
+            if (accountPair.accountId < accountId) {
+                accountId = accountPair.accountId;
+            }
+        }
 
         LOGGER.debug("action=get-speech-audio sense_id={} account_id={}", senseId, accountId);
-
         try {
             final SpeechServiceResult resp = asyncSpeechClient.stream(inputStream, sampling);
 
             // try to execute command in transcript
-            HandlerResult executeResult = HandlerResult.emptyResult();
             if(resp.getTranscript().isPresent()) {
+
                 // get bi-gram commands
                 final String[] unigrams = resp.getTranscript().get().toLowerCase().split(" ");
+
                 for (int i = 0; i < (unigrams.length - 1); i++) {
                     final String commandText = String.format("%s %s", unigrams[i], unigrams[i+1]);
                     LOGGER.debug("action=get-transcribed-command text={}", commandText);
 
                     // TODO: command-parser
                     final Optional<BaseHandler> optionalHandler = handlerFactory.getHandler(commandText);
+
                     if (optionalHandler.isPresent()) {
                         final BaseHandler handler = optionalHandler.get();
                         LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
@@ -156,58 +176,15 @@ public class UploadResource {
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                return response(Response.SpeechResponse.Result.OK, includeProtobuf);
+                return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult);
             } else {
-                return response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf);
+                return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult);
             }
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return response(Response.SpeechResponse.Result.REJECTED, includeProtobuf);
-    }
-
-
-    /**
-     * Creates a response
-     * Format: [PB-size] + [response PB] + [audio-data]
-     * @param result transcription result
-     * @return bytes
-     * @throws IOException
-     */
-    private byte[] response(final Response.SpeechResponse.Result result, final boolean includeProtobuf) throws IOException {
-
-        LOGGER.debug("action=create-response result={}", result.toString());
-
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-        // TODO: return custom response. If not exist, return default response based on intent
-        final DefaultResponseDAO.DefaultResponse defaultResponse = defaultResponseDAO.getResponse(result);
-
-        final Response.SpeechResponse response = defaultResponse.response;
-        final Integer responsePBSize = response.getSerializedSize();
-        LOGGER.info("action=create-response response_size={}", responsePBSize);
-
-        if (!includeProtobuf) {
-            LOGGER.debug("action=return-audio-only-response");
-            outputStream.write(defaultResponse.audio_bytes);
-
-        } else {
-
-            final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
-
-            dataOutputStream.writeInt(responsePBSize);
-            response.writeTo(dataOutputStream);
-
-            final byte[] audioData = defaultResponse.audio_bytes;
-            LOGGER.info("action=create-response audio_size={}", audioData.length);
-
-            dataOutputStream.write(audioData);
-
-            LOGGER.info("action=get-output-stream-size size={}", outputStream.size());
-        }
-
-        return outputStream.toByteArray();
+        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult);
     }
 
 }

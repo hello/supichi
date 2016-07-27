@@ -18,7 +18,8 @@ public class VoiceResponse {
     }
 
     public enum VoiceType {
-        ALLISON(1);
+        ALLISON(1),
+        MICHAEL(2);
         protected int value;
         VoiceType(final int value) { this.value = value; }
         public int getValue() { return this.value; }
