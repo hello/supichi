@@ -528,9 +528,9 @@ public final class Text2SpeechQueue {
        */
       LIGHT(7, 8),
       /**
-       * <code>AIR_QUALITY = 9;</code>
+       * <code>PARTICULATES = 9;</code>
        */
-      AIR_QUALITY(8, 9),
+      PARTICULATES(8, 9),
       /**
        * <code>SOUND = 10;</code>
        */
@@ -570,9 +570,9 @@ public final class Text2SpeechQueue {
        */
       public static final int LIGHT_VALUE = 8;
       /**
-       * <code>AIR_QUALITY = 9;</code>
+       * <code>PARTICULATES = 9;</code>
        */
-      public static final int AIR_QUALITY_VALUE = 9;
+      public static final int PARTICULATES_VALUE = 9;
       /**
        * <code>SOUND = 10;</code>
        */
@@ -591,7 +591,7 @@ public final class Text2SpeechQueue {
           case 6: return TEMPERATURE;
           case 7: return HUMIDITY;
           case 8: return LIGHT;
-          case 9: return AIR_QUALITY;
+          case 9: return PARTICULATES;
           case 10: return SOUND;
           default: return null;
         }
@@ -1914,7 +1914,7 @@ public final class Text2SpeechQueue {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\025voice_responses.proto\"\221\007\n\021SynthesizeMe" +
+      "\n\025voice_responses.proto\"\222\007\n\021SynthesizeMe" +
       "ssage\022\031\n\021voice_response_id\030\001 \001(\003\022\014\n\004text" +
       "\030\002 \001(\t\022-\n\006intent\030\003 \001(\0162\035.SynthesizeMessa" +
       "ge.IntentType\022-\n\006action\030\004 \001(\0162\035.Synthesi" +
@@ -1928,17 +1928,17 @@ public final class Text2SpeechQueue {
       "\022\t\n\005ALARM\020\002\022\020\n\014SLEEP_REPORT\020\003\022\023\n\017ROOM_CO" +
       "NDITIONS\020\004\"O\n\nActionType\022\016\n\nPLAY_SOUND\020\001" +
       "\022\016\n\nSTOP_SOUND\020\002\022\021\n\rGET_CONDITION\020\003\022\016\n\nG" +
-      "ET_SENSOR\020\004\"\266\001\n\014CategoryType\022\013\n\007DEFAULT\020" +
+      "ET_SENSOR\020\004\"\267\001\n\014CategoryType\022\013\n\007DEFAULT\020" +
       "\001\022\016\n\nSOUND_NAME\020\002\022\022\n\016SOUND_DURATION\020\003\022\027\n" +
       "\023SOUND_NAME_DURATION\020\004\022\026\n\022OVERALL_CONDIT" +
       "IONS\020\005\022\017\n\013TEMPERATURE\020\006\022\014\n\010HUMIDITY\020\007\022\t\n" +
-      "\005LIGHT\020\010\022\017\n\013AIR_QUALITY\020\t\022\t\n\005SOUND\020\n\"\031\n\013" +
-      "ServiceType\022\n\n\006WATSON\020\001\"%\n\tVoiceType\022\013\n\007",
-      "ALLISON\020\001\022\013\n\007MICHAEL\020\002\"s\n\014ResponseType\022\013" +
-      "\n\007SUCCESS\020\001\022\013\n\007FAILURE\020\002\022\007\n\003IDK\020\003\022\013\n\007TIM" +
-      "EOUT\020\004\022\021\n\rNETWORK_ERROR\020\005\022\r\n\tAPI_ERROR\020\006" +
-      "\022\021\n\rUNKNOWN_ERROR\020\007B,\n\030is.hello.speech.c" +
-      "ore.apiB\020Text2SpeechQueue"
+      "\005LIGHT\020\010\022\020\n\014PARTICULATES\020\t\022\t\n\005SOUND\020\n\"\031\n" +
+      "\013ServiceType\022\n\n\006WATSON\020\001\"%\n\tVoiceType\022\013\n",
+      "\007ALLISON\020\001\022\013\n\007MICHAEL\020\002\"s\n\014ResponseType\022" +
+      "\013\n\007SUCCESS\020\001\022\013\n\007FAILURE\020\002\022\007\n\003IDK\020\003\022\013\n\007TI" +
+      "MEOUT\020\004\022\021\n\rNETWORK_ERROR\020\005\022\r\n\tAPI_ERROR\020" +
+      "\006\022\021\n\rUNKNOWN_ERROR\020\007B,\n\030is.hello.speech." +
+      "core.apiB\020Text2SpeechQueue"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

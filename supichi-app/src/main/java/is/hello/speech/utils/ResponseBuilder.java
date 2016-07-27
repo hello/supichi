@@ -117,12 +117,12 @@ public class ResponseBuilder {
         return outputStream.toByteArray();
     }
 
+    // TODO: refactor this
     private Optional<UploadResponse> getRoomConditionsResponse(final Response.SpeechResponse.Result result, HandlerResult handlerResult) {
         String s3Bucket = "ROOM_CONDITIONS";
         String filename = "ROOM_CONDITIONS-GET_SENSOR";
         String sensorName = "";
         String responseText;
-        byte [] audioBytes;
 
         if (handlerResult.responseParameters.containsKey("sensor")) {
             sensorName = handlerResult.responseParameters.get("sensor").toUpperCase();
@@ -130,24 +130,35 @@ public class ResponseBuilder {
             s3Bucket += String.format("/%s", sensorName);
         }
 
+        // get outcome
         final String outcomeString = handlerResult.responseParameters.get("result");
         final HandlerResult.Outcome outcome = HandlerResult.Outcome.fromString(outcomeString);
 
-        // compose filename from results
+        // compose filename from outcomes
         if (outcome.equals(HandlerResult.Outcome.FAIL)) {
-            // error message
-            s3Bucket = "";
-            filename = "default_rejected-WATSON-MICHAEL-compressed.ima";
-            responseText = "Sorry, your command is rejected.";
+
+            final String errorMessage = handlerResult.responseParameters.get("error");
+            if (errorMessage.equalsIgnoreCase("no data") || errorMessage.equalsIgnoreCase("data too old")) {
+                // custom errors
+                filename += String.format("-no_data-WATSON-%s-16k.wav", voiceName);
+                responseText = String.format("Sorry, I wasn't able to access your %s data right now. Please try again later", sensorName);
+            } else {
+                // return generic error
+                s3Bucket = "";
+                filename = String.format("default_rejected-WATSON-%s-16k.wav", voiceName);
+                responseText = "Sorry, I wasn't able to understand.";
+            }
 
         } else {
 
-            // valid response
+            // process valid response
             if (!sensorName.isEmpty()) {
 
+                // value
                 final String sensorValue = handlerResult.responseParameters.get("value");
                 String params = String.format("value_%s", sensorValue);
 
+                // units
                 final String unit = handlerResult.responseParameters.get("unit");
                 if (sensorName.equalsIgnoreCase(Sensor.TEMPERATURE.toString()) && unit.equals("ºF")) {
                     params += "_F";
@@ -161,40 +172,27 @@ public class ResponseBuilder {
                     params += String.format("-opt_%d", option);
                 }
 
-                filename += String.format("-%s-%s-%s-compressed.ima", params, voiceService, voiceName);
+                // special cases
+                if (sensorName.equalsIgnoreCase(Sensor.LIGHT.toString()) && sensorValue.equals("0")) {
+                    params = "under_1_lux-opt_1";
+                }
+
+                filename += String.format("-%s-%s-%s-16k.wav", params, voiceService, voiceName);
                 responseText = String.format("The %s in your room is %s %s.", sensorName, sensorValue, unit);
+
             } else {
                 s3Bucket = "";
-                filename = "default_try_again-WATSON-MICHAEL-compressed.ima";
+                filename = String.format("default_try_again-WATSON-%s-16k.wav", voiceName);
                 responseText = "Sorry, your command cannot be processed. Please try again.";
             }
         }
 
         LOGGER.debug("action=get-filename name={}", filename);
 
-        if (audioCache.containsKey(filename)) {
-            LOGGER.debug("action=found-audio-in-cache");
-            audioBytes = audioCache.get(filename);
+        final byte [] audioBytes = getAudio(s3Bucket, filename);
 
-        } else {
-
-            try {
-                // fetch file from S3
-                s3Bucket = bucketName + "/" + s3Bucket;
-                LOGGER.debug("action=fetching-audio-from-s3 bucket={} key={}", s3Bucket, filename);
-
-                final S3Object object = s3.getObject(s3Bucket, filename);
-                final InputStream inputStream = object.getObjectContent();
-                byte [] bytes = IOUtils.toByteArray(inputStream);
-                audioBytes = Arrays.copyOfRange(bytes, HEADER_SIZE, bytes.length); // headerless
-                audioCache.put(filename, audioBytes);
-            } catch (IOException e) {
-                LOGGER.error("error=fail-to-get-audio bucket={} key={} error_msg={}", s3Bucket, filename, e.getMessage());
-                return Optional.absent();
-            } catch (AmazonS3Exception e) {
-                LOGGER.error("error=fail-to-get-audio bucket={} key={} error_msg={}", s3Bucket, filename, e.getMessage());
-                return Optional.absent();
-            }
+        if (audioBytes == null) {
+            return Optional.absent();
         }
 
         final Response.SpeechResponse response = Response.SpeechResponse.newBuilder()
@@ -207,4 +205,33 @@ public class ResponseBuilder {
         return Optional.of(new UploadResponse(response, audioBytes));
 
     }
+
+
+    private byte [] getAudio(final String s3Bucket, final String filename) {
+        byte [] audioBytes = null;
+        if (audioCache.containsKey(filename)) {
+            LOGGER.debug("action=found-audio-in-cache");
+            return audioCache.get(filename);
+        }
+
+        // fetch file from S3
+        try {
+            final String finalS3Bucket = bucketName + "/" + s3Bucket;
+            LOGGER.debug("action=fetching-audio-from-s3 bucket={} key={}", finalS3Bucket, filename);
+
+            final S3Object object = s3.getObject(finalS3Bucket, filename);
+
+            final InputStream inputStream = object.getObjectContent();
+            byte [] bytes = IOUtils.toByteArray(inputStream);
+            audioBytes = Arrays.copyOfRange(bytes, HEADER_SIZE, bytes.length); // headerless
+
+            audioCache.put(filename, audioBytes);   // add to cache
+
+        } catch (IOException | AmazonS3Exception e) {
+            LOGGER.error("error=fail-to-get-audio bucket={} key={} error_msg={}", s3Bucket, filename, e.getMessage());
+        }
+
+        return audioBytes;
+    }
+
 }

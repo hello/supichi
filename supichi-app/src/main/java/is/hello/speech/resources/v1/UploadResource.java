@@ -34,7 +34,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 
 @Path("/upload")
@@ -110,29 +109,22 @@ public class UploadResource {
     @Timed
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public byte[] streamingAudio(final InputStream inputStream,
-                            @DefaultValue("8000") @QueryParam("r") final Integer sampling
-    ) throws InterruptedException, IOException {
-        return streaming(inputStream, sampling, false);
-    }
-
-    @Path("/pb")
-    @POST
-    @Timed
-    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
-    @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public byte[] streaming(final InputStream inputStream,
+    public byte[] streaming(final byte[] body,
                             @DefaultValue("8000") @QueryParam("r") final Integer sampling,
-                            @DefaultValue("true") @QueryParam("pb") final boolean includeProtobuf
+                            @DefaultValue("false") @QueryParam("pb") final boolean includeProtobuf
     ) throws InterruptedException, IOException {
+
+        LOGGER.debug("action=received-bytes size={}", body.length);
 
         HandlerResult executeResult = HandlerResult.emptyResult();
 
         final String debugSenseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
-        final String senseId = (debugSenseId == null) ? "8AF6441AF72321F4" : debugSenseId;
+        final String senseId = (debugSenseId == null || debugSenseId.equals("0000000000000000")) ? "8AF6441AF72321F4" : debugSenseId;
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(senseId);
 
+        LOGGER.debug("info=sense-id id={}", senseId);
         if (accounts.isEmpty()) {
+            LOGGER.error("error=no-paired-sense-found sense_id={}", senseId);
             return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult);
         }
 
@@ -146,6 +138,7 @@ public class UploadResource {
 
         LOGGER.debug("action=get-speech-audio sense_id={} account_id={}", senseId, accountId);
         try {
+            final ByteArrayInputStream inputStream = new ByteArrayInputStream(body);
             final SpeechServiceResult resp = asyncSpeechClient.stream(inputStream, sampling);
 
             // try to execute command in transcript

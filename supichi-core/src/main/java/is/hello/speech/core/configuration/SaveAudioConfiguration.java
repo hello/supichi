@@ -23,8 +23,8 @@ public class SaveAudioConfiguration {
 
     @Valid
     @NotNull
-    @JsonProperty("s3_audio_prefix_compressed")
-    private String audioPrefixCompressed;
-    public String getAudioPrefixCompressed() { return audioPrefixCompressed; }
+    @JsonProperty("s3_audio_prefix")
+    private String audioPrefix;
+    public String getAudioPrefix() { return audioPrefix; }
 
 }

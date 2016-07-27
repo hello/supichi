@@ -37,13 +37,14 @@ public class Text2SpeechQueueConsumer implements Managed {
 
     private static final int MAX_RECEIVED_MESSAGES = 10;
     private static final AudioFormat DEFAULT_AUDIO_FORMAT = AudioFormat.WAV;
+    private static final int WATSON_SAMPLING_RATE = 22050;
 
     private static final String COMPRESS_PARAMS = "-r 16k -e ima-adpcm `";
 
     private final AmazonS3 amazonS3;
     private final String s3Bucket;
     private final String s3KeyRaw;
-    private final String s3KeyCompressed;
+    private final String s3Key;
 
     private final TextToSpeech watson;
     private final Voice watsonVoice;
@@ -57,14 +58,14 @@ public class Text2SpeechQueueConsumer implements Managed {
     private boolean isRunning = false;
 
     public Text2SpeechQueueConsumer(final AmazonS3 amazonS3, final String s3Bucket,
-                                    final String s3PrefixRaw, final String s3PrefixCompressed,
+                                    final String s3PrefixRaw, final String s3Prefix,
                                     final TextToSpeech watson, final String voice,
                                     final AmazonSQSAsync sqsClient, final String sqsQueueUrl, final SQSConfiguration sqsConfiguration,
                                     final ExecutorService consumerExecutor) {
         this.amazonS3 = amazonS3;
         this.s3Bucket = s3Bucket;
         this.s3KeyRaw = String.format("%s/%s", s3Bucket, s3PrefixRaw);
-        this.s3KeyCompressed = String.format("%s/%s", s3Bucket, s3PrefixCompressed);
+        this.s3Key = String.format("%s/%s", s3Bucket, s3Prefix);
         this.watson = watson;
         this.watsonVoice = this.watson.getVoice(voice).execute();
         this.sqsClient = sqsClient;
@@ -130,53 +131,44 @@ public class Text2SpeechQueueConsumer implements Managed {
 
                         LOGGER.debug("action=save-audio-to-file filename={}", keyname);
 
-                        // save to file
+                        // Save Raw data to tmp file, upload tmp file to S3
                         final String rawFilename = "/tmp/tmp.wav";
                         final File rawFile = new File(rawFilename);
                         final FileOutputStream fileOutputStream = new FileOutputStream(rawFile);
                         ByteStreams.copy(stream, fileOutputStream);
                         fileOutputStream.close();
 
-                        // save to S3
-
-//                        // save directly from stream
-//                         final ObjectMetadata metadata = new ObjectMetadata();
-//                         metadata.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-//
-//                        // if we want to set content-length
-//                        // byte[] bytes = IOUtils.toByteArray(stream);
-//                        // final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-//                        // metadata.setContentLength(bytes.length);
-//
-//                         amazonS3.putObject(new PutObjectRequest(this.s3KeyRaw, filename, stream, metadata));
-
-
-                        // Save Raw data from tmp file
                         final String s3RawBucket = String.format("%s/%s/%s", s3KeyRaw, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
                         amazonS3.putObject(new PutObjectRequest(s3RawBucket, String.format("%s-raw.wav", keyname), rawFile));
 
 
-                        // convert to AD-PCM 16K 6-bit audio and save to a different s3 bucket
+                        // Process Audio
+
+                        // Compress: convert to AD-PCM 16K 6-bit audio and save to a different s3 bucket
                         // "sox test.wav -r 16k -e ima-adpcm -b 4 -c 1 output3.wav";
-                        final String compressedFilename = "/tmp/tmp_compressed.ima";
-                        final String compressCommand = String.format("sox -r 22050 -v 1.5 %s -r 16k -b 4 -c 1 -e ima-adpcm %s", rawFilename, compressedFilename);
+//                        final String processedFilename = "/tmp/tmp_compressed.ima";
+//                        final String processCommand = String.format("sox -r 22050 -v 1.5 %s -r 16k -b 4 -c 1 -e ima-adpcm %s", rawFilename, processedFilename);
+
+                        // Downsample: 16k
+                        final String processedFilename = "/tmp/tmp_processed.wav";
+                        final String processCommand = String.format("sox -r %d %s -r 16k %s", WATSON_SAMPLING_RATE, rawFilename, processedFilename);
+
                         try {
-                            LOGGER.debug("action=compressing-file command={}", compressCommand);
-                            final Process process2 = Runtime.getRuntime().exec(compressCommand);
-                            final boolean returnCode2 = process2.waitFor(5000L, TimeUnit.MILLISECONDS);
-                            LOGGER.debug("action=compression-success return_code={}", returnCode2);
+                            LOGGER.debug("action=compressing-file command={}", processCommand);
+                            final Process process = Runtime.getRuntime().exec(processCommand);
+                            final boolean returnCode = process.waitFor(5000L, TimeUnit.MILLISECONDS);
+                            LOGGER.debug("action=compression-success return_code={}", returnCode);
 
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            // save converted file to S3
+                            final File compressedFile = new File(processedFilename);
+                            final String S3Keyname = String.format("%s-16k.wav", keyname);
+                            final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
+                            LOGGER.debug("action=upload-s3 bucket={} key={}", S3Bucket, S3Keyname);
+                            amazonS3.putObject(new PutObjectRequest(S3Bucket, S3Keyname, compressedFile));
+
+                        } catch (IOException | InterruptedException e) {
+                            LOGGER.error("action=fail-to-sox key={} error={}", keyname, e.getMessage());
                         }
-
-                        final File compressedFile = new File(compressedFilename);
-                        final String S3Keyname = String.format("%s-compressed.ima", keyname);
-                        final String S3Bucket = String.format("%s/%s/%s", s3KeyCompressed, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
-                        LOGGER.debug("action=upload-s3 bucket={} key={}", S3Bucket, S3Keyname);
-                        amazonS3.putObject(new PutObjectRequest(S3Bucket, S3Keyname, compressedFile));
 
                     }
 
@@ -189,9 +181,6 @@ public class Text2SpeechQueueConsumer implements Managed {
                             new DeleteMessageBatchRequest(sqsQueueUrl, processedHandlers));
                     LOGGER.debug("action=delete-messages size={}", deleteResult.getSuccessful().size());
                 }
-            } else {
-                // no messages, sleep for a bit TODO use a scheduled thread?
-                // Thread.sleep(1000L);
             }
 
         } while (isRunning);

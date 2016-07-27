@@ -26,10 +26,10 @@ public class DefaultResponseDAO {
     private final static int HEADER_SIZE = 44;
 
     private final static Map<Response.SpeechResponse.Result, String> DEFAULT_KEYNAMES = new HashMap<Response.SpeechResponse.Result, String>() {{
-        put(Response.SpeechResponse.Result.OK, "default_ok-WATSON-MICHAEL-compressed.ima");
-        put(Response.SpeechResponse.Result.REJECTED, "default_rejected-WATSON-MICHAEL-compressed.ima");
-        put(Response.SpeechResponse.Result.TRY_AGAIN, "default_try_again-WATSON-MICHAEL-compressed.ima");
-        put(Response.SpeechResponse.Result.UNKNOWN, "default_unknown-WATSON-MICHAEL-compressed.ima");
+        put(Response.SpeechResponse.Result.OK, "default_ok-WATSON-ALLISON-16k.wav");
+        put(Response.SpeechResponse.Result.REJECTED, "default_rejected-WATSON-ALLISON-16k.wav");
+        put(Response.SpeechResponse.Result.TRY_AGAIN, "default_try_again-WATSON-ALLISON-16k.wav");
+        put(Response.SpeechResponse.Result.UNKNOWN, "default_unknown-WATSON-ALLISON-16k.wav");
     }};
 
     private final static Map<Response.SpeechResponse.Result, String> DEFAULT_TEXT = new HashMap<Response.SpeechResponse.Result, String>() {{
@@ -45,6 +45,7 @@ public class DefaultResponseDAO {
 
         final Map<Response.SpeechResponse.Result, UploadResponse> tmpMap = Maps.newHashMap();
 
+        LOGGER.debug("action=get-default-responses bucket={}", bucket);
         for (Map.Entry<Response.SpeechResponse.Result, String> entry : DEFAULT_KEYNAMES.entrySet()) {
             final String keyname = entry.getValue();
             final Response.SpeechResponse.Result result = entry.getKey();

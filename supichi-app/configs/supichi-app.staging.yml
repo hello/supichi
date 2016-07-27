@@ -114,11 +114,11 @@ sqs_configuration:
 watson:
   username: ce487881-c6f6-45cf-8aa5-585554de4941
   password: 8riFzRbKOd4c
-  voice: en-US_MichaelVoice
+  voice: en-US_AllisonVoice
 
 save_audio:
   s3_bucket_name: hello-audio
   s3_audio_prefix_raw: voice/watson-text2speech/raw
-  s3_audio_prefix_compressed: voice/watson-text2speech/compressed
+  s3_audio_prefix: voice/watson-text2speech/16k  # bucket with responses sent back to Sense
 
 consumer_enabled: false

@@ -80,7 +80,7 @@ public class SupichiWorker extends Application<WorkerConfiguration> {
         final Text2SpeechQueueConsumer consumer = new Text2SpeechQueueConsumer(
                 amazonS3, workerConfiguration.getSaveAudioConfiguration().getBucketName(),
                 workerConfiguration.getSaveAudioConfiguration().getAudioPrefixRaw(),
-                workerConfiguration.getSaveAudioConfiguration().getAudioPrefixCompressed(),
+                workerConfiguration.getSaveAudioConfiguration().getAudioPrefix(),
                 watson, watsonConfiguration.getVoiceName(),
                 sqsClient, sqsQueueUrl, workerConfiguration.getSqsConfiguration(),
                 consumerExecutor);
