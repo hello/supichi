@@ -20,7 +20,7 @@ public enum SpeechCommand {
     ROOM_SOUND("room_sound", RoomConditionsHandler.class),
     PARTICULATES("particulates", RoomConditionsHandler.class),
     TIME_REPORT("time_report",TimeHandler.class),
-    TRIVA("triva", TriviaHandler.class);
+    TRIVIA("trivia", TriviaHandler.class);
 
 
     private String value;

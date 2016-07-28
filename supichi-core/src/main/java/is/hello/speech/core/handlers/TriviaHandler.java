@@ -32,11 +32,11 @@ public class TriviaHandler extends BaseHandler {
     private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
-        tempMap.put("the president", SpeechCommand.TRIVA);
-        tempMap.put("hello ceo", SpeechCommand.TRIVA);
-        tempMap.put("hello co", SpeechCommand.TRIVA);
-        tempMap.put("next president", SpeechCommand.TRIVA);
-        tempMap.put("best basketball", SpeechCommand.TRIVA);
+        tempMap.put("the president", SpeechCommand.TRIVIA);
+        tempMap.put("hello ceo", SpeechCommand.TRIVIA);
+        tempMap.put("hello co", SpeechCommand.TRIVIA);
+        tempMap.put("next president", SpeechCommand.TRIVIA);
+        tempMap.put("best basketball", SpeechCommand.TRIVIA);
         return tempMap;
     }
 
