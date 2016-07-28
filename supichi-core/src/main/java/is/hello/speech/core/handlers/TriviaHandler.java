@@ -36,6 +36,7 @@ public class TriviaHandler extends BaseHandler {
         tempMap.put("hello ceo", SpeechCommand.TRIVA);
         tempMap.put("hello co", SpeechCommand.TRIVA);
         tempMap.put("next president", SpeechCommand.TRIVA);
+        tempMap.put("best basketball", SpeechCommand.TRIVA);
         return tempMap;
     }
 
@@ -60,8 +61,13 @@ public class TriviaHandler extends BaseHandler {
                 response.put("result", HandlerResult.Outcome.OK.getValue());
                 response.put("answer", "next_president");
                 response.put("text", "The next president of the United States will either be Hillary Clinton, or Donald Trump.");
-            }
+            } else if (text.equalsIgnoreCase("best basketball")) {
+            response.put("result", HandlerResult.Outcome.OK.getValue());
+            response.put("answer", "best_basketball");
+            response.put("text", "The best basketball team in the NBA is the Golden State Warriors.");
         }
+
+    }
         return new HandlerResult(HandlerType.TRIVIA, response);
     }
 }

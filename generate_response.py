@@ -125,8 +125,12 @@ def process_misc(env):
     # body["parameters"] = "president_obama"
     # r = post_request(env, body)
 
-    body["text"] = "The CEO of Hello will always be James Proud."
-    body["parameters"] = "hello_ceo_james"
+    # body["text"] = "The CEO of Hello will always be James Proud."
+    # body["parameters"] = "hello_ceo_james"
+    # r = post_request(env, body)
+
+    body["text"] = "The best basketball team in the NBA is the Golden State Warriors."
+    body["parameters"] = "best_basketball"
     r = post_request(env, body)
 
 def process_time(env):
@@ -149,8 +153,9 @@ def process_time(env):
     # body["parameters"] = "00_00"
     # r = post_request(env, body)
 
-    for day in ['pm']: #['am', 'pm']:
+    for day in ['am']: #, 'pm']:
         for hour in range(2, 13):
+            hour = 12
 
             for mins in range(0, 60):
                 m_str = str(mins)
@@ -166,11 +171,18 @@ def process_time(env):
                 if new_hour < 10:
                     h_str = "0%d" % new_hour
 
+                if day == 'am' and hour == 12:
+                    h_str = '00'
+
                 body["text"] = "The time is %s" % time_string
                 body["parameters"] = "%s_%s" % (h_str, m_str)
                 print body["text"], body["parameters"]
                 r = post_request(env, body)
+            break
 
+    body["text"] = "The time is 12 midnight"
+    body["parameters"] = "00_00"
+    r = post_request(env, body)
 
 if __name__ == '__main__':
 

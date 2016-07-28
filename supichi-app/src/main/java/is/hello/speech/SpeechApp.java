@@ -61,12 +61,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpeechApp.class);
 
     public static void main(String[] args) throws Exception {
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         new SpeechApp().run(args);
     }
 
