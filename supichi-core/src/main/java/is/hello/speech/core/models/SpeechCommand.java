@@ -3,6 +3,8 @@ package is.hello.speech.core.models;
 import is.hello.speech.core.handlers.AlarmHandler;
 import is.hello.speech.core.handlers.RoomConditionsHandler;
 import is.hello.speech.core.handlers.SleepSoundHandler;
+import is.hello.speech.core.handlers.TimeHandler;
+import is.hello.speech.core.handlers.TriviaHandler;
 
 /**
  * Created by ksg on 6/21/16
@@ -16,7 +18,9 @@ public enum SpeechCommand {
     ROOM_HUMIDITY("room_humidity", RoomConditionsHandler.class),
     ROOM_LIGHT("room_light", RoomConditionsHandler.class),
     ROOM_SOUND("room_sound", RoomConditionsHandler.class),
-    PARTICULATES("particulates", RoomConditionsHandler.class);
+    PARTICULATES("particulates", RoomConditionsHandler.class),
+    TIME_REPORT("time_report",TimeHandler.class),
+    TRIVA("triva", TriviaHandler.class);
 
 
     private String value;

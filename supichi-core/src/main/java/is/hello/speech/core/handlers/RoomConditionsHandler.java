@@ -68,7 +68,7 @@ public class RoomConditionsHandler extends BaseHandler {
 
 
     @Override
-    public HandlerResult executionCommand(final String text, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final String text, final String senseId, final Long accountId) {
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
 

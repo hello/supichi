@@ -5,12 +5,10 @@ import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.util.IOUtils;
 import com.google.api.client.util.Maps;
-import com.google.common.base.Optional;
 import com.hello.suripu.core.models.Sensor;
 import is.hello.speech.core.api.Response;
 import is.hello.speech.core.db.DefaultResponseDAO;
 import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.UploadResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,17 +75,20 @@ public class ResponseBuilder {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         // return custom response if available
+
         final UploadResponse uploadResponse;
-        if (handlerResult.handlerType.equals(HandlerType.ROOM_CONDITIONS)) {
-            Optional<UploadResponse> optionalUploadResponse = getRoomConditionsResponse(result, handlerResult);
-            if (optionalUploadResponse.isPresent()) {
-                uploadResponse = optionalUploadResponse.get();
-            } else {
-                LOGGER.error("action=fail-to-get-custom-response remedy=return-UNKNOWN-error-response");
-                uploadResponse = defaultResponseDAO.getResponse(Response.SpeechResponse.Result.UNKNOWN);
-            }
-        } else {
-            uploadResponse = defaultResponseDAO.getResponse(result);
+        switch(handlerResult.handlerType) {
+            case ROOM_CONDITIONS:
+                uploadResponse = getRoomConditionsResponse(result, handlerResult);
+                break;
+            case TIME_REPORT:
+                uploadResponse = getTimeResponse(result, handlerResult);
+                break;
+            case TRIVIA:
+                uploadResponse = getTriviaResponse(result, handlerResult);
+                break;
+            default:
+                uploadResponse = defaultResponseDAO.getResponse(result);
         }
 
         final Response.SpeechResponse response = uploadResponse.response;
@@ -117,8 +118,76 @@ public class ResponseBuilder {
         return outputStream.toByteArray();
     }
 
+    private UploadResponse getTriviaResponse(final Response.SpeechResponse.Result result, final HandlerResult handlerResult) {
+        String s3Bucket = "TRIVIA/TRIVIA_INFO";
+        String filename = "TRIVIA-GET_TRIVIA-TRIVIA_INFO";
+        final String responseText;
+
+        final HandlerResult.Outcome outcome = getOutcome(handlerResult);
+        if (outcome.equals(HandlerResult.Outcome.OK)) {
+            final String answer = handlerResult.responseParameters.get("answer");
+            filename += String.format("-%s-WATSON-%s-16k.wav", answer, voiceName);
+            responseText = handlerResult.responseParameters.get("text");
+
+        } else {
+            s3Bucket = "";
+            filename = String.format("default_rejected-WATSON-%s-16k.wav", voiceName);
+            responseText = "Sorry, I wasn't able to understand.";
+        }
+
+        final byte[] audioBytes = getAudio(s3Bucket, filename);
+
+        if (audioBytes == null) {
+            LOGGER.error("error=fail-to-audio-bytes action=return-UNKNOWN-error-response");
+            return defaultResponseDAO.getResponse(Response.SpeechResponse.Result.UNKNOWN);
+        }
+
+        final Response.SpeechResponse response = Response.SpeechResponse.newBuilder()
+                .setUrl("http://s3.amazonaws.com/" + s3Bucket + "/" + filename)
+                .setResult(result)
+                .setText(responseText)
+                .setAudioStreamSize(audioBytes.length)
+                .build();
+
+        return new UploadResponse(response, audioBytes);
+    }
+
+
+    private UploadResponse getTimeResponse(final Response.SpeechResponse.Result result, final HandlerResult handlerResult) {
+
+        final String s3Bucket = "TIME_REPORT/TIME";
+        String filename = "TIME_REPORT-GET_TIME-TIME";
+        final String responseText;
+
+        final HandlerResult.Outcome outcome = getOutcome(handlerResult);
+        if (outcome.equals(HandlerResult.Outcome.OK)) {
+            final String timeString = handlerResult.responseParameters.get("time");
+            filename += String.format("-%s-WATSON-%s-16k.wav", timeString, voiceName);
+            responseText = String.format("The time is %s", timeString);
+        } else {
+            responseText = "Sorry, I'm not able to determine the time right now. Please try again later.";
+            filename += String.format("-no_data-WATSON-%s-16k.wav", voiceName);
+        }
+
+        final byte [] audioBytes = getAudio(s3Bucket, filename);
+
+        if (audioBytes == null) {
+            LOGGER.error("error=fail-to-audio-bytes action=return-UNKNOWN-error-response");
+            return defaultResponseDAO.getResponse(Response.SpeechResponse.Result.UNKNOWN);
+        }
+
+        final Response.SpeechResponse response = Response.SpeechResponse.newBuilder()
+                .setUrl("http://s3.amazonaws.com/" + s3Bucket + "/" + filename)
+                .setResult(result)
+                .setText(responseText)
+                .setAudioStreamSize(audioBytes.length)
+                .build();
+
+        return new UploadResponse(response, audioBytes);
+    }
+
     // TODO: refactor this
-    private Optional<UploadResponse> getRoomConditionsResponse(final Response.SpeechResponse.Result result, HandlerResult handlerResult) {
+    private UploadResponse getRoomConditionsResponse(final Response.SpeechResponse.Result result, HandlerResult handlerResult) {
         String s3Bucket = "ROOM_CONDITIONS";
         String filename = "ROOM_CONDITIONS-GET_SENSOR";
         String sensorName = "";
@@ -130,9 +199,7 @@ public class ResponseBuilder {
             s3Bucket += String.format("/%s", sensorName);
         }
 
-        // get outcome
-        final String outcomeString = handlerResult.responseParameters.get("result");
-        final HandlerResult.Outcome outcome = HandlerResult.Outcome.fromString(outcomeString);
+        final HandlerResult.Outcome outcome = getOutcome(handlerResult);
 
         // compose filename from outcomes
         if (outcome.equals(HandlerResult.Outcome.FAIL)) {
@@ -192,7 +259,8 @@ public class ResponseBuilder {
         final byte [] audioBytes = getAudio(s3Bucket, filename);
 
         if (audioBytes == null) {
-            return Optional.absent();
+            LOGGER.error("error=fail-to-audio-bytes action=return-UNKNOWN-error-response");
+            return defaultResponseDAO.getResponse(Response.SpeechResponse.Result.UNKNOWN);
         }
 
         final Response.SpeechResponse response = Response.SpeechResponse.newBuilder()
@@ -202,10 +270,14 @@ public class ResponseBuilder {
                 .setAudioStreamSize(audioBytes.length)
                 .build();
 
-        return Optional.of(new UploadResponse(response, audioBytes));
+        return new UploadResponse(response, audioBytes);
 
     }
 
+    private HandlerResult.Outcome getOutcome (final HandlerResult handlerResult) {
+        final String outcomeString = handlerResult.responseParameters.get("result");
+        return HandlerResult.Outcome.fromString(outcomeString);
+    }
 
     private byte [] getAudio(final String s3Bucket, final String filename) {
         byte [] audioBytes = null;

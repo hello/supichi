@@ -28,7 +28,7 @@ public class AlarmHandler extends BaseHandler {
     }
 
     @Override
-    public HandlerResult executionCommand(final String text, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final String text, final String senseId, final Long accountId) {
         // TODO
         final Optional<SpeechCommand> optionalCommand = getCommand(text);
         return HandlerResult.emptyResult();

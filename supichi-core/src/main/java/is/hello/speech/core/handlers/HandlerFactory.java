@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
+import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredw8.clients.MessejiClient;
@@ -35,24 +36,37 @@ public class HandlerFactory {
                                         final DeviceDataDAODynamoDB deviceDataDAODynamoDB,
                                         final DeviceDAO deviceDAO,
                                         final SenseColorDAO senseColorDAO,
-                                        final CalibrationDAO calibrationDAO
-        ) {
+                                        final CalibrationDAO calibrationDAO,
+                                        final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB
+                                        ) {
 
         final Map<HandlerType, BaseHandler> handlerMap = Maps.newHashMap();
 
         // create handlers
+
         // sleep sounds
         final SleepSoundHandler sleepSoundHandler = new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor);
         handlerMap.put(HandlerType.SLEEP_SOUNDS, sleepSoundHandler);
 
+        // room conditions
         final RoomConditionsHandler roomConditionsHandler = new RoomConditionsHandler(speechCommandDAO, deviceDataDAODynamoDB, deviceDAO, senseColorDAO, calibrationDAO);
         handlerMap.put(HandlerType.ROOM_CONDITIONS, roomConditionsHandler);
 
-        // Alarm
+        // current time
+        final TimeHandler timeHandler = new TimeHandler(speechCommandDAO, timeZoneHistoryDAODynamoDB);
+        handlerMap.put(HandlerType.TIME_REPORT, timeHandler);
+
+        // trivia
+        final TriviaHandler triviaHandler = new TriviaHandler(speechCommandDAO);
+        handlerMap.put(HandlerType.TRIVIA, triviaHandler);
+
+        // TODO: alarm
         final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO);
         handlerMap.put(HandlerType.ALARM, alarmHandler);
 
+
         // map command text to handler
+
         final Map<String, HandlerType> commandToHandlerMap = Maps.newHashMap();
         for (Map.Entry<HandlerType, BaseHandler> entrySet : handlerMap.entrySet()) {
             final Set<String> commands = entrySet.getValue().getRelevantCommands();

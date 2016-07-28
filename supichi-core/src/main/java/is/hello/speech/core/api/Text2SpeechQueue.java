@@ -303,6 +303,14 @@ public final class Text2SpeechQueue {
        * <code>ROOM_CONDITIONS = 4;</code>
        */
       ROOM_CONDITIONS(3, 4),
+      /**
+       * <code>TRIVIA = 5;</code>
+       */
+      TRIVIA(4, 5),
+      /**
+       * <code>TIME_REPORT = 6;</code>
+       */
+      TIME_REPORT(5, 6),
       ;
 
       /**
@@ -321,6 +329,14 @@ public final class Text2SpeechQueue {
        * <code>ROOM_CONDITIONS = 4;</code>
        */
       public static final int ROOM_CONDITIONS_VALUE = 4;
+      /**
+       * <code>TRIVIA = 5;</code>
+       */
+      public static final int TRIVIA_VALUE = 5;
+      /**
+       * <code>TIME_REPORT = 6;</code>
+       */
+      public static final int TIME_REPORT_VALUE = 6;
 
 
       public final int getNumber() { return value; }
@@ -331,6 +347,8 @@ public final class Text2SpeechQueue {
           case 2: return ALARM;
           case 3: return SLEEP_REPORT;
           case 4: return ROOM_CONDITIONS;
+          case 5: return TRIVIA;
+          case 6: return TIME_REPORT;
           default: return null;
         }
       }
@@ -407,6 +425,14 @@ public final class Text2SpeechQueue {
        * <code>GET_SENSOR = 4;</code>
        */
       GET_SENSOR(3, 4),
+      /**
+       * <code>GET_TRIVIA = 5;</code>
+       */
+      GET_TRIVIA(4, 5),
+      /**
+       * <code>GET_TIME = 6;</code>
+       */
+      GET_TIME(5, 6),
       ;
 
       /**
@@ -429,6 +455,14 @@ public final class Text2SpeechQueue {
        * <code>GET_SENSOR = 4;</code>
        */
       public static final int GET_SENSOR_VALUE = 4;
+      /**
+       * <code>GET_TRIVIA = 5;</code>
+       */
+      public static final int GET_TRIVIA_VALUE = 5;
+      /**
+       * <code>GET_TIME = 6;</code>
+       */
+      public static final int GET_TIME_VALUE = 6;
 
 
       public final int getNumber() { return value; }
@@ -439,6 +473,8 @@ public final class Text2SpeechQueue {
           case 2: return STOP_SOUND;
           case 3: return GET_CONDITION;
           case 4: return GET_SENSOR;
+          case 5: return GET_TRIVIA;
+          case 6: return GET_TIME;
           default: return null;
         }
       }
@@ -535,6 +571,14 @@ public final class Text2SpeechQueue {
        * <code>SOUND = 10;</code>
        */
       SOUND(9, 10),
+      /**
+       * <code>TRIVIA_INFO = 11;</code>
+       */
+      TRIVIA_INFO(10, 11),
+      /**
+       * <code>TIME = 12;</code>
+       */
+      TIME(11, 12),
       ;
 
       /**
@@ -577,6 +621,14 @@ public final class Text2SpeechQueue {
        * <code>SOUND = 10;</code>
        */
       public static final int SOUND_VALUE = 10;
+      /**
+       * <code>TRIVIA_INFO = 11;</code>
+       */
+      public static final int TRIVIA_INFO_VALUE = 11;
+      /**
+       * <code>TIME = 12;</code>
+       */
+      public static final int TIME_VALUE = 12;
 
 
       public final int getNumber() { return value; }
@@ -593,6 +645,8 @@ public final class Text2SpeechQueue {
           case 8: return LIGHT;
           case 9: return PARTICULATES;
           case 10: return SOUND;
+          case 11: return TRIVIA_INFO;
+          case 12: return TIME;
           default: return null;
         }
       }
@@ -1914,7 +1968,7 @@ public final class Text2SpeechQueue {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\025voice_responses.proto\"\222\007\n\021SynthesizeMe" +
+      "\n\025voice_responses.proto\"\350\007\n\021SynthesizeMe" +
       "ssage\022\031\n\021voice_response_id\030\001 \001(\003\022\014\n\004text" +
       "\030\002 \001(\t\022-\n\006intent\030\003 \001(\0162\035.SynthesizeMessa" +
       "ge.IntentType\022-\n\006action\030\004 \001(\0162\035.Synthesi" +
@@ -1924,21 +1978,23 @@ public final class Text2SpeechQueue {
       "nthesizeMessage.ServiceType\022+\n\005voice\030\010 \001" +
       "(\0162\034.SynthesizeMessage.VoiceType\0226\n\rresp" +
       "onse_type\030\t \001(\0162\037.SynthesizeMessage.Resp",
-      "onseType\"P\n\nIntentType\022\020\n\014SLEEP_SOUNDS\020\001" +
+      "onseType\"m\n\nIntentType\022\020\n\014SLEEP_SOUNDS\020\001" +
       "\022\t\n\005ALARM\020\002\022\020\n\014SLEEP_REPORT\020\003\022\023\n\017ROOM_CO" +
-      "NDITIONS\020\004\"O\n\nActionType\022\016\n\nPLAY_SOUND\020\001" +
-      "\022\016\n\nSTOP_SOUND\020\002\022\021\n\rGET_CONDITION\020\003\022\016\n\nG" +
-      "ET_SENSOR\020\004\"\267\001\n\014CategoryType\022\013\n\007DEFAULT\020" +
-      "\001\022\016\n\nSOUND_NAME\020\002\022\022\n\016SOUND_DURATION\020\003\022\027\n" +
-      "\023SOUND_NAME_DURATION\020\004\022\026\n\022OVERALL_CONDIT" +
-      "IONS\020\005\022\017\n\013TEMPERATURE\020\006\022\014\n\010HUMIDITY\020\007\022\t\n" +
-      "\005LIGHT\020\010\022\020\n\014PARTICULATES\020\t\022\t\n\005SOUND\020\n\"\031\n" +
-      "\013ServiceType\022\n\n\006WATSON\020\001\"%\n\tVoiceType\022\013\n",
-      "\007ALLISON\020\001\022\013\n\007MICHAEL\020\002\"s\n\014ResponseType\022" +
-      "\013\n\007SUCCESS\020\001\022\013\n\007FAILURE\020\002\022\007\n\003IDK\020\003\022\013\n\007TI" +
-      "MEOUT\020\004\022\021\n\rNETWORK_ERROR\020\005\022\r\n\tAPI_ERROR\020" +
-      "\006\022\021\n\rUNKNOWN_ERROR\020\007B,\n\030is.hello.speech." +
-      "core.apiB\020Text2SpeechQueue"
+      "NDITIONS\020\004\022\n\n\006TRIVIA\020\005\022\017\n\013TIME_REPORT\020\006\"" +
+      "m\n\nActionType\022\016\n\nPLAY_SOUND\020\001\022\016\n\nSTOP_SO" +
+      "UND\020\002\022\021\n\rGET_CONDITION\020\003\022\016\n\nGET_SENSOR\020\004" +
+      "\022\016\n\nGET_TRIVIA\020\005\022\014\n\010GET_TIME\020\006\"\322\001\n\014Categ" +
+      "oryType\022\013\n\007DEFAULT\020\001\022\016\n\nSOUND_NAME\020\002\022\022\n\016" +
+      "SOUND_DURATION\020\003\022\027\n\023SOUND_NAME_DURATION\020" +
+      "\004\022\026\n\022OVERALL_CONDITIONS\020\005\022\017\n\013TEMPERATURE" +
+      "\020\006\022\014\n\010HUMIDITY\020\007\022\t\n\005LIGHT\020\010\022\020\n\014PARTICULA",
+      "TES\020\t\022\t\n\005SOUND\020\n\022\017\n\013TRIVIA_INFO\020\013\022\010\n\004TIM" +
+      "E\020\014\"\031\n\013ServiceType\022\n\n\006WATSON\020\001\"%\n\tVoiceT" +
+      "ype\022\013\n\007ALLISON\020\001\022\013\n\007MICHAEL\020\002\"s\n\014Respons" +
+      "eType\022\013\n\007SUCCESS\020\001\022\013\n\007FAILURE\020\002\022\007\n\003IDK\020\003" +
+      "\022\013\n\007TIMEOUT\020\004\022\021\n\rNETWORK_ERROR\020\005\022\r\n\tAPI_" +
+      "ERROR\020\006\022\021\n\rUNKNOWN_ERROR\020\007B,\n\030is.hello.s" +
+      "peech.core.apiB\020Text2SpeechQueue"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

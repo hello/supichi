@@ -96,12 +96,14 @@ dynamodb:
     device_data: prod_sense_data
     file_manifest: prod_file_manifest
     sleep_hmm: speech_commands  # use "sleep_hmm as placeholder"
+    timezone_history: timezone_history
 
   endpoints:
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
     sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
+    timezone_history: http://dynamodb.us-east-1.amazonaws.com
 
 sqs_configuration:
     sqs_queue_name: dev_text2speech
@@ -119,6 +121,6 @@ watson:
 save_audio:
   s3_bucket_name: hello-audio
   s3_audio_prefix_raw: voice/watson-text2speech/raw
-  s3_audio_prefix: voice/watson-text2speech/16k  # bucket with responses sent back to Sense
+  s3_audio_prefix: voice/watson-text2speech/16keq  # bucket with responses sent back to Sense
 
 consumer_enabled: false

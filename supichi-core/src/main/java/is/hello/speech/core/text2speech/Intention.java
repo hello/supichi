@@ -8,7 +8,9 @@ public class Intention {
         SLEEP_SOUNDS(1),
         ALARM(2),
         SLEEP_REPORT(3),
-        ROOM_CONDITIONS(4);
+        ROOM_CONDITIONS(4),
+        TRIVIA(5),
+        TIME_REPORT(6);
 
         protected int value;
 
@@ -38,7 +40,9 @@ public class Intention {
         PLAY_SOUND(1),
         STOP_SOUND(2),
         GET_CONDITION(3),
-        GET_SENSOR(4);
+        GET_SENSOR(4),
+        GET_TRIVIA(5),
+        GET_TIME(6);
 
         protected int value;
 
@@ -75,7 +79,9 @@ public class Intention {
         HUMIDITY(7),
         LIGHT(8),
         PARTICULATES(9),
-        SOUND(10);
+        SOUND(10),
+        TRIVIA_INFO(11),
+        TIME(12);
 
         protected int value;
 
