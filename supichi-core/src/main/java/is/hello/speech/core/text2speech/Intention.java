@@ -74,7 +74,7 @@ public class Intention {
         TEMPERATURE(6),
         HUMIDITY(7),
         LIGHT(8),
-        AIR_QUALITY(9),
+        PARTICULATES(9),
         SOUND(10);
 
         protected int value;

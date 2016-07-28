@@ -7,7 +7,7 @@ import sys
 import json
 
 
-VALID_SENSORS = ['TEMPERATURE', 'HUMIDITY', 'LIGHT', 'PARTICULATES', 'SOUND']
+VALID_SENSORS = ['TEMPERATURE', 'HUMIDITY', 'LIGHT', 'PARTICULATES', 'SOUND', 'ERRORS']
 def post_request(env, body):
     headers = {"content-type": "application/json"}
     url = "http://dev-speech.hello.is"
@@ -78,6 +78,32 @@ def process_air(env, value, body):
     body["parameters"] = "value_%s-opt_2" % (value)
     r = post_request(env, body)
 
+def process_error_msgs(env, body):
+
+    body["text"] = "Sorry. I wasn't able to access your air quality data right now. Please try again later."
+    body["parameters"] = "no_data"
+    body["category"] = "PARTICULATES"
+    r = post_request(env, body)
+    
+    body["text"] = "Sorry. I wasn't able to access your temperature data right now. Please try again later."
+    body["parameters"] = "no_data"
+    body["category"] = "TEMPERATURE"
+    r = post_request(env, body)
+
+    body["text"] = "Sorry. I wasn't able to access your humidity data right now. Please try again later."
+    body["parameters"] = "no_data"
+    body["category"] = "HUMIDITY"
+    r = post_request(env, body)
+
+    body["text"] = "Sorry. I wasn't able to access your light data right now. Please try again later."
+    body["parameters"] = "no_data"
+    body["category"] = "LIGHT"
+    r = post_request(env, body)
+
+    body["text"] = "Sorry. I wasn't able to access your sound data right now. Please try again later."
+    body["parameters"] = "no_data"
+    body["category"] = "SOUND"
+    r = post_request(env, body)
 
 if __name__ == '__main__':
 
@@ -97,15 +123,22 @@ if __name__ == '__main__':
         "action":"GET_SENSOR",
         "category": sensor,
         "service_type":"WATSON",
-        "voice_type":"MICHAEL",
+        "voice_type":"ALLISON",
         "response_type":"SUCCESS",
         "parameters":""
     }
 
+    if sensor == 'ERRORS':
+        process_error_msgs(env, body)
+        sys.exit();
+
     low = 1
     high = 101
     if sensor == 'LIGHT':
-        high = 400
+        high = 300
+    elif sensor == 'PARTICULATES':
+        low = 100
+        high = 301
 
     for i in range (low, high):
         value = str(i)

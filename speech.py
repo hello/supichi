@@ -99,7 +99,7 @@ def get_message(body, msgtype):
         traceback.print_exc(file=sys.stdout)
 
     audio_data = body[pb_end:]
-    fp = open('./tmp.ima', 'wb')
+    fp = open('./tmp.wav', 'wb')
     fp.write(audio_data)
     fp.close()
 
@@ -115,15 +115,15 @@ if __name__ == '__main__':
         pb = sys.argv[4]
 
     su = SlowUpload(filename)
-    headers = {"content-type": "application/octet-stream"} #, "X-Hello-Sense-Id": "8AF6441AF72321F4"}
+    # testing 8AF6441AF72321F4 2095
+    # demo C8DAAC353AEFA4A9 62297
+    headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "8AF6441AF72321F4"}
     if env == 'local':
-        ENDPOINT = "http://localhost:8181/upload/pb?r=%s&pb=%s" % (sampling_rate, pb)
-    elif env == 'audio':
-        ENDPOINT = "http://localhost:8181/upload/audio?r=%s" % (sampling_rate)
+        ENDPOINT = "http://localhost:8181/upload/audio?r=%s&pb=%s" % (sampling_rate, pb)
     elif env == 'dev':
-        ENDPOINT = "http://dev-speech.hello.is/upload/pb?r=%s&pb=%s" % (sampling_rate, pb)
+        ENDPOINT = "http://dev-speech.hello.is/upload/audio?r=%s" % (sampling_rate)
     elif env == 'goog':
-        ENDPOINT = "http://8.34.219.91:8181/upload/pb?r=%s" % (sampling_rate)
+        ENDPOINT = "http://8.34.219.91:8181/upload/audio?r=%s" % (sampling_rate)
     else:
         print "invalid env. choose from [local/dev/goog]"
         sys.exit(1)
@@ -149,7 +149,7 @@ if __name__ == '__main__':
         msg = get_message(r.content, response_pb2.SpeechResponse)
         print "protobuf:\n", msg
     else:
-        fp = open('./tmp1.ima', 'wb')
+        fp = open('./tmp1.wav', 'wb')
         fp.write(r.content)
         fp.close()
 

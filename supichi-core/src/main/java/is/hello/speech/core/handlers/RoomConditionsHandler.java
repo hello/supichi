@@ -102,6 +102,9 @@ public class RoomConditionsHandler extends BaseHandler {
         final DateTime minDT = DateTime.now(DateTimeZone.UTC).minusMinutes(mostRecentLookBackMinutes);
         final Optional<DeviceData> optionalData = deviceDataDAODynamoDB.getMostRecent(accountId, senseId, maxDT, minDT);
 
+        final String sensorName = getSensorName(command);
+        response.put("sensor", sensorName);
+
         if (!optionalData.isPresent()) {
             response.put("result", HandlerResult.Outcome.FAIL.getValue());
             response.put("error", "no data");
@@ -121,10 +124,8 @@ public class RoomConditionsHandler extends BaseHandler {
 
         final String sensorValue;
         final String sensorUnit;
-        final String sensorName;
         switch (command) {
             case ROOM_TEMPERATURE:
-                sensorName = Sensor.TEMPERATURE.toString();
                 if (unit.equalsIgnoreCase("f")) {
                     sensorUnit = "ºF";
                     sensorValue = String.valueOf(celsiusToFahrenheit(roomState.temperature.value));
@@ -135,28 +136,22 @@ public class RoomConditionsHandler extends BaseHandler {
                 }
                 break;
             case ROOM_HUMIDITY:
-                sensorName = Sensor.HUMIDITY.toString();
                 sensorValue = String.valueOf(Math.round(roomState.humidity.value));
                 sensorUnit = "percent";
                 break;
             case ROOM_LIGHT:
-                sensorName = Sensor.LIGHT.toString();
                 sensorValue = String.valueOf(Math.round(roomState.light.value));
                 sensorUnit = "lux";
                 break;
             case ROOM_SOUND:
-                sensorName = Sensor.SOUND.toString();
                 sensorValue = String.valueOf(Math.round(roomState.sound.value));
                 sensorUnit = "decibels";
                 break;
             case PARTICULATES:
-                sensorName = Sensor.PARTICULATES.toString();
                 sensorValue = String.valueOf(Math.round(roomState.particulates.value));
                 sensorUnit = "micro grams per cubic meter";
                 break;
-
             default:
-                sensorName = "";
                 sensorValue = "";
                 sensorUnit = "";
                 break;
@@ -181,4 +176,19 @@ public class RoomConditionsHandler extends BaseHandler {
         return (int) Math.round((value * 9.0) / 5.0) + 32;
     }
 
+    private String getSensorName(final SpeechCommand command) {
+        switch (command) {
+            case ROOM_TEMPERATURE:
+                return Sensor.TEMPERATURE.toString();
+            case ROOM_HUMIDITY:
+                return Sensor.HUMIDITY.toString();
+            case ROOM_LIGHT:
+                return Sensor.LIGHT.toString();
+            case ROOM_SOUND:
+                return Sensor.SOUND.toString();
+            case PARTICULATES:
+                return Sensor.PARTICULATES.toString();
+        }
+        return "";
+    }
 }

@@ -176,7 +176,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
             final Text2SpeechQueueConsumer consumer = new Text2SpeechQueueConsumer(
                     amazonS3, speechBucket,
                     speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixRaw(),
-                    speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixCompressed(),
+                    speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefix(),
                     watson, watsonConfiguration.getVoiceName(),
                     sqsClient, sqsQueueUrl, speechAppConfiguration.getSqsConfiguration(),
                     consumerExecutor);
@@ -198,7 +198,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
         environment.lifecycle().manage(speechClientManaged);
 
-        final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixCompressed());
+        final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefix());
 
         final DefaultResponseDAO defaultResponseDAO = DefaultResponseDAO.create(amazonS3, s3ResponseBucket);
 
