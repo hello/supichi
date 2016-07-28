@@ -7,7 +7,7 @@ import sys
 import json
 
 
-VALID_SENSORS = ['TEMPERATURE', 'HUMIDITY', 'LIGHT', 'PARTICULATES', 'SOUND', 'ERRORS']
+VALID_SENSORS = ['TEMPERATURE', 'HUMIDITY', 'LIGHT', 'PARTICULATES', 'SOUND', 'ERRORS', 'TIME', 'MISC']
 def post_request(env, body):
     headers = {"content-type": "application/json"}
     url = "http://dev-speech.hello.is"
@@ -105,6 +105,70 @@ def process_error_msgs(env, body):
     body["category"] = "SOUND"
     r = post_request(env, body)
 
+def process_misc(env):
+    body = {
+        "text":"",
+        "intent":"TRIVIA",
+        "action":"GET_TRIVIA",
+        "category": "TRIVIA_INFO",
+        "service_type":"WATSON",
+        "voice_type":"ALLISON",
+        "response_type":"SUCCESS",
+        "parameters":""
+    }
+
+    # body["text"] = "The next president of the United States will either be Hillary Clinton, or Donald Trump."
+    # body["parameters"] = "president_next"
+    # r = post_request(env, body)
+
+    # body["text"] = "The current president of the United States is Barack Obama."
+    # body["parameters"] = "president_obama"
+    # r = post_request(env, body)
+
+    body["text"] = "The CEO of Hello will always be James Proud."
+    body["parameters"] = "hello_ceo_james"
+    r = post_request(env, body)
+
+def process_time(env):
+    body = {
+        "text":"",
+        "intent":"TIME_REPORT",
+        "action":"GET_TIME",
+        "category": "TIME",
+        "service_type":"WATSON",
+        "voice_type":"ALLISON",
+        "response_type":"SUCCESS",
+        "parameters":""
+    }
+
+    # body["text"] = "Sorry. I'm not able to determine the time right now. Please try again later."
+    # body["parameters"] = "no_data"
+    # r = post_request(env, body)
+
+    # body["text"] = "The time is 12:00am"
+    # body["parameters"] = "00_00"
+    # r = post_request(env, body)
+
+    for day in ['am', 'pm']:
+        for hour in range(1, 13):
+            if day == 'pm' and hour != 12:
+                hour += 12
+
+            for mins in range(0, 60):
+                m_str = str(mins)
+                if mins < 10:
+                    m_str = "0%d" % mins
+                time_string = "%s:%s %s" % (hour, m_str, day)
+    
+                h_str = str(hour)
+                if hour < 10:
+                    h_str = "0%d" % hour
+
+                body["text"] = "The time is %s" % time_string
+                body["parameters"] = "%s_%s" % (h_str, m_str)
+                r = post_request(env, body)
+
+
 if __name__ == '__main__':
 
     sensor = sys.argv[1].upper()
@@ -131,6 +195,12 @@ if __name__ == '__main__':
     if sensor == 'ERRORS':
         process_error_msgs(env, body)
         sys.exit();
+    elif sensor == "TIME":
+        process_time(env)
+        sys.exit()
+    elif sensor == "MISC":
+        process_misc(env)
+        sys.exit()
 
     low = 1
     high = 101

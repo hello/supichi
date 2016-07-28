@@ -1,39 +1,3 @@
-
-common_db:
-  driverClass: org.postgresql.Driver
-  user: [your local database user]
-  password: [your password]
-  url: jdbc:postgresql://localhost:5432/[your local common database]
-  properties:
-    hibernate.dialect: org.hibernate.spatial.dialect.postgis.PostgisDialect
-
-  # any properties specific to your JDBC driver:
-  properties:
-    charSet: UTF-8
-
-  # the maximum amount of time to wait on an empty pool before throwing an exception
-  maxWaitForConnection: 1s
-
-  # the SQL query to run when validating a connection's liveness
-  validationQuery: "/* MyService Health Check */ SELECT 1"
-
-  initialSize: 2
-
-  # the minimum number of connections to keep open
-  minSize: 2
-
-  # the maximum number of connections to keep open
-  maxSize: 8
-
-  # whether or not idle connections should be validated
-  checkConnectionWhileIdle: false
-
-  # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
-  evictionInterval: 10s
-
-  # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
-  minIdleTime: 1 minute
-
 s3_bucket:
   bucket: hello-firmware-public
   aws_access_key: AKIAIPS2RBLAWR6TNSPA # temp credentials
@@ -66,7 +30,7 @@ google_api_port: 443
 
 audio_parameters:
   interim_results_preference: false
-  encoding: LINEAR16 # availiable encodings: [ENCODING_UNSPECIFIED, LINEAR16, FLAC, MULAW, AMR, AMR_WB, UNRECOGNIZED]
+  encoding: LINEAR16 # [ENCODING_UNSPECIFIED, LINEAR16, FLAC, MULAW, AMR, AMR_WB, UNRECOGNIZED]
   buffer_size: 2048 # play around with this
 
 # note: connecting to dev messeji instance directly because ELB is an internal one, not reachable from outside
@@ -78,28 +42,77 @@ messeji_http_client:
 dynamodb:
   region: us-east-1
   tables:
-    sleep_hmm: speech_commands  # use "sleep_hmm as placeholder"
+    calibration: calibration
+    device_data: sense_data
     file_manifest: file_manifest
+    sleep_hmm: speech_commands  # use "sleep_hmm as placeholder"
+    timezone_history: timezone_history
+
+
 
   endpoints:
-    sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
+    calibration: http://dynamodb.us-east-1.amazonaws.com
+    device_data: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
+    sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
+    timezone_history: http://dynamodb.us-east-1.amazonaws.com
+
+
+
+
+common_db:
+  driverClass: org.postgresql.Driver
+  user: [your user]
+  password: [your password]
+
+  url: jdbc:postgresql://localhost:5432/[your database name]
+  properties:
+    hibernate.dialect: org.hibernate.spatial.dialect.postgis.PostgisDialect
+
+  # any properties specific to your JDBC driver:
+  properties:
+    charSet: UTF-8
+
+  # the maximum amount of time to wait on an empty pool before throwing an exception
+  maxWaitForConnection: 1s
+
+  # the SQL query to run when validating a connection's liveness
+  validationQuery: "/* MyService Health Check */ SELECT 1"
+
+  initialSize: 2
+
+  # the minimum number of connections to keep open
+  minSize: 2
+
+  # the maximum number of connections to keep open
+  maxSize: 8
+
+  # whether or not idle connections should be validated
+  checkConnectionWhileIdle: false
+
+  # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
+  evictionInterval: 10s
+
+  # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
+  minIdleTime: 1 minute
 
 sqs_configuration:
     sqs_queue_name: dev_text2speech
     sqs_queue_url: https://sqs.us-east-1.amazonaws.com/053216739513/dev_text2speech
-    sqs_max_connections: 1
+    sqs_max_connections: 5
     sqs_max_messages_read: 10
-    sqs_wait_time_seconds: 10
+    sqs_wait_time_seconds: 1
     sqs_visibility_timeout_seconds: 30
 
 watson:
   username: ce487881-c6f6-45cf-8aa5-585554de4941
   password: 8riFzRbKOd4c
   voice: en-US_AllisonVoice
+  #voice: en-US_MichaelVoice
 
 save_audio:
   s3_bucket_name: hello-audio
-  s3_audio_prefix: voice/watson-text2speech/raw
+  s3_audio_prefix_raw: voice/watson-text2speech/raw
+  s3_audio_prefix: voice/watson-text2speech/16k  # bucket with responses sent back to Sense
 
-consumer_enabled: false
+consumer_enabled: true

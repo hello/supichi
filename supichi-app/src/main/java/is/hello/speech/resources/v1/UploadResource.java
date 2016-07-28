@@ -159,7 +159,7 @@ public class UploadResource {
                         final BaseHandler handler = optionalHandler.get();
                         LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
 
-                        executeResult = handler.executionCommand(commandText, senseId, accountId);
+                        executeResult = handler.executeCommand(commandText, senseId, accountId);
                         LOGGER.debug("action=execute-command result={}", executeResult);
                         break;
                     } else {

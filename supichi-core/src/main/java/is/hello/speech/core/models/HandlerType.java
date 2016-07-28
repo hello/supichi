@@ -7,9 +7,11 @@ public enum HandlerType {
     NONE("none"),
     SLEEP_SOUNDS("sleep_sounds"),
     ALARM("alarm"),
-    ROOM_CONDITIONS("room_conditions");
+    ROOM_CONDITIONS("room_conditions"),
+    TIME_REPORT("time_report"),
+    TRIVIA("trivia");
 
-    protected String value;
+    public String value;
 
     HandlerType(String value) { this.value = value; }
 }

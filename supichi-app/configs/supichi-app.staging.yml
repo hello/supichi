@@ -96,12 +96,15 @@ dynamodb:
     device_data: sense_data
     file_manifest: file_manifest
     sleep_hmm: speech_commands  # use "sleep_hmm as placeholder"
+    timezone_history: timezone_history
 
   endpoints:
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
     sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
+    timezone_history: http://dynamodb.us-east-1.amazonaws.com
+
 
 sqs_configuration:
     sqs_queue_name: dev_text2speech

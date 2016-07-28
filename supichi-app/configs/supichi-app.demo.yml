@@ -119,6 +119,6 @@ watson:
 save_audio:
   s3_bucket_name: hello-audio
   s3_audio_prefix_raw: voice/watson-text2speech/raw
-  s3_audio_prefix: voice/watson-text2speech/16k  # bucket with responses sent back to Sense
+  s3_audio_prefix: voice/watson-text2speech/16keq  # bucket with responses sent back to Sense
 
 consumer_enabled: false
