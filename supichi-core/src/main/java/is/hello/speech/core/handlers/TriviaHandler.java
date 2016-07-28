@@ -34,6 +34,7 @@ public class TriviaHandler extends BaseHandler {
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("the president", SpeechCommand.TRIVA);
         tempMap.put("hello ceo", SpeechCommand.TRIVA);
+        tempMap.put("hello co", SpeechCommand.TRIVA);
         tempMap.put("next president", SpeechCommand.TRIVA);
         return tempMap;
     }
