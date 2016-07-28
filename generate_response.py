@@ -125,8 +125,12 @@ def process_misc(env):
     # body["parameters"] = "president_obama"
     # r = post_request(env, body)
 
-    body["text"] = "The CEO of Hello will always be James Proud."
-    body["parameters"] = "hello_ceo_james"
+    # body["text"] = "The CEO of Hello will always be James Proud."
+    # body["parameters"] = "hello_ceo_james"
+    # r = post_request(env, body)
+
+    body["text"] = "The best basketball team in the NBA is the Golden State Warriors."
+    body["parameters"] = "best_basketball"
     r = post_request(env, body)
 
 def process_time(env):
