@@ -49,10 +49,11 @@ public class TimeHandler extends BaseHandler {
 
         if (optionalCommand.isPresent()) {
             final int offsetMillis = getTimeZoneOffsetMillis(accountId);
-            final DateTime now = DateTime.now(DateTimeZone.UTC).plusMillis(offsetMillis);
+            final DateTime now = DateTime.now(DateTimeZone.UTC);
+            final DateTime localNow = now.plusMillis(offsetMillis);
 
-            final String currentTime = now.toString("HH_mm");
-            LOGGER.debug("action=get-current-time now={} string={} offset={} account_id={}", now.toString(), currentTime, offsetMillis, accountId);
+            final String currentTime = localNow.toString("HH_mm");
+            LOGGER.debug("action=get-current-time now={} local_now={} string={} offset={} account_id={}", now.toString(), localNow.toString(), currentTime, offsetMillis, accountId);
             response.put("result", HandlerResult.Outcome.OK.getValue());
             response.put("time", currentTime);
         }
@@ -66,6 +67,6 @@ public class TimeHandler extends BaseHandler {
             return tzHistory.get().offsetMillis;
         }
 
-        return TimeZoneHistory.FALLBACK_OFFSET_MILLIS;
+        return -25200000; // PDT
     }
 }
