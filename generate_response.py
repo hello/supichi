@@ -149,10 +149,8 @@ def process_time(env):
     # body["parameters"] = "00_00"
     # r = post_request(env, body)
 
-    for day in ['am', 'pm']:
-        for hour in range(1, 13):
-            if day == 'pm' and hour != 12:
-                hour += 12
+    for day in ['pm']: #['am', 'pm']:
+        for hour in range(2, 13):
 
             for mins in range(0, 60):
                 m_str = str(mins)
@@ -160,12 +158,17 @@ def process_time(env):
                     m_str = "0%d" % mins
                 time_string = "%s:%s %s" % (hour, m_str, day)
     
-                h_str = str(hour)
-                if hour < 10:
-                    h_str = "0%d" % hour
+                new_hour = hour
+                if day == 'pm' and new_hour != 12:
+                    new_hour += 12
+
+                h_str = str(new_hour)
+                if new_hour < 10:
+                    h_str = "0%d" % new_hour
 
                 body["text"] = "The time is %s" % time_string
                 body["parameters"] = "%s_%s" % (h_str, m_str)
+                print body["text"], body["parameters"]
                 r = post_request(env, body)
 
 

@@ -51,12 +51,14 @@ public class TriviaHandler extends BaseHandler {
                 response.put("answer", "president_obama");
                 response.put("text", "The current president of the United States is Barack Obama.");
 
-            } else if (text.equalsIgnoreCase("hello's ceo")) {
+            } else if (text.equalsIgnoreCase("hello ceo")) {
                 response.put("result", HandlerResult.Outcome.OK.getValue());
                 response.put("answer", "hello_ceo_james");
                 response.put("text", "The CEO of Hello Inc. will always be James Proud.");
-            } else if (text.equalsIgnoreCase("hello's ceo")) {
-
+            } else if (text.equalsIgnoreCase("next president")) {
+                response.put("result", HandlerResult.Outcome.OK.getValue());
+                response.put("answer", "next_president");
+                response.put("text", "The next president of the United States will either be Hillary Clinton, or Donald Trump.");
             }
         }
         return new HandlerResult(HandlerType.TRIVIA, response);
