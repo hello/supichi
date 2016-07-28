@@ -115,7 +115,7 @@ if __name__ == '__main__':
         pb = sys.argv[4]
 
     su = SlowUpload(filename)
-    headers = {"content-type": "application/octet-stream"} #, "X-Hello-Sense-Id": "8AF6441AF72321F4"}
+    headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "C8DAAC353AEFA4A9"}
     if env == 'local':
         ENDPOINT = "http://localhost:8181/upload/audio?r=%s&pb=%s" % (sampling_rate, pb)
     elif env == 'dev':
