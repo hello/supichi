@@ -157,7 +157,7 @@ public class Text2SpeechQueueConsumer implements Managed {
                         final byte[] downSampledBytes = downSampleAudio(watsonAudio.bytes, TARGET_SAMPLING_RATE);
                         if (downSampledBytes != null) {
                             final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
-                            uploadToS3(S3Bucket, String.format("%s-16k-java.wav", keyname), downSampledBytes);
+                            uploadToS3(S3Bucket, String.format("%s-16k.wav", keyname), downSampledBytes);
                         }
                     }
 
