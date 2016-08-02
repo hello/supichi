@@ -1,12 +1,12 @@
 package is.hello.speech.utils;
 
-import com.google.cloud.speech.v1.RecognizeResponse;
-import com.google.cloud.speech.v1.SpeechRecognitionResult;
+import com.google.cloud.speech.v1beta1.StreamingRecognitionResult;
+import com.google.cloud.speech.v1beta1.StreamingRecognizeResponse;
 import com.google.common.base.Optional;
 import com.google.protobuf.TextFormat;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import is.hello.speech.clients.AsyncSpeechClient;
+import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.models.ResultGetter;
 import is.hello.speech.core.models.SpeechServiceResult;
 import org.slf4j.Logger;
@@ -14,10 +14,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
 
-public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, ResultGetter {
+public class HelloStreamObserver implements StreamObserver<StreamingRecognizeResponse>, ResultGetter {
 
     private static final Logger logger =
-            LoggerFactory.getLogger(AsyncSpeechClient.class.getName());
+            LoggerFactory.getLogger(SpeechClient.class.getName());
 
     private SpeechServiceResult speechServiceResult = new SpeechServiceResult();
 
@@ -29,8 +29,8 @@ public class HelloStreamObserver implements StreamObserver<RecognizeResponse>, R
     }
 
     @Override
-    public void onNext(final RecognizeResponse response) {
-        for(final SpeechRecognitionResult result : response.getResultsList()) {
+    public void onNext(final StreamingRecognizeResponse response) {
+        for(final StreamingRecognitionResult result : response.getResultsList()) {
             logger.info("action=received-api-result result={}", TextFormat.printToString(result));
 
             speechServiceResult.setStability(result.getStability());
