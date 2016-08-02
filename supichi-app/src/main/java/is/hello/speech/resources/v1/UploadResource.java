@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.util.HelloHttpHeader;
-import is.hello.speech.clients.AsyncSpeechClient;
+import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
 import is.hello.speech.core.handlers.BaseHandler;
 import is.hello.speech.core.handlers.HandlerFactory;
@@ -46,7 +46,7 @@ public class UploadResource {
 
     private final AmazonS3 s3;
     private final String bucketName;
-    private final AsyncSpeechClient asyncSpeechClient;
+    private final SpeechClient speechClient;
 
     private final HandlerFactory handlerFactory;
 
@@ -58,13 +58,13 @@ public class UploadResource {
     HttpServletRequest request;
 
     public UploadResource(final AmazonS3 s3, final String bucketName,
-                          final AsyncSpeechClient asyncSpeechClient,
+                          final SpeechClient speechClient,
                           final HandlerFactory factory,
                           final DeviceDAO deviceDAO,
                           final ResponseBuilder responseBuilder) {
         this.s3 = s3;
         this.bucketName = bucketName;
-        this.asyncSpeechClient = asyncSpeechClient;
+        this.speechClient = speechClient;
         this.handlerFactory = factory;
         this.deviceDAO = deviceDAO;
         this.responseBuilder = responseBuilder;
@@ -94,15 +94,6 @@ public class UploadResource {
         return "KO";
     }
 
-
-    @Path("/google")
-    @POST
-    @Timed
-    public String speech(byte[] body) throws InterruptedException, IOException {
-
-        final Optional<String> resp = asyncSpeechClient.recognize(body, SAMPLING);
-        return resp.or("failed");
-    }
 
     @Path("/audio")
     @POST
@@ -139,8 +130,7 @@ public class UploadResource {
 
         LOGGER.debug("action=get-speech-audio sense_id={} account_id={}", senseId, accountId);
         try {
-            final ByteArrayInputStream inputStream = new ByteArrayInputStream(body);
-            final SpeechServiceResult resp = asyncSpeechClient.stream(inputStream, sampling);
+            final SpeechServiceResult resp = speechClient.stream(body, sampling);
 
             // try to execute command in transcript
             if(resp.getTranscript().isPresent()) {
@@ -162,8 +152,6 @@ public class UploadResource {
                         executeResult = handler.executeCommand(commandText, senseId, accountId);
                         LOGGER.debug("action=execute-command result={}", executeResult);
                         break;
-                    } else {
-                        LOGGER.info("action=find-handler result=fail text=\"{}\"", commandText);
                     }
                 }
             }

@@ -82,7 +82,7 @@ google_api_port: 443
 audio_parameters:
   interim_results_preference: false
   encoding: LINEAR16 # [ENCODING_UNSPECIFIED, LINEAR16, FLAC, MULAW, AMR, AMR_WB, UNRECOGNIZED]
-  buffer_size: 2048 # play around with this
+  buffer_size: 3200 # play around with this (100ms of audio at 16K SR)
 
 messeji_http_client:
   endpoint: "http://internal-internal-messeji-dev-1279589514.us-east-1.elb.amazonaws.com:80"

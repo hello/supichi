@@ -42,7 +42,7 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import is.hello.speech.cli.WatsonTextToSpeech;
-import is.hello.speech.clients.AsyncSpeechClient;
+import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.clients.SpeechClientManaged;
 import is.hello.speech.configuration.SpeechAppConfiguration;
 import is.hello.speech.core.configuration.SQSConfiguration;
@@ -197,7 +197,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
             public String getAWSSecretKey() { return speechAppConfiguration.getS3Configuration().getAwsSecretKey(); }
         };
 
-        final AsyncSpeechClient client = new AsyncSpeechClient(
+        final SpeechClient client = new SpeechClient(
                 speechAppConfiguration.getGoogleAPIHost(),
                 speechAppConfiguration.getGoogleAPIPort(),
                 speechAppConfiguration.getAudioConfiguration());

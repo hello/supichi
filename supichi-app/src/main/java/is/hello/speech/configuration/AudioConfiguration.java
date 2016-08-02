@@ -1,7 +1,7 @@
 package is.hello.speech.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.cloud.speech.v1.InitialRecognizeRequest.AudioEncoding;
+import com.google.cloud.speech.v1beta1.RecognitionConfig;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -19,8 +19,8 @@ public class AudioConfiguration {
     @Valid
     @NotNull
     @JsonProperty("encoding")
-    private AudioEncoding encoding;
-    public AudioEncoding getEncoding() { return encoding; }
+    private RecognitionConfig.AudioEncoding encoding;
+    public RecognitionConfig.AudioEncoding getEncoding() { return encoding; }
 
     @Valid
     @NotNull

@@ -8,9 +8,9 @@ public class SpeechClientManaged implements Managed {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(SpeechClientManaged.class);
 
-    private final AsyncSpeechClient asyncSpeechClient;
+    private final SpeechClient asyncSpeechClient;
 
-    public SpeechClientManaged(AsyncSpeechClient asyncSpeechClient) {
+    public SpeechClientManaged(SpeechClient asyncSpeechClient) {
         this.asyncSpeechClient = asyncSpeechClient;
     }
 
