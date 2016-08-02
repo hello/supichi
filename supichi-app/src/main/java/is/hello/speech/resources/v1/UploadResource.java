@@ -130,8 +130,6 @@ public class UploadResource {
 
         LOGGER.debug("action=get-speech-audio sense_id={} account_id={}", senseId, accountId);
         try {
-            final ByteArrayInputStream inputStream = new ByteArrayInputStream(body);
-//            final SpeechServiceResult resp = speechClient.recognize(body, sampling);
             final SpeechServiceResult resp = speechClient.stream(body, sampling);
 
             // try to execute command in transcript
