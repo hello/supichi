@@ -63,7 +63,18 @@ public class Text2SpeechQueueConsumer implements Managed {
 
     private boolean isRunning = false;
 
+    private class StreamToBytes {
+        final byte [] bytes;
+        final int contentSize;
+
+        private StreamToBytes(byte[] bytes, int contentSize) {
+            this.bytes = bytes;
+            this.contentSize = contentSize;
+        }
+    }
+
     public Text2SpeechQueueConsumer(final AmazonS3 amazonS3, final String s3Bucket,
+
                                     final String s3PrefixRaw, final String s3Prefix,
                                     final TextToSpeech watson, final String voice,
                                     final AmazonSQSAsync sqsClient, final String sqsQueueUrl, final SQSConfiguration sqsConfiguration,
@@ -147,10 +158,11 @@ public class Text2SpeechQueueConsumer implements Managed {
 //
 //                        final String s3RawBucket = String.format("%s/%s/%s", s3KeyRaw, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
 //                        amazonS3.putObject(new PutObjectRequest(s3RawBucket, String.format("%s-raw.wav", keyname), rawFile));
-                        final InputStream newStream = WaveUtils.reWriteWaveHeader(stream);
+                        // final InputStream newStream = WaveUtils.reWriteWaveHeader(stream);
+                        final StreamToBytes watsonAudio = convertStreamToBytes(stream);
 
                         // Process Audio
-                        final Optional<AudioInputStream> downSampledAudio = downSampleAudio(newStream, TARGET_SAMPLING_RATE);
+                        final Optional<AudioInputStream> downSampledAudio = downSampleAudio(watsonAudio.bytes, TARGET_SAMPLING_RATE);
                         if (downSampledAudio.isPresent()) {
                             // Save to File
 //                            final String processedFilename = String.format("/tmp/tmp_down_%s.wav", uuid);
@@ -234,11 +246,12 @@ public class Text2SpeechQueueConsumer implements Managed {
         LOGGER.info("key=text2speech-queue-consumer action=consume-text2speech-queue-done");
     }
 
-    private Optional<AudioInputStream> downSampleAudio(final InputStream inputStream, final float targetSampleRate) {
+    private Optional<AudioInputStream> downSampleAudio(final byte[] bytes, final float targetSampleRate) {
 
         AudioInputStream sourceStream;
         try {
             // final InputStream bufferedStream = new BufferedInputStream(inputStream);
+            final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             sourceStream = AudioSystem.getAudioInputStream(inputStream);
         } catch (UnsupportedAudioFileException e) {
             LOGGER.error("error=unsupported-audio-file msg={}", e.getMessage());
@@ -263,6 +276,34 @@ public class Text2SpeechQueueConsumer implements Managed {
         return Optional.of(convertedStream);
     }
 
+    private StreamToBytes convertStreamToBytes(final InputStream inputStream) {
+        byte [] audioBytes = new byte[0];
+        try {
+            audioBytes = WaveUtils.toByteArray(inputStream);
+        } catch (IOException e) {
+            LOGGER.warn("error=fail-to-convert-inputstream msg={}", e.getMessage());
+            return new StreamToBytes(null, 0);
+        }
+
+        final int fileSize = audioBytes.length - 8;
+        writeInt(fileSize, audioBytes, 4);
+        writeInt(fileSize - 8, audioBytes, 74);
+        return new StreamToBytes(audioBytes, audioBytes.length);
+    }
+
+
+    /**
+     * Writes an number into an array using 4 bytes
+     *
+     * @param value the number to write
+     * @param array the byte array
+     * @param offset the offset
+     */
+    private static void writeInt(int value, byte[] array, int offset) {
+        for (int i = 0; i < 4; i++) {
+            array[offset + i] = (byte) (value >>> (8 * i));
+        }
+    }
     private List<Text2SpeechMessage> receiveMessages() {
         final ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest()
                 .withQueueUrl(this.sqsQueueUrl)
