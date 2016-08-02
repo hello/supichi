@@ -11,12 +11,12 @@ import com.amazonaws.services.sqs.model.DeleteMessageBatchResult;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
+import com.amazonaws.util.IOUtils;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.AudioFormat;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
-import com.ibm.watson.developer_cloud.text_to_speech.v1.util.WaveUtils;
 import io.dropwizard.lifecycle.Managed;
 import is.hello.speech.core.api.Text2SpeechQueue;
 import is.hello.speech.core.configuration.SQSConfiguration;
@@ -31,7 +31,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -42,13 +41,14 @@ public class Text2SpeechQueueConsumer implements Managed {
 
     private static final int MAX_RECEIVED_MESSAGES = 10;
     private static final AudioFormat DEFAULT_AUDIO_FORMAT = AudioFormat.WAV;
-    private static final int WATSON_SAMPLING_RATE = 22050;
     private static final float TARGET_SAMPLING_RATE = 16000.0f;
 
-    private static final String COMPRESS_PARAMS = "-r 16k -e ima-adpcm `";
+    // for adding WAV headers to watson stream
+    private static final int WAVE_HEADER_SIZE = 8;      // The WAVE meta-data header size.
+    private static final int WAVE_SIZE_POS = 4;         // The WAVE meta-data size position.
+    private static final int WAVE_METADATA_POS = 74;    // The WAVE meta-data position in bytes.
 
     private final AmazonS3 amazonS3;
-    private final String s3Bucket;
     private final String s3KeyRaw;
     private final String s3Key;
 
@@ -63,24 +63,22 @@ public class Text2SpeechQueueConsumer implements Managed {
 
     private boolean isRunning = false;
 
-    private class StreamToBytes {
+    private class AudioBytes {
         final byte [] bytes;
         final int contentSize;
 
-        private StreamToBytes(byte[] bytes, int contentSize) {
+        private AudioBytes(byte[] bytes, int contentSize) {
             this.bytes = bytes;
             this.contentSize = contentSize;
         }
     }
 
     public Text2SpeechQueueConsumer(final AmazonS3 amazonS3, final String s3Bucket,
-
                                     final String s3PrefixRaw, final String s3Prefix,
                                     final TextToSpeech watson, final String voice,
                                     final AmazonSQSAsync sqsClient, final String sqsQueueUrl, final SQSConfiguration sqsConfiguration,
                                     final ExecutorService consumerExecutor) {
         this.amazonS3 = amazonS3;
-        this.s3Bucket = s3Bucket;
         this.s3KeyRaw = String.format("%s/%s", s3Bucket, s3PrefixRaw);
         this.s3Key = String.format("%s/%s", s3Bucket, s3Prefix);
         this.watson = watson;
@@ -134,7 +132,7 @@ public class Text2SpeechQueueConsumer implements Managed {
                         // text-to-speech conversion
                         LOGGER.debug("action=synthesize-text service={} text={}", synthesizeMessage.getService().toString(), text);
 
-                        final InputStream stream = watson.synthesize(text, watsonVoice, DEFAULT_AUDIO_FORMAT).execute();
+                        final InputStream watsonStream = watson.synthesize(text, watsonVoice, DEFAULT_AUDIO_FORMAT).execute();
 
                         // construct filename
                         String keyname = String.format("%s-%s-%s-%s-%s-%s",
@@ -148,92 +146,26 @@ public class Text2SpeechQueueConsumer implements Managed {
 
                         LOGGER.debug("action=save-audio-to-file filename={}", keyname);
 
-                        // Save Raw data to tmp file, upload tmp file to S3
-                        final String uuid = UUID.randomUUID().toString();
-//                        final String rawFilename = String.format("/tmp/tmp_%s.wav", uuid);
-//                        final File rawFile = new File(rawFilename);
-//                        final FileOutputStream fileOutputStream = new FileOutputStream(rawFile);
-//                        ByteStreams.copy(stream, fileOutputStream);
-//                        fileOutputStream.close();
-//
-//                        final String s3RawBucket = String.format("%s/%s/%s", s3KeyRaw, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
-//                        amazonS3.putObject(new PutObjectRequest(s3RawBucket, String.format("%s-raw.wav", keyname), rawFile));
-                        // final InputStream newStream = WaveUtils.reWriteWaveHeader(stream);
-                        final StreamToBytes watsonAudio = convertStreamToBytes(stream);
+                        // re-write correct header for Watson audio stream (needed for downsampling)
+                        final AudioBytes watsonAudio = convertStreamToBytesWithWavHeader(watsonStream);
 
-                        // Process Audio
-                        final Optional<AudioInputStream> downSampledAudio = downSampleAudio(watsonAudio.bytes, TARGET_SAMPLING_RATE);
-                        if (downSampledAudio.isPresent()) {
-                            // Save to File
-//                            final String processedFilename = String.format("/tmp/tmp_down_%s.wav", uuid);
-//                            final File processedFile = new File(processedFilename);
-//                            final int bytesWritten = AudioSystem.write(downSampledAudio.get(), AudioFileFormat.Type.WAVE, processedFile);
-//                            LOGGER.debug("action=write-downsampled-audio-to-file filename={} size={}", processedFilename, bytesWritten);
+                        // upload raw data to S3
+                        final String s3RawBucket = String.format("%s/%s/%s", s3KeyRaw, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
+                        uploadToS3(s3RawBucket, String.format("%s-raw.wav", keyname), watsonAudio.bytes);
 
-                            // get stream size
-                            // final int audioSize = downSampledAudio.get().available();
-                            // LOGGER.debug("audio_size={}", audioSize);
-
-                            // convert input stream to bytes
-                            final byte [] audioBytes = WaveUtils.toByteArray(downSampledAudio.get());
-
-
-                            // write to S3
-                            final String S3Keyname = String.format("%s-16k-java2.wav", keyname);
+                        // down-sample audio from 22050 to 16k, upload converted bytes to S3
+                        final byte[] downSampledBytes = downSampleAudio(watsonAudio.bytes, TARGET_SAMPLING_RATE);
+                        if (downSampledBytes != null) {
                             final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
-                            LOGGER.debug("action=upload-downsampled-s3 bucket={} key={}", S3Bucket, S3Keyname);
-
-                            final ObjectMetadata metadata = new ObjectMetadata();
-                            metadata.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-                            metadata.setContentLength(audioBytes.length);
-
-                            final InputStream s3Stream = new ByteArrayInputStream(audioBytes);
-
-                            final PutObjectResult putResult = amazonS3.putObject(new PutObjectRequest(S3Bucket, S3Keyname, s3Stream, metadata));
-                            LOGGER.debug("action=upload-downsampled-to-S3 md5={}", putResult.getContentMd5());
-
-//                            if (processedFile.delete()) {
-//                                LOGGER.info("action=delete-file-success filename={}", processedFilename);
-//                            } else {
-//                                LOGGER.info("action=delete-file-failure filename={}", processedFilename);
-//                            }
-
+                            uploadToS3(S3Bucket, String.format("%s-16k-java.wav", keyname), downSampledBytes);
                         }
-
-                        // Compress: convert to AD-PCM 16K 6-bit audio and save to a different s3 bucket
-                        // "sox test.wav -r 16k -e ima-adpcm -b 4 -c 1 output3.wav";
-//                        final String processedFilename = "/tmp/tmp_compressed.ima";
-//                        final String processCommand = String.format("sox -r 22050 -v 1.5 %s -r 16k -b 4 -c 1 -e ima-adpcm %s", rawFilename, processedFilename);
-
-                        /**
-                        // Shell out command to downsample: 16k
-                        final String processedFilename = "/tmp/tmp_processed.wav";
-                        final String processCommand = String.format("sox -r %d %s -r 16k %s", WATSON_SAMPLING_RATE, rawFilename, processedFilename);
-
-                        try {
-                            LOGGER.debug("action=compressing-file command={}", processCommand);
-                            final Process process = Runtime.getRuntime().exec(processCommand);
-                            final boolean returnCode = process.waitFor(5000L, TimeUnit.MILLISECONDS);
-                            LOGGER.debug("action=compression-success return_code={}", returnCode);
-
-                            // save converted file to S3
-                            final File compressedFile = new File(processedFilename);
-                            final String S3Keyname = String.format("%s-16k.wav", keyname);
-                            final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
-                            LOGGER.debug("action=upload-s3 bucket={} key={}", S3Bucket, S3Keyname);
-                            amazonS3.putObject(new PutObjectRequest(S3Bucket, S3Keyname, compressedFile));
-
-                        } catch (IOException | InterruptedException e) {
-                            LOGGER.error("action=fail-to-sox key={} error={}", keyname, e.getMessage());
-                        }
-                         **/
-
                     }
 
                     processedHandlers.add(new DeleteMessageBatchRequestEntry(message.messageId, message.messageHandler));
                 }
 
                 if (!processedHandlers.isEmpty()) {
+                    // delete processed SQS message
                     LOGGER.debug("action=clearing-processed-messages-from-queue size={}", processedHandlers.size());
                     final DeleteMessageBatchResult deleteResult = sqsClient.deleteMessageBatch(
                             new DeleteMessageBatchRequest(sqsQueueUrl, processedHandlers));
@@ -246,19 +178,35 @@ public class Text2SpeechQueueConsumer implements Managed {
         LOGGER.info("key=text2speech-queue-consumer action=consume-text2speech-queue-done");
     }
 
-    private Optional<AudioInputStream> downSampleAudio(final byte[] bytes, final float targetSampleRate) {
+    private void uploadToS3(String bucketName, String keyname, byte[] bytes) {
+        LOGGER.debug("action=upload-s3 bucket={} key={} content_length={}", bucketName, keyname, bytes.length);
 
+        final ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        metadata.setContentLength(bytes.length);
+
+        final PutObjectResult putResult = amazonS3.putObject(new PutObjectRequest(bucketName, keyname, new ByteArrayInputStream(bytes), metadata));
+
+        LOGGER.debug("action=upload-result md5={}", putResult.getContentMd5());
+    }
+
+    /**
+     * Down-sample audio to a different sampling rate
+     * @param bytes raw audio bytes
+     * @param targetSampleRate target sample rate
+     * @return data in raw bytes
+     */
+    private byte[] downSampleAudio(final byte[] bytes, final float targetSampleRate) {
         AudioInputStream sourceStream;
         try {
-            // final InputStream bufferedStream = new BufferedInputStream(inputStream);
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             sourceStream = AudioSystem.getAudioInputStream(inputStream);
         } catch (UnsupportedAudioFileException e) {
             LOGGER.error("error=unsupported-audio-file msg={}", e.getMessage());
-            return Optional.absent();
+            return null;
         } catch (IOException e) {
-            LOGGER.error("error=io-exception msg={}", e.getMessage());
-            return Optional.absent();
+            LOGGER.error("error=fail-to-convert-bytes-to-audiostream reason=IO-exception msg={}", e.getMessage());
+            return null;
         }
 
         final javax.sound.sampled.AudioFormat sourceFormat = sourceStream.getFormat();
@@ -273,24 +221,37 @@ public class Text2SpeechQueueConsumer implements Managed {
         );
 
         final AudioInputStream convertedStream = AudioSystem.getAudioInputStream(targetFormat, sourceStream);
-        return Optional.of(convertedStream);
+        try {
+            return IOUtils.toByteArray(convertedStream);
+        } catch (IOException e) {
+            LOGGER.error("error=fail-to-convert-stream-to-bytes");
+            return null;
+        }
     }
 
-    private StreamToBytes convertStreamToBytes(final InputStream inputStream) {
-        byte [] audioBytes = new byte[0];
+    /**
+     * Note: from IBM WaveUtils
+     * Re-writes the data size in the header(bytes 4-8) of the WAVE(.wav) input stream.<br>
+     * It needs to be read in order to calculate the size.
+     *
+     * @param inputStream the input stream
+     */
+    private AudioBytes convertStreamToBytesWithWavHeader(final InputStream inputStream) {
+        byte [] audioBytes;
         try {
-            audioBytes = WaveUtils.toByteArray(inputStream);
+            audioBytes = IOUtils.toByteArray(inputStream);
         } catch (IOException e) {
             LOGGER.warn("error=fail-to-convert-inputstream msg={}", e.getMessage());
-            return new StreamToBytes(null, 0);
+            return new AudioBytes(null, 0);
         }
 
-        final int fileSize = audioBytes.length - 8;
-        writeInt(fileSize, audioBytes, 4);
-        writeInt(fileSize - 8, audioBytes, 74);
-        return new StreamToBytes(audioBytes, audioBytes.length);
-    }
+        final int fileSize = audioBytes.length - WAVE_HEADER_SIZE;
 
+        writeInt(fileSize, audioBytes, WAVE_SIZE_POS);
+        writeInt(fileSize - WAVE_HEADER_SIZE, audioBytes, WAVE_METADATA_POS);
+
+        return new AudioBytes(audioBytes, audioBytes.length);
+    }
 
     /**
      * Writes an number into an array using 4 bytes
@@ -304,6 +265,8 @@ public class Text2SpeechQueueConsumer implements Managed {
             array[offset + i] = (byte) (value >>> (8 * i));
         }
     }
+
+
     private List<Text2SpeechMessage> receiveMessages() {
         final ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest()
                 .withQueueUrl(this.sqsQueueUrl)
