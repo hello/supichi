@@ -188,17 +188,17 @@ public class SpeechClient {
             final int bufferSize = configuration.getBufferSize();
             final int numChunks = bytes.length / bufferSize;
 
-            byte[] buffer;
             int totalBytes = 0;
 
-            LOGGER.debug("body_length={}", bytes.length);
+            LOGGER.debug("body_length={} buffer_size={} num_chunks={}", bytes.length, bufferSize, numChunks);
 
             for (int i = 0; i < numChunks + 1; i++) {
                 final int startIndex = i * bufferSize;
                 final int endIndex = (i == numChunks) ? bytes.length : startIndex + bufferSize;
-                buffer = Arrays.copyOfRange(bytes, startIndex, endIndex);
+                final byte[] buffer = Arrays.copyOfRange(bytes, startIndex, endIndex);
+
                 totalBytes += buffer.length;
-                LOGGER.debug("action=read-bytes-from-input-stream bytes_read={}", buffer.length);
+                LOGGER.debug("action=read-bytes-from-input-stream iteration={} bytes_read={}", i, buffer.length);
 
                 final StreamingRecognizeRequest request = StreamingRecognizeRequest.newBuilder()
                         .setAudioContent(ByteString.copyFrom(buffer))
