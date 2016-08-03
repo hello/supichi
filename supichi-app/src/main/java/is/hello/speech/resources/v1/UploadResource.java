@@ -16,6 +16,7 @@ import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
+import is.hello.speech.core.models.TextQuery;
 import is.hello.speech.utils.ResponseBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
@@ -135,25 +137,7 @@ public class UploadResource {
             // try to execute command in transcript
             if(resp.getTranscript().isPresent()) {
 
-                // get bi-gram commands
-                final String[] unigrams = resp.getTranscript().get().toLowerCase().split(" ");
-
-                for (int i = 0; i < (unigrams.length - 1); i++) {
-                    final String commandText = String.format("%s %s", unigrams[i], unigrams[i+1]);
-                    LOGGER.debug("action=get-transcribed-command text={}", commandText);
-
-                    // TODO: command-parser
-                    final Optional<BaseHandler> optionalHandler = handlerFactory.getHandler(commandText);
-
-                    if (optionalHandler.isPresent()) {
-                        final BaseHandler handler = optionalHandler.get();
-                        LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
-
-                        executeResult = handler.executeCommand(commandText, senseId, accountId);
-                        LOGGER.debug("action=execute-command result={}", executeResult);
-                        break;
-                    }
-                }
+                executeResult = handle(senseId, accountId, resp.getTranscript().get());
             }
 
             // TODO: response-builder
@@ -167,6 +151,69 @@ public class UploadResource {
         }
 
         return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult);
+    }
+
+
+    private HandlerResult handle(final String senseId, final Long accountId, final String transcript) {
+        final String[] unigrams = transcript.toLowerCase().split(" ");
+
+        for (int i = 0; i < (unigrams.length - 1); i++) {
+            final String commandText = String.format("%s %s", unigrams[i], unigrams[i+1]);
+            LOGGER.debug("action=get-transcribed-command text={}", commandText);
+
+            // TODO: command-parser
+            final Optional<BaseHandler> optionalHandler = handlerFactory.getHandler(commandText);
+
+            if (optionalHandler.isPresent()) {
+                final BaseHandler handler = optionalHandler.get();
+                LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
+
+                final HandlerResult executeResult = handler.executeCommand(commandText, senseId, accountId);
+                LOGGER.debug("action=execute-command result={}", executeResult);
+                return executeResult;
+            }
+        }
+
+        return HandlerResult.emptyResult();
+    }
+
+    @Path("/text")
+    @POST
+    @Timed
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public byte[] text(@Valid final TextQuery query) throws InterruptedException, IOException {
+
+        final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(query.senseId);
+
+        LOGGER.debug("info=sense-id id={}", query.senseId);
+        if (accounts.isEmpty()) {
+            LOGGER.error("error=no-paired-sense-found sense_id={}", query.senseId);
+            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult());
+        }
+
+        // TODO: for now, pick the smallest account-id as the primary id
+        Long accountId = accounts.get(0).accountId;
+        for (final DeviceAccountPair accountPair : accounts) {
+            if (accountPair.accountId < accountId) {
+                accountId = accountPair.accountId;
+            }
+        }
+
+        LOGGER.debug("action=execute-handler sense_id={} account_id={}", query.senseId, accountId);
+        try {
+            final HandlerResult executeResult = handle(query.senseId, accountId, query.transcript);
+
+            // TODO: response-builder
+            if (!executeResult.handlerType.equals(HandlerType.NONE)) {
+                return responseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult);
+            }
+            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, false, executeResult);
+        } catch (Exception e) {
+            LOGGER.error("action=streaming error={}", e.getMessage());
+        }
+
+        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult());
     }
 
 }
