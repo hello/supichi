@@ -30,9 +30,10 @@ public class HelloStreamObserver implements StreamObserver<StreamingRecognizeRes
 
     @Override
     public void onNext(final StreamingRecognizeResponse response) {
+        logger.debug("action=check-results size={}", response.getResultsCount());
+
         for(final StreamingRecognitionResult result : response.getResultsList()) {
             logger.info("action=received-api-result result={}", TextFormat.printToString(result));
-
             speechServiceResult.setStability(result.getStability());
             speechServiceResult.setConfidence(result.getAlternatives(0).getConfidence());
             speechServiceResult.setTranscript(Optional.of(result.getAlternatives(0).getTranscript()));
