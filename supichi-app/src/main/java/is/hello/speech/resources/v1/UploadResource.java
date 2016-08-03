@@ -112,8 +112,8 @@ public class UploadResource {
         HandlerResult executeResult = HandlerResult.emptyResult();
 
         final String debugSenseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
-        // old default: 8AF6441AF72321F4
-        final String senseId = (debugSenseId == null || debugSenseId.equals("0000000000000000")) ? "C8DAAC353AEFA4A9" : debugSenseId;
+        // old default: 8AF6441AF72321F4  C8DAAC353AEFA4A9
+        final String senseId = (debugSenseId == null || debugSenseId.equals("0000000000000000")) ? "8AF6441AF72321F4" : debugSenseId;
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(senseId);
 
         LOGGER.debug("info=sense-id id={}", senseId);
