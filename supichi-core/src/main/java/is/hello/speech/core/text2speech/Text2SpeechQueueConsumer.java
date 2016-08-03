@@ -20,6 +20,9 @@ import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
 import io.dropwizard.lifecycle.Managed;
 import is.hello.speech.core.api.Text2SpeechQueue;
 import is.hello.speech.core.configuration.SQSConfiguration;
+import net.sourceforge.lame.lowlevel.LameEncoder;
+import net.sourceforge.lame.mp3.Lame;
+import net.sourceforge.lame.mp3.MPEGMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +31,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -42,6 +46,8 @@ public class Text2SpeechQueueConsumer implements Managed {
     private static final int MAX_RECEIVED_MESSAGES = 10;
     private static final AudioFormat DEFAULT_AUDIO_FORMAT = AudioFormat.WAV;
     private static final float TARGET_SAMPLING_RATE = 16000.0f;
+    private static final int MP3_BITRATE = 44;
+    private static final boolean USE_VBR = false;
 
     // for adding WAV headers to watson stream
     private static final int WAVE_HEADER_SIZE = 8;      // The WAVE meta-data header size.
@@ -63,13 +69,19 @@ public class Text2SpeechQueueConsumer implements Managed {
 
     private boolean isRunning = false;
 
-    private class AudioBytes {
+    private static class AudioBytes {
         final byte [] bytes;
         final int contentSize;
+        final Optional<javax.sound.sampled.AudioFormat> format;
 
-        private AudioBytes(byte[] bytes, int contentSize) {
+        private AudioBytes(byte[] bytes, int contentSize, javax.sound.sampled.AudioFormat format) {
             this.bytes = bytes;
             this.contentSize = contentSize;
+            this.format = Optional.fromNullable(format);
+        }
+
+        public static AudioBytes empty() {
+            return new AudioBytes(new byte[0], 0, null);
         }
     }
 
@@ -154,11 +166,19 @@ public class Text2SpeechQueueConsumer implements Managed {
                         uploadToS3(s3RawBucket, String.format("%s-raw.wav", keyname), watsonAudio.bytes);
 
                         // down-sample audio from 22050 to 16k, upload converted bytes to S3
-                        final byte[] downSampledBytes = downSampleAudio(watsonAudio.bytes, TARGET_SAMPLING_RATE);
+                        final AudioBytes downSampledBytes = downSampleAudio(watsonAudio.bytes, TARGET_SAMPLING_RATE);
                         if (downSampledBytes != null) {
                             final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
-                            uploadToS3(S3Bucket, String.format("%s-16k.wav", keyname), downSampledBytes);
+                            uploadToS3(S3Bucket, String.format("%s-16k.wav", keyname), downSampledBytes.bytes);
                         }
+
+                        // convert to mp3
+                        final byte[] mp3Bytes = encodePcmToMp3(downSampledBytes);
+                        if (mp3Bytes.length > 0) {
+                            final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
+                            uploadToS3(S3Bucket, String.format("%s-16k.mp3", keyname), mp3Bytes);
+                        }
+
                     }
 
                     processedHandlers.add(new DeleteMessageBatchRequestEntry(message.messageId, message.messageHandler));
@@ -196,17 +216,17 @@ public class Text2SpeechQueueConsumer implements Managed {
      * @param targetSampleRate target sample rate
      * @return data in raw bytes
      */
-    private byte[] downSampleAudio(final byte[] bytes, final float targetSampleRate) {
+    private AudioBytes downSampleAudio(final byte[] bytes, final float targetSampleRate) {
         AudioInputStream sourceStream;
         try {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             sourceStream = AudioSystem.getAudioInputStream(inputStream);
         } catch (UnsupportedAudioFileException e) {
             LOGGER.error("error=unsupported-audio-file msg={}", e.getMessage());
-            return null;
+            return AudioBytes.empty();
         } catch (IOException e) {
             LOGGER.error("error=fail-to-convert-bytes-to-audiostream reason=IO-exception msg={}", e.getMessage());
-            return null;
+            return AudioBytes.empty();
         }
 
         final javax.sound.sampled.AudioFormat sourceFormat = sourceStream.getFormat();
@@ -222,10 +242,11 @@ public class Text2SpeechQueueConsumer implements Managed {
 
         final AudioInputStream convertedStream = AudioSystem.getAudioInputStream(targetFormat, sourceStream);
         try {
-            return IOUtils.toByteArray(convertedStream);
+            final byte[] convertedBytes = IOUtils.toByteArray(convertedStream);
+            return new AudioBytes(convertedBytes, convertedBytes.length, convertedStream.getFormat());
         } catch (IOException e) {
             LOGGER.error("error=fail-to-convert-stream-to-bytes");
-            return null;
+            return AudioBytes.empty();
         }
     }
 
@@ -242,7 +263,7 @@ public class Text2SpeechQueueConsumer implements Managed {
             audioBytes = IOUtils.toByteArray(inputStream);
         } catch (IOException e) {
             LOGGER.warn("error=fail-to-convert-inputstream msg={}", e.getMessage());
-            return new AudioBytes(null, 0);
+            return new AudioBytes(null, 0, null);
         }
 
         final int fileSize = audioBytes.length - WAVE_HEADER_SIZE;
@@ -250,7 +271,7 @@ public class Text2SpeechQueueConsumer implements Managed {
         writeInt(fileSize, audioBytes, WAVE_SIZE_POS);
         writeInt(fileSize - WAVE_HEADER_SIZE, audioBytes, WAVE_METADATA_POS);
 
-        return new AudioBytes(audioBytes, audioBytes.length);
+        return new AudioBytes(audioBytes, audioBytes.length, null);
     }
 
     /**
@@ -291,5 +312,41 @@ public class Text2SpeechQueueConsumer implements Managed {
         }
 
         return decodedMessages;
+    }
+
+    private byte[] encodePcmToMp3(final AudioBytes pcm) {
+
+        if (!pcm.format.isPresent()) {
+            LOGGER.error("error=no-pcm-format-found-for-mp3-conversion");
+            return new byte[0];
+        }
+
+        final javax.sound.sampled.AudioFormat sourceFormat = pcm.format.get();
+        final javax.sound.sampled.AudioFormat inputFormat = new javax.sound.sampled.AudioFormat(
+                javax.sound.sampled.AudioFormat.Encoding.PCM_SIGNED,
+                TARGET_SAMPLING_RATE,
+                sourceFormat.getSampleSizeInBits(),
+                sourceFormat.getChannels(),
+                sourceFormat.getFrameSize(),
+                TARGET_SAMPLING_RATE,
+                sourceFormat.isBigEndian()
+        );
+
+        LameEncoder encoder = new LameEncoder(inputFormat, MP3_BITRATE, MPEGMode.MONO, Lame.QUALITY_HIGHEST, USE_VBR);
+
+        ByteArrayOutputStream mp3 = new ByteArrayOutputStream();
+        final byte[] buffer = new byte[encoder.getPCMBufferSize()];
+        int bytesToTransfer = Math.min(buffer.length, pcm.contentSize);
+        int bytesWritten;
+        int currentPcmPosition = 0;
+        while (0 < (bytesWritten = encoder.encodeBuffer(pcm.bytes, currentPcmPosition, bytesToTransfer, buffer))) {
+            currentPcmPosition += bytesToTransfer;
+            bytesToTransfer = Math.min(buffer.length, pcm.contentSize - currentPcmPosition);
+
+            mp3.write(buffer, 0, bytesWritten);
+        }
+
+        encoder.close();
+        return mp3.toByteArray();
     }
 }
