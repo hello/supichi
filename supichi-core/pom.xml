@@ -24,11 +24,6 @@
     </build>
 
     <repositories>
-        <!--<repository>-->
-            <!--<id>project.local</id>-->
-            <!--<name>project</name>-->
-            <!--<url>file:${project.basedir}/repo</url>-->
-        <!--</repository>-->
         <repository>
             <releases>
                 <enabled>true</enabled>
