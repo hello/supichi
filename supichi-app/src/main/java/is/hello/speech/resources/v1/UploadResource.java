@@ -184,9 +184,25 @@ public class UploadResource {
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] text(@Valid final TextQuery query) throws InterruptedException, IOException {
 
-        LOGGER.debug("action=execute-handler sense_id={} account_id={}", query.senseId, query.accountId);
+        final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(query.senseId);
+
+        LOGGER.debug("info=sense-id id={}", query.senseId);
+        if (accounts.isEmpty()) {
+            LOGGER.error("error=no-paired-sense-found sense_id={}", query.senseId);
+            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult());
+        }
+
+        // TODO: for now, pick the smallest account-id as the primary id
+        Long accountId = accounts.get(0).accountId;
+        for (final DeviceAccountPair accountPair : accounts) {
+            if (accountPair.accountId < accountId) {
+                accountId = accountPair.accountId;
+            }
+        }
+
+        LOGGER.debug("action=execute-handler sense_id={} account_id={}", query.senseId, accountId);
         try {
-            final HandlerResult executeResult = handle(query.senseId, query.accountId, query.transcript);
+            final HandlerResult executeResult = handle(query.senseId, accountId, query.transcript);
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
