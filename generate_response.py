@@ -129,8 +129,12 @@ def process_misc(env):
     # body["parameters"] = "hello_ceo_james"
     # r = post_request(env, body)
 
-    body["text"] = "The best basketball team in the NBA is the Golden State Warriors."
-    body["parameters"] = "best_basketball"
+    # body["text"] = "The best basketball team in the NBA is the Golden State Warriors."
+    # body["parameters"] = "best_basketball"
+    # r = post_request(env, body)
+
+    body["text"] = "Your sleep score was 76. Try reducing the humidity in your room."
+    body["parameters"] = "sleep_last_night"
     r = post_request(env, body)
 
 def process_time(env):
