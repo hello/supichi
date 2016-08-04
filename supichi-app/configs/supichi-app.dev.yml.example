@@ -116,3 +116,7 @@ save_audio:
   s3_audio_prefix: voice/watson-text2speech/16k  # bucket with responses sent back to Sense
 
 consumer_enabled: true
+
+wolfram:
+  app_id: 5X75YH-PH2R5WXXTV
+  format: plaintext

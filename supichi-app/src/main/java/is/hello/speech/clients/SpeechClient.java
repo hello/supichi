@@ -196,6 +196,7 @@ public class SpeechClient {
                 final int startIndex = i * bufferSize;
                 final int endIndex = (i == numChunks) ? bytes.length : startIndex + bufferSize;
                 final byte[] buffer = Arrays.copyOfRange(bytes, startIndex, endIndex);
+
                 totalBytes += buffer.length;
                 LOGGER.debug("action=read-bytes-from-input-stream iteration={} bytes_read={}", i, buffer.length);
 

@@ -85,16 +85,17 @@ audio_parameters:
   buffer_size: 2048 # play around with this
 
 messeji_http_client:
-  endpoint: "http://ec2-52-90-54-153.compute-1.amazonaws.com:8000"  # prod!!
+  # endpoint: "http://ec2-52-90-54-153.compute-1.amazonaws.com:8000"  # prod!!
+  endpoint: "http://internal-internal-messeji-dev-1279589514.us-east-1.elb.amazonaws.com:80"  #dev
   http_client_config:
     keepAlive: 0s
 
 dynamodb:
   region: us-east-1
   tables:
-    calibration: prod_calibration
-    device_data: prod_sense_data
-    file_manifest: prod_file_manifest
+    calibration: calibration
+    device_data: sense_data
+    file_manifest: file_manifest
     sleep_hmm: speech_commands  # use "sleep_hmm as placeholder"
     timezone_history: timezone_history
 
@@ -124,3 +125,7 @@ save_audio:
   s3_audio_prefix: voice/watson-text2speech/16keq  # bucket with responses sent back to Sense
 
 consumer_enabled: false
+
+wolfram:
+  app_id: 5X75YH-PH2R5WXXTV
+  format: plaintext
