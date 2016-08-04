@@ -30,21 +30,18 @@ public class WatsonResponseBuilder {
     public byte[] response(HandlerResult executeResult) {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        final HandlerResult.Outcome outcome = ResponseUtils.getOutcome(executeResult);
-        if (outcome.equals(HandlerResult.Outcome.OK)) {
-            final String text = executeResult.responseParameters.get("text");
+        final String text = executeResult.responseParameters.get("text");
+        try (final InputStream watsonStream = watson.synthesize(text, watsonVoice, AudioFormat.WAV).execute()) {
+            final AudioUtils.AudioBytes watsonAudio = AudioUtils.convertStreamToBytesWithWavHeader(watsonStream);
 
-            try (final InputStream watsonStream = watson.synthesize(text, watsonVoice, AudioFormat.WAV).execute()) {
-                final AudioUtils.AudioBytes watsonAudio = AudioUtils.convertStreamToBytesWithWavHeader(watsonStream);
+            // down-sample audio from 22050 to 16k, upload converted bytes to S3
+            final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(watsonAudio.bytes, 16000.0f);
 
-                // down-sample audio from 22050 to 16k, upload converted bytes to S3
-                final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(watsonAudio.bytes, 16000.0f);
-
-                outputStream.write(downSampledBytes.bytes);
-            } catch (IOException e) {
-                LOGGER.error("action=watson-downsample-fails error_msg={}", e.getMessage());
-            }
+            outputStream.write(downSampledBytes.bytes);
+        } catch (IOException e) {
+            LOGGER.error("action=watson-downsample-fails error_msg={}", e.getMessage());
         }
+
 
         return outputStream.toByteArray();
     }
