@@ -13,11 +13,13 @@ import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
 import is.hello.speech.core.handlers.BaseHandler;
 import is.hello.speech.core.handlers.HandlerFactory;
+import is.hello.speech.core.handlers.WolframAlphaHandler;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
 import is.hello.speech.core.models.TextQuery;
 import is.hello.speech.utils.ResponseBuilder;
+import is.hello.speech.utils.WatsonResponseBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -55,6 +57,7 @@ public class UploadResource {
     private final DeviceDAO deviceDAO;
 
     private final ResponseBuilder responseBuilder;
+    private final WatsonResponseBuilder watsonResponseBuilder;
 
     @Context
     HttpServletRequest request;
@@ -63,13 +66,15 @@ public class UploadResource {
                           final SpeechClient speechClient,
                           final HandlerFactory factory,
                           final DeviceDAO deviceDAO,
-                          final ResponseBuilder responseBuilder) {
+                          final ResponseBuilder responseBuilder,
+                          final WatsonResponseBuilder watsonResponseBuilder) {
         this.s3 = s3;
         this.bucketName = bucketName;
         this.speechClient = speechClient;
         this.handlerFactory = factory;
         this.deviceDAO = deviceDAO;
         this.responseBuilder = responseBuilder;
+        this.watsonResponseBuilder = watsonResponseBuilder;
     }
 
     @Path("{prefix}")
@@ -140,6 +145,10 @@ public class UploadResource {
                 executeResult = handle(senseId, accountId, resp.getTranscript().get());
             }
 
+            if (executeResult.handlerType.equals(HandlerType.WOLFRAM_ALPHA)) {
+                return watsonResponseBuilder.response(executeResult);
+            }
+
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
                 return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult);
@@ -174,7 +183,10 @@ public class UploadResource {
             }
         }
 
-        return HandlerResult.emptyResult();
+        LOGGER.debug("action=fail-to-find-command remedy=trying-wolfram-alpha");
+
+        final WolframAlphaHandler wolframAlphaHandler = handlerFactory.wolframAlphaHandler();
+        return wolframAlphaHandler.executeCommand(transcript, senseId, accountId);
     }
 
     @Path("/text")
@@ -202,7 +214,12 @@ public class UploadResource {
 
         LOGGER.debug("action=execute-handler sense_id={} account_id={}", query.senseId, accountId);
         try {
+
             final HandlerResult executeResult = handle(query.senseId, accountId, query.transcript);
+
+            if (executeResult.handlerType.equals(HandlerType.WOLFRAM_ALPHA)) {
+                return watsonResponseBuilder.response(executeResult);
+            }
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {

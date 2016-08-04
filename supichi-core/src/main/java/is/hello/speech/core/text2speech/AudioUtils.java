@@ -32,10 +32,10 @@ public class AudioUtils {
     private static final boolean USE_VBR = false;
 
 
-    static class AudioBytes {
-        final byte [] bytes;
-        final int contentSize;
-        final Optional<AudioFormat> format;
+    public static class AudioBytes {
+        public final byte [] bytes;
+        public final int contentSize;
+        public final Optional<AudioFormat> format;
 
         private AudioBytes(byte[] bytes, int contentSize, javax.sound.sampled.AudioFormat format) {
             this.bytes = bytes;
@@ -55,7 +55,7 @@ public class AudioUtils {
      *
      * @param inputStream the input stream
      */
-    static AudioBytes convertStreamToBytesWithWavHeader(final InputStream inputStream) {
+    public static AudioBytes convertStreamToBytesWithWavHeader(final InputStream inputStream) {
         byte [] audioBytes;
         try {
             audioBytes = IOUtils.toByteArray(inputStream);
@@ -78,7 +78,7 @@ public class AudioUtils {
      * @param targetSampleRate target sample rate
      * @return data in raw bytes
      */
-    static AudioBytes downSampleAudio(final byte[] bytes, final float targetSampleRate) {
+    public static AudioBytes downSampleAudio(final byte[] bytes, final float targetSampleRate) {
         AudioInputStream sourceStream;
         try {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);

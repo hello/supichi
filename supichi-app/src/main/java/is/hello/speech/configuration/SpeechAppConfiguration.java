@@ -8,6 +8,7 @@ import io.dropwizard.db.DataSourceFactory;
 import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.SaveAudioConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
+import is.hello.speech.core.configuration.WolframAlphaConfiguration;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -73,5 +74,11 @@ public class SpeechAppConfiguration extends Configuration {
     private Boolean consumerEnabled = false;
     public Boolean consumerEnabled() {
         return consumerEnabled;
+    }
+
+    @JsonProperty("wolfram")
+    private WolframAlphaConfiguration wolframAlphaConfiguration;
+    public WolframAlphaConfiguration wolframAlphaConfiguration() {
+        return wolframAlphaConfiguration;
     }
 }

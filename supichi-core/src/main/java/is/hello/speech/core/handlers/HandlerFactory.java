@@ -10,6 +10,7 @@ import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredw8.clients.MessejiClient;
+import is.hello.speech.core.configuration.WolframAlphaConfiguration;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerType;
 
@@ -37,7 +38,8 @@ public class HandlerFactory {
                                         final DeviceDAO deviceDAO,
                                         final SenseColorDAO senseColorDAO,
                                         final CalibrationDAO calibrationDAO,
-                                        final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB
+                                        final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB,
+                                        final WolframAlphaConfiguration wolframAlphaConfiguration
                                         ) {
 
         final Map<HandlerType, BaseHandler> handlerMap = Maps.newHashMap();
@@ -64,6 +66,8 @@ public class HandlerFactory {
         final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO);
         handlerMap.put(HandlerType.ALARM, alarmHandler);
 
+        final WolframAlphaHandler wolframAlphaHandler = WolframAlphaHandler.create(speechCommandDAO, wolframAlphaConfiguration.appId(), wolframAlphaConfiguration.format());
+        handlerMap.put(HandlerType.WOLFRAM_ALPHA, wolframAlphaHandler);
 
         // map command text to handler
 
@@ -77,6 +81,10 @@ public class HandlerFactory {
         }
 
         return new HandlerFactory(handlerMap, commandToHandlerMap);
+    }
+
+    public WolframAlphaHandler wolframAlphaHandler() {
+        return (WolframAlphaHandler) availableHandlers.get(HandlerType.WOLFRAM_ALPHA);
     }
 
     public Optional<BaseHandler> getHandler(final String command) {

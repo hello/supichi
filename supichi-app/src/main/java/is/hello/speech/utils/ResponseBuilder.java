@@ -123,7 +123,7 @@ public class ResponseBuilder {
         String filename = "TRIVIA-GET_TRIVIA-TRIVIA_INFO";
         final String responseText;
 
-        final HandlerResult.Outcome outcome = getOutcome(handlerResult);
+        final HandlerResult.Outcome outcome = ResponseUtils.getOutcome(handlerResult);
         if (outcome.equals(HandlerResult.Outcome.OK)) {
             final String answer = handlerResult.responseParameters.get("answer");
             filename += String.format("-%s-WATSON-%s-16k.wav", answer, voiceName);
@@ -159,7 +159,7 @@ public class ResponseBuilder {
         String filename = "TIME_REPORT-GET_TIME-TIME";
         final String responseText;
 
-        final HandlerResult.Outcome outcome = getOutcome(handlerResult);
+        final HandlerResult.Outcome outcome = ResponseUtils.getOutcome(handlerResult);
         if (outcome.equals(HandlerResult.Outcome.OK)) {
             final String timeString = handlerResult.responseParameters.get("time");
             filename += String.format("-%s-WATSON-%s-16k.wav", timeString, voiceName);
@@ -199,7 +199,7 @@ public class ResponseBuilder {
             s3Bucket += String.format("/%s", sensorName);
         }
 
-        final HandlerResult.Outcome outcome = getOutcome(handlerResult);
+        final HandlerResult.Outcome outcome = ResponseUtils.getOutcome(handlerResult);
 
         // compose filename from outcomes
         if (outcome.equals(HandlerResult.Outcome.FAIL)) {
@@ -272,11 +272,6 @@ public class ResponseBuilder {
 
         return new UploadResponse(response, audioBytes);
 
-    }
-
-    private HandlerResult.Outcome getOutcome (final HandlerResult handlerResult) {
-        final String outcomeString = handlerResult.responseParameters.get("result");
-        return HandlerResult.Outcome.fromString(outcomeString);
     }
 
     private byte [] getAudio(final String s3Bucket, final String filename) {

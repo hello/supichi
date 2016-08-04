@@ -85,7 +85,7 @@ audio_parameters:
   buffer_size: 3200 # play around with this (100ms of audio at 16K SR)
 
 messeji_http_client:
-  endpoint: "http://internal-internal-messeji-dev-1279589514.us-east-1.elb.amazonaws.com:80"
+  endpoint: "http://internal-internal-messeji-dev-1279589514.us-east-1.elb.amazonaws.com:80"  # dev
   http_client_config:
     keepAlive: 0s
 
@@ -125,3 +125,7 @@ save_audio:
   s3_audio_prefix: voice/watson-text2speech/16k  # bucket with responses sent back to Sense
 
 consumer_enabled: false
+
+wolfram:
+  app_id: 5X75YH-PH2R5WXXTV
+  format: plaintext

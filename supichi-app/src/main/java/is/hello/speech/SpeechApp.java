@@ -56,6 +56,7 @@ import is.hello.speech.resources.v1.ParseResource;
 import is.hello.speech.resources.v1.QueueMessageResource;
 import is.hello.speech.resources.v1.UploadResource;
 import is.hello.speech.utils.ResponseBuilder;
+import is.hello.speech.utils.WatsonResponseBuilder;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,7 +141,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 deviceDAO,
                 senseColorDAO,
                 calibrationDAO,
-                timeZoneHistoryDAODynamoDB
+                timeZoneHistoryDAODynamoDB,
+                speechAppConfiguration.wolframAlphaConfiguration()
                 );
 
         // setup SQS for QueueMessage API
@@ -210,7 +212,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final DefaultResponseDAO defaultResponseDAO = DefaultResponseDAO.create(amazonS3, s3ResponseBucket);
 
         final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, defaultResponseDAO, "WATSON", watsonConfiguration.getVoiceName());
-        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerFactory, deviceDAO, responseBuilder));
+        final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
+        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerFactory, deviceDAO, responseBuilder, watsonResponseBuilder));
 
         environment.jersey().register(new ParseResource());
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.getSaveAudioConfiguration().getBucketName()));
