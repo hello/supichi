@@ -13,7 +13,6 @@ import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
 import is.hello.speech.core.handlers.BaseHandler;
 import is.hello.speech.core.handlers.HandlerFactory;
-import is.hello.speech.core.handlers.WolframAlphaHandler;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
@@ -145,7 +144,7 @@ public class UploadResource {
                 executeResult = handle(senseId, accountId, resp.getTranscript().get());
             }
 
-            if (executeResult.handlerType.equals(HandlerType.WOLFRAM_ALPHA) || executeResult.handlerType.equals(HandlerType.WEATHER)) {
+            if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
                 return watsonResponseBuilder.response(executeResult);
             }
 
@@ -183,10 +182,8 @@ public class UploadResource {
             }
         }
 
-        LOGGER.debug("action=fail-to-find-command remedy=trying-wolfram-alpha");
-
-        final WolframAlphaHandler wolframAlphaHandler = handlerFactory.wolframAlphaHandler();
-        return wolframAlphaHandler.executeCommand(transcript, senseId, accountId);
+        LOGGER.debug("action=fail-to-find-command account_id={} sense_id={} transcript={}", accountId, senseId, transcript);
+        return HandlerResult.emptyResult();
     }
 
     @Path("/text")
@@ -217,7 +214,7 @@ public class UploadResource {
 
             final HandlerResult executeResult = handle(query.senseId, accountId, query.transcript);
 
-            if (executeResult.handlerType.equals(HandlerType.WOLFRAM_ALPHA) || executeResult.handlerType.equals(HandlerType.WEATHER)) {
+            if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
                 return watsonResponseBuilder.response(executeResult);
             }
 
