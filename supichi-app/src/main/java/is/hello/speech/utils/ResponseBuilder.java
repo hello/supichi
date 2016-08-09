@@ -113,7 +113,11 @@ public class ResponseBuilder {
             return audioCache.get(filename);
         }
 
-        final String finalS3Bucket = bucketName + "/" + s3Bucket;
+        String finalS3Bucket = bucketName;
+        if (!s3Bucket.isEmpty()) {
+            finalS3Bucket += "/" + s3Bucket;
+        }
+
         final byte [] audioBytes = ResponseUtils.getAudioFromS3(s3, finalS3Bucket, filename);
         if (audioBytes.length > 0) {
             audioCache.put(filename, audioBytes);   // add to cache
