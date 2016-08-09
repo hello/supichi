@@ -23,7 +23,7 @@ public abstract class BaseHandler {
         this.commandMap = ImmutableMap.copyOf(commandMap);
     }
 
-    Set<String> getRelevantCommands() {
+    public Set<String> getRelevantCommands() {
         return this.commandMap.keySet();
     }
 

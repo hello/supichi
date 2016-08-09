@@ -1,7 +1,6 @@
 package is.hello.speech;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
@@ -49,9 +48,10 @@ import is.hello.speech.configuration.SpeechAppConfiguration;
 import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
-import is.hello.speech.core.handlers.executors.BigramHandlerExecutor;
-import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.core.handlers.HandlerFactory;
+import is.hello.speech.core.handlers.executors.HandlerExecutor;
+import is.hello.speech.core.handlers.executors.UnigramHandlerExecutor;
+import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
 import is.hello.speech.resources.v1.PCMResource;
 import is.hello.speech.resources.v1.ParseResource;
@@ -136,6 +136,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         // TODO: add additional handler resources here
 
         final FileInfoDAO fileInfoDAO = null; // TODO: remove for google compute engine
+
+
         final HandlerFactory handlerFactory = HandlerFactory.create(
                 speechCommandDAO,
                 messejiClient,
@@ -147,9 +149,15 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 timeZoneHistoryDAODynamoDB,
                 speechAppConfiguration.forecastio(),
                 accountLocationDAO
-                );
+        );
 
-        final HandlerExecutor handlerExecutor = new BigramHandlerExecutor(handlerFactory);
+        final HandlerExecutor handlerExecutor = new UnigramHandlerExecutor()
+                .register(HandlerType.ALARM, handlerFactory.alarmHandler())
+                .register(HandlerType.WEATHER, handlerFactory.weatherHandler())
+                .register(HandlerType.SLEEP_SOUNDS, handlerFactory.sleepSoundHandler())
+                .register(HandlerType.ROOM_CONDITIONS, handlerFactory.roomConditionsHandler())
+                .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
+                .register(HandlerType.TRIVIA, handlerFactory.triviaHandler());
 
         // setup SQS for QueueMessage API
         final SQSConfiguration sqsConfig = speechAppConfiguration.getSqsConfiguration();
@@ -198,12 +206,6 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
             environment.lifecycle().manage(consumer);
         }
-
-        // Speech API
-        final AWSCredentials awsCredentials = new AWSCredentials() {
-            public String getAWSAccessKeyId() { return speechAppConfiguration.getS3Configuration().getAwsAccessKey(); }
-            public String getAWSSecretKey() { return speechAppConfiguration.getS3Configuration().getAwsSecretKey(); }
-        };
 
         final SpeechClient client = new SpeechClient(
                 speechAppConfiguration.getGoogleAPIHost(),
