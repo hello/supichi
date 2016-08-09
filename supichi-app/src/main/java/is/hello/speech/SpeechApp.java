@@ -47,7 +47,6 @@ import is.hello.speech.clients.SpeechClientManaged;
 import is.hello.speech.configuration.SpeechAppConfiguration;
 import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
-import is.hello.speech.core.db.DefaultResponseDAO;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
@@ -209,9 +208,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefix());
 
-        final DefaultResponseDAO defaultResponseDAO = DefaultResponseDAO.create(amazonS3, s3ResponseBucket);
-
-        final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, defaultResponseDAO, "WATSON", watsonConfiguration.getVoiceName());
+        final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
         environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerFactory, deviceDAO, responseBuilder, watsonResponseBuilder));
 
