@@ -49,6 +49,8 @@ import is.hello.speech.configuration.SpeechAppConfiguration;
 import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
+import is.hello.speech.core.handlers.executors.BigramHandlerExecutor;
+import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
 import is.hello.speech.resources.v1.PCMResource;
@@ -147,6 +149,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 accountLocationDAO
                 );
 
+        final HandlerExecutor handlerExecutor = new BigramHandlerExecutor(handlerFactory);
+
         // setup SQS for QueueMessage API
         final SQSConfiguration sqsConfig = speechAppConfiguration.getSqsConfiguration();
         final int maxConnections = sqsConfig.getSqsMaxConnections();
@@ -213,7 +217,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
-        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerFactory, deviceDAO, responseBuilder, watsonResponseBuilder));
+        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, responseBuilder, watsonResponseBuilder));
 
         environment.jersey().register(new ParseResource());
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.getSaveAudioConfiguration().getBucketName()));
