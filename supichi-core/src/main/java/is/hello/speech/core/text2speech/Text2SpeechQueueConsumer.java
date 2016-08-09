@@ -113,39 +113,47 @@ public class Text2SpeechQueueConsumer implements Managed {
                         // text-to-speech conversion
                         LOGGER.debug("action=synthesize-text service={} text={}", synthesizeMessage.getService().toString(), text);
 
-                        final InputStream watsonStream = watson.synthesize(text, watsonVoice, DEFAULT_AUDIO_FORMAT).execute();
+                        try {
+                            final InputStream watsonStream = watson.synthesize(text, watsonVoice, DEFAULT_AUDIO_FORMAT).execute();
 
-                        // construct filename
-                        String keyname = String.format("%s-%s-%s-%s-%s-%s",
-                                synthesizeMessage.getIntent().toString(),
-                                synthesizeMessage.getAction().toString(),
-                                synthesizeMessage.getCategory().toString(),
-                                synthesizeMessage.getParametersString(),
-                                synthesizeMessage.getService().toString(),
-                                synthesizeMessage.getVoice().toString()
-                        );
+                            // construct filename
+                            String keyname = String.format("%s-%s-%s-%s-%s-%s",
+                                    synthesizeMessage.getIntent().toString(),
+                                    synthesizeMessage.getAction().toString(),
+                                    synthesizeMessage.getCategory().toString(),
+                                    synthesizeMessage.getParametersString(),
+                                    synthesizeMessage.getService().toString(),
+                                    synthesizeMessage.getVoice().toString()
+                            );
 
-                        LOGGER.debug("action=save-audio-to-file filename={}", keyname);
+                            LOGGER.debug("action=save-audio-to-file filename={}", keyname);
 
-                        // re-write correct header for Watson audio stream (needed for down-sampling)
-                        final AudioUtils.AudioBytes watsonAudio = AudioUtils.convertStreamToBytesWithWavHeader(watsonStream);
+                            // re-write correct header for Watson audio stream (needed for down-sampling)
+                            final AudioUtils.AudioBytes watsonAudio = AudioUtils.convertStreamToBytesWithWavHeader(watsonStream);
+                            if (watsonAudio.contentSize != 0) {
 
-                        // upload raw data to S3
-                        final String s3RawBucket = String.format("%s/%s/%s", s3KeyRaw, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
-                        uploadToS3(s3RawBucket, String.format("%s-raw.wav", keyname), watsonAudio.bytes);
+                                // upload raw data to S3
+                                final String s3RawBucket = String.format("%s/%s/%s", s3KeyRaw, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
+                                uploadToS3(s3RawBucket, String.format("%s-raw.wav", keyname), watsonAudio.bytes);
 
-                        // down-sample audio from 22050 to 16k, upload converted bytes to S3
-                        final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(watsonAudio.bytes, TARGET_SAMPLING_RATE);
-                        if (downSampledBytes != null) {
-                            final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
-                            uploadToS3(S3Bucket, String.format("%s-16k.wav", keyname), downSampledBytes.bytes);
-                        }
+                                // down-sample audio from 22050 to 16k, upload converted bytes to S3
+                                final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(watsonAudio.bytes, TARGET_SAMPLING_RATE);
+                                if (downSampledBytes.contentSize != 0) {
+                                    final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
+                                    uploadToS3(S3Bucket, String.format("%s-16k.wav", keyname), downSampledBytes.bytes);
 
-                        // convert to mp3
-                        final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(downSampledBytes);
-                        if (mp3Bytes.length > 0) {
-                            final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
-                            uploadToS3(S3Bucket, String.format("%s-16k.mp3", keyname), mp3Bytes);
+                                    // convert to mp3
+                                    final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(downSampledBytes);
+                                    if (mp3Bytes.length > 0) {
+                                        uploadToS3(S3Bucket, String.format("%s-16k.mp3", keyname), mp3Bytes);
+                                    }
+                                }
+                            }
+
+                            watsonStream.close();
+
+                        } catch (Exception e) {
+                            LOGGER.error("error=watson-audio-fail error_msg={}", e.getMessage());
                         }
 
                     }

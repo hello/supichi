@@ -23,10 +23,12 @@ import java.io.InputStream;
 public class AudioUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(AudioUtils.class);
 
+    public static final int WAVE_HEADER_SIZE = 44;
+
     // for adding WAV headers to watson stream
-    private static final int WAVE_HEADER_SIZE = 8;      // The WAVE meta-data header size.
-    private static final int WAVE_SIZE_POS = 4;         // The WAVE meta-data size position.
-    private static final int WAVE_METADATA_POS = 74;    // The WAVE meta-data position in bytes.
+    private static final int WATSON_WAVE_HEADER_SIZE = 8;      // The WAVE meta-data header size.
+    private static final int WATSON_WAVE_SIZE_POS = 4;         // The WAVE meta-data size position.
+    private static final int WATSON_WAVE_METADATA_POS = 74;    // The WAVE meta-data position in bytes.
 
     private static final int MP3_BITRATE = 44;  // TODO: make this configurable
     private static final boolean USE_VBR = false;
@@ -61,13 +63,13 @@ public class AudioUtils {
             audioBytes = IOUtils.toByteArray(inputStream);
         } catch (IOException e) {
             LOGGER.warn("error=fail-to-convert-inputstream msg={}", e.getMessage());
-            return new AudioBytes(null, 0, null);
+            return AudioBytes.empty();
         }
 
-        final int fileSize = audioBytes.length - WAVE_HEADER_SIZE;
+        final int fileSize = audioBytes.length - WATSON_WAVE_HEADER_SIZE;
 
-        writeInt(fileSize, audioBytes, WAVE_SIZE_POS);
-        writeInt(fileSize - WAVE_HEADER_SIZE, audioBytes, WAVE_METADATA_POS);
+        writeInt(fileSize, audioBytes, WATSON_WAVE_SIZE_POS);
+        writeInt(fileSize - WATSON_WAVE_HEADER_SIZE, audioBytes, WATSON_WAVE_METADATA_POS);
 
         return new AudioBytes(audioBytes, audioBytes.length, null);
     }
