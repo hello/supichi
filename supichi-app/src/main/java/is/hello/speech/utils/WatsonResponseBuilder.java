@@ -1,4 +1,4 @@
-package is.hello.speech.utils.responsebuilder;
+package is.hello.speech.utils;
 
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.AudioFormat;
@@ -39,7 +39,7 @@ public class WatsonResponseBuilder {
 
             outputStream.write(downSampledBytes.bytes);
         } catch (IOException e) {
-            LOGGER.error("action=watson-downsample-fails error_msg={}", e.getMessage());
+            LOGGER.error("action=watson-down-sample-fails error_msg={}", e.getMessage());
         }
 
 

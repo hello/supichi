@@ -1,8 +1,8 @@
-package is.hello.speech.utils.responsebuilder;
+package is.hello.speech.core.models.responsebuilder;
 
-import com.google.api.client.util.Maps;
+import com.google.common.collect.Maps;
 import com.hello.suripu.core.models.Sensor;
-import is.hello.speech.core.models.BuilderResponse;
+import is.hello.speech.core.api.Response;
 import is.hello.speech.core.models.HandlerResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +13,7 @@ import java.util.Random;
 /**
  * Created by ksg on 7/26/16
  */
-public class RoomConditionsResponseBuilder {
+public class RoomConditionsResponseBuilder implements ResponseBuilderInterface{
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomConditionsResponseBuilder.class);
 
     // MUST-HAVES
@@ -40,8 +40,8 @@ public class RoomConditionsResponseBuilder {
     }
 
     public static BuilderResponse response(final HandlerResult handlerResult,
-                                                      final String voiceService,
-                                                      final String voiceName) {
+                                    final String voiceService,
+                                    final String voiceName) {
         String s3Bucket = BUCKET_NAME;
         String filename = FILENAME_PREFIX;
         String sensorName = "";
@@ -65,9 +65,9 @@ public class RoomConditionsResponseBuilder {
                 responseText = String.format(CUSTOM_ERROR_FORMATTER, sensorName);
             } else {
                 // return generic error
-                s3Bucket = "";
-                filename = String.format(ResponseUtils.REJECT_ERROR_FILENAME_TEMPLATE, voiceName);
-                responseText = ResponseUtils.REJECT_ERROR_TEXT;
+                s3Bucket = DefaultResponseBuilder.BUCKET_NAME;
+                filename = DefaultResponseBuilder.DEFAULT_KEYNAMES.get(Response.SpeechResponse.Result.REJECTED);
+                responseText = DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.REJECTED);
             }
 
         } else {
@@ -102,9 +102,9 @@ public class RoomConditionsResponseBuilder {
                 responseText = String.format(RESPONSE_TEXT_FORMATTER, sensorName, sensorValue, unit);
 
             } else {
-                s3Bucket = "";
-                filename = String.format("default_try_again-WATSON-%s-16k.wav", voiceName);
-                responseText = "Sorry, your command cannot be processed. Please try again.";
+                s3Bucket = DefaultResponseBuilder.BUCKET_NAME;
+                filename = DefaultResponseBuilder.DEFAULT_KEYNAMES.get(Response.SpeechResponse.Result.TRY_AGAIN);
+                responseText = DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN);
             }
         }
 

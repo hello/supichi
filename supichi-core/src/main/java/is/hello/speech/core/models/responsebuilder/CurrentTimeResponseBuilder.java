@@ -1,6 +1,5 @@
-package is.hello.speech.utils.responsebuilder;
+package is.hello.speech.core.models.responsebuilder;
 
-import is.hello.speech.core.models.BuilderResponse;
 import is.hello.speech.core.models.HandlerResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,7 +7,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by ksg on 8/8/16
  */
-public class CurrentTimeResponseBuilder {
+public class CurrentTimeResponseBuilder implements ResponseBuilderInterface{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CurrentTimeResponseBuilder.class);
 
@@ -25,7 +24,6 @@ public class CurrentTimeResponseBuilder {
 
     public static BuilderResponse response(final HandlerResult handlerResult, final String voiceService, final String voiceName) {
 
-        final String s3Bucket = BUCKET_NAME;
         String filename = FILENAME_PREFIX;
         final String responseText;
 
@@ -39,6 +37,6 @@ public class CurrentTimeResponseBuilder {
             filename += String.format(TIME_ERROR_FILENAME_TEMPLATE, voiceService, voiceName);
         }
 
-        return new BuilderResponse(s3Bucket, filename, responseText);
+        return new BuilderResponse(BUCKET_NAME, filename, responseText);
     }
 }

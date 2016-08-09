@@ -1,4 +1,4 @@
-package is.hello.speech.core.models;
+package is.hello.speech.core.models.responsebuilder;
 
 /**
  * Created by ksg on 8/8/16
@@ -12,5 +12,9 @@ public class BuilderResponse {
         this.s3Bucket = s3Bucket;
         this.s3Filename = s3Filename;
         this.responseText = responseText;
+    }
+
+    public static BuilderResponse empty() {
+        return new BuilderResponse("", "", "");
     }
 }
