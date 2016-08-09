@@ -143,7 +143,6 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 senseColorDAO,
                 calibrationDAO,
                 timeZoneHistoryDAODynamoDB,
-                speechAppConfiguration.wolframAlphaConfiguration(),
                 speechAppConfiguration.forecastio(),
                 accountLocationDAO
                 );
