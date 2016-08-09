@@ -5,6 +5,7 @@ import is.hello.speech.core.handlers.RoomConditionsHandler;
 import is.hello.speech.core.handlers.SleepSoundHandler;
 import is.hello.speech.core.handlers.TimeHandler;
 import is.hello.speech.core.handlers.TriviaHandler;
+import is.hello.speech.core.handlers.WeatherHandler;
 
 /**
  * Created by ksg on 6/21/16
@@ -20,7 +21,8 @@ public enum SpeechCommand {
     ROOM_SOUND("room_sound", RoomConditionsHandler.class),
     PARTICULATES("particulates", RoomConditionsHandler.class),
     TIME_REPORT("time_report",TimeHandler.class),
-    TRIVIA("trivia", TriviaHandler.class);
+    TRIVIA("trivia", TriviaHandler.class),
+    WEATHER("weather", WeatherHandler.class);
 
 
     private String value;

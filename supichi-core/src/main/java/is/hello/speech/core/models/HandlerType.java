@@ -10,7 +10,8 @@ public enum HandlerType {
     ROOM_CONDITIONS("room_conditions"),
     TIME_REPORT("time_report"),
     TRIVIA("trivia"),
-    WOLFRAM_ALPHA("wolfram_alpha");
+    WOLFRAM_ALPHA("wolfram_alpha"),
+    WEATHER("weather");
 
     public String value;
 

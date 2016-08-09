@@ -81,4 +81,10 @@ public class SpeechAppConfiguration extends Configuration {
     public WolframAlphaConfiguration wolframAlphaConfiguration() {
         return wolframAlphaConfiguration;
     }
+
+    @JsonProperty("forecastio")
+    private String forecastio = "";
+    public String forecastio() {
+        return forecastio;
+    }
 }

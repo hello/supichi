@@ -1,8 +1,10 @@
 package is.hello.speech.core.handlers;
 
+import com.github.dvdme.ForecastIOLib.ForecastIO;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
@@ -39,7 +41,9 @@ public class HandlerFactory {
                                         final SenseColorDAO senseColorDAO,
                                         final CalibrationDAO calibrationDAO,
                                         final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB,
-                                        final WolframAlphaConfiguration wolframAlphaConfiguration
+                                        final WolframAlphaConfiguration wolframAlphaConfiguration,
+                                        final String forecastio,
+                                        final AccountLocationDAO accountLocationDAO
                                         ) {
 
         final Map<HandlerType, BaseHandler> handlerMap = Maps.newHashMap();
@@ -69,6 +73,10 @@ public class HandlerFactory {
         final WolframAlphaHandler wolframAlphaHandler = WolframAlphaHandler.create(speechCommandDAO, wolframAlphaConfiguration.appId(), wolframAlphaConfiguration.format());
         handlerMap.put(HandlerType.WOLFRAM_ALPHA, wolframAlphaHandler);
 
+        final ForecastIO forecastIOClient = new ForecastIO(forecastio);
+        final WeatherHandler weatherHandler = WeatherHandler.create(speechCommandDAO, forecastIOClient, accountLocationDAO);
+        handlerMap.put(HandlerType.WEATHER, weatherHandler);
+
         // map command text to handler
 
         final Map<String, HandlerType> commandToHandlerMap = Maps.newHashMap();
@@ -85,6 +93,10 @@ public class HandlerFactory {
 
     public WolframAlphaHandler wolframAlphaHandler() {
         return (WolframAlphaHandler) availableHandlers.get(HandlerType.WOLFRAM_ALPHA);
+    }
+
+    public WeatherHandler weatherHandler() {
+        return (WeatherHandler) availableHandlers.get(HandlerType.WEATHER);
     }
 
     public Optional<BaseHandler> getHandler(final String command) {
