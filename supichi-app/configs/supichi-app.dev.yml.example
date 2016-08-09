@@ -120,3 +120,5 @@ consumer_enabled: true
 wolfram:
   app_id: 5X75YH-PH2R5WXXTV
   format: plaintext
+
+forecastio: 69ae5412a3a9bfc16a07ce05f6c7c5a5

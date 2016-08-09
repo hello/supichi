@@ -145,7 +145,7 @@ public class UploadResource {
                 executeResult = handle(senseId, accountId, resp.getTranscript().get());
             }
 
-            if (executeResult.handlerType.equals(HandlerType.WOLFRAM_ALPHA)) {
+            if (executeResult.handlerType.equals(HandlerType.WOLFRAM_ALPHA) || executeResult.handlerType.equals(HandlerType.WEATHER)) {
                 return watsonResponseBuilder.response(executeResult);
             }
 
@@ -217,7 +217,7 @@ public class UploadResource {
 
             final HandlerResult executeResult = handle(query.senseId, accountId, query.transcript);
 
-            if (executeResult.handlerType.equals(HandlerType.WOLFRAM_ALPHA)) {
+            if (executeResult.handlerType.equals(HandlerType.WOLFRAM_ALPHA) || executeResult.handlerType.equals(HandlerType.WEATHER)) {
                 return watsonResponseBuilder.response(executeResult);
             }
 

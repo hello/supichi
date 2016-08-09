@@ -14,6 +14,7 @@ import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
 import com.google.common.collect.ImmutableMap;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
+import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.CalibrationDynamoDB;
 import com.hello.suripu.core.db.DeviceDAO;
@@ -99,6 +100,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
         final SenseColorDAO senseColorDAO = commonDB.onDemand(SenseColorDAOSQLImpl.class);
+        final AccountLocationDAO accountLocationDAO = commonDB.onDemand(AccountLocationDAO.class);
 
 //        final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
 
@@ -142,7 +144,9 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 senseColorDAO,
                 calibrationDAO,
                 timeZoneHistoryDAODynamoDB,
-                speechAppConfiguration.wolframAlphaConfiguration()
+                speechAppConfiguration.wolframAlphaConfiguration(),
+                speechAppConfiguration.forecastio(),
+                accountLocationDAO
                 );
 
         // setup SQS for QueueMessage API
