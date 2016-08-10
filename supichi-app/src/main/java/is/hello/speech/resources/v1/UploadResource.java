@@ -4,15 +4,13 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.util.Md5Utils;
 import com.codahale.metrics.annotation.Timed;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
-import is.hello.speech.core.handlers.BaseHandler;
-import is.hello.speech.core.handlers.HandlerFactory;
+import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
@@ -51,7 +49,7 @@ public class UploadResource {
     private final String bucketName;
     private final SpeechClient speechClient;
 
-    private final HandlerFactory handlerFactory;
+    private final HandlerExecutor handlerExecutor;
 
     private final DeviceDAO deviceDAO;
 
@@ -63,14 +61,14 @@ public class UploadResource {
 
     public UploadResource(final AmazonS3 s3, final String bucketName,
                           final SpeechClient speechClient,
-                          final HandlerFactory factory,
+                          final HandlerExecutor handlerExecutor,
                           final DeviceDAO deviceDAO,
                           final ResponseBuilder responseBuilder,
                           final WatsonResponseBuilder watsonResponseBuilder) {
         this.s3 = s3;
         this.bucketName = bucketName;
         this.speechClient = speechClient;
-        this.handlerFactory = factory;
+        this.handlerExecutor = handlerExecutor;
         this.deviceDAO = deviceDAO;
         this.responseBuilder = responseBuilder;
         this.watsonResponseBuilder = watsonResponseBuilder;
@@ -141,7 +139,7 @@ public class UploadResource {
             // try to execute command in transcript
             if(resp.getTranscript().isPresent()) {
 
-                executeResult = handle(senseId, accountId, resp.getTranscript().get());
+                executeResult = handlerExecutor.handle(senseId, accountId, resp.getTranscript().get());
             }
 
             if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
@@ -159,31 +157,6 @@ public class UploadResource {
         }
 
         return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult);
-    }
-
-
-    private HandlerResult handle(final String senseId, final Long accountId, final String transcript) {
-        final String[] unigrams = transcript.toLowerCase().split(" ");
-
-        for (int i = 0; i < (unigrams.length - 1); i++) {
-            final String commandText = String.format("%s %s", unigrams[i], unigrams[i+1]);
-            LOGGER.debug("action=get-transcribed-command text={}", commandText);
-
-            // TODO: command-parser
-            final Optional<BaseHandler> optionalHandler = handlerFactory.getHandler(commandText);
-
-            if (optionalHandler.isPresent()) {
-                final BaseHandler handler = optionalHandler.get();
-                LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
-
-                final HandlerResult executeResult = handler.executeCommand(commandText, senseId, accountId);
-                LOGGER.debug("action=execute-command result={}", executeResult);
-                return executeResult;
-            }
-        }
-
-        LOGGER.debug("action=fail-to-find-command account_id={} sense_id={} transcript={}", accountId, senseId, transcript);
-        return HandlerResult.emptyResult();
     }
 
     @Path("/text")
@@ -212,7 +185,7 @@ public class UploadResource {
         LOGGER.debug("action=execute-handler sense_id={} account_id={}", query.senseId, accountId);
         try {
 
-            final HandlerResult executeResult = handle(query.senseId, accountId, query.transcript);
+            final HandlerResult executeResult = handlerExecutor.handle(query.senseId, accountId, query.transcript);
 
             if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
                 return watsonResponseBuilder.response(executeResult);
