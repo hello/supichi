@@ -6,6 +6,8 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.kinesis.producer.KinesisProducer;
+import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
@@ -44,7 +46,9 @@ import io.dropwizard.util.Duration;
 import is.hello.speech.cli.WatsonTextToSpeech;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.clients.SpeechClientManaged;
+import is.hello.speech.configuration.KinesisConfiguration;
 import is.hello.speech.configuration.SpeechAppConfiguration;
+import is.hello.speech.core.api.SpeechResultsKinesis;
 import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
@@ -53,6 +57,7 @@ import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.core.handlers.executors.UnigramHandlerExecutor;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
+import is.hello.speech.kinesis.SpeechKinesisProducer;
 import is.hello.speech.resources.v1.PCMResource;
 import is.hello.speech.resources.v1.ParseResource;
 import is.hello.speech.resources.v1.QueueMessageResource;
@@ -60,15 +65,14 @@ import is.hello.speech.resources.v1.UploadResource;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SpeechApp.class);
 
     public static void main(String[] args) throws Exception {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
@@ -207,6 +211,28 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
             environment.lifecycle().manage(consumer);
         }
 
+        // set up Kinesis
+        final KinesisConfiguration kinesisConfiguration = speechAppConfiguration.kinesisConfiguration();
+        final KinesisProducerConfiguration kplConfig = new KinesisProducerConfiguration()
+                .setRegion(kinesisConfiguration.region())
+                .setCredentialsProvider(awsCredentialsProvider)
+                .setMaxConnections(kinesisConfiguration.maxConnections())
+                .setRequestTimeout(kinesisConfiguration.requstTimeout())
+                .setRecordMaxBufferedTime(kinesisConfiguration.recordMaxBufferedTime());
+
+        final ExecutorService kinesisExecutor = environment.lifecycle().executorService("kinesis_producer")
+                .minThreads(1)
+                .maxThreads(2)
+                .keepAliveTime(Duration.seconds(2L)).build();
+
+
+        final KinesisProducer kinesisProducer = new KinesisProducer(kplConfig);
+        final String kinesisStreamName = kinesisConfiguration.streams().get(KinesisConfiguration.Stream.SPEECH_RESULT);
+        final BlockingQueue<SpeechResultsKinesis.SpeechResultsData> kinesisEvents = new ArrayBlockingQueue<>(kinesisConfiguration.queueSize());
+        final SpeechKinesisProducer speechKinesisProducer = new SpeechKinesisProducer(kinesisStreamName, kinesisEvents, kinesisProducer, kinesisExecutor);
+        environment.lifecycle().manage(speechKinesisProducer);
+
+        // set up speech client
         final SpeechClient client = new SpeechClient(
                 speechAppConfiguration.getGoogleAPIHost(),
                 speechAppConfiguration.getGoogleAPIPort(),
@@ -219,7 +245,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
-        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, responseBuilder, watsonResponseBuilder));
+        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
 
         environment.jersey().register(new ParseResource());
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.getSaveAudioConfiguration().getBucketName()));

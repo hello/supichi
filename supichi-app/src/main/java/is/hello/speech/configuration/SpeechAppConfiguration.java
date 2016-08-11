@@ -80,4 +80,8 @@ public class SpeechAppConfiguration extends Configuration {
     public String forecastio() {
         return forecastio;
     }
+
+    @JsonProperty("kinesis")
+    private KinesisConfiguration kinesisConfiguration;
+    public KinesisConfiguration kinesisConfiguration() { return kinesisConfiguration; }
 }
