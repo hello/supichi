@@ -1,6 +1,5 @@
-package is.hello.speech.configuration;
+package is.hello.speech.core.configuration;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 
@@ -11,38 +10,7 @@ import java.util.Map;
 /**
  * Created by ksg on 8/9/16
  */
-public class KinesisConfiguration {
-
-    public enum Stream {
-        AUDIO("audio"),
-        SPEECH_RESULT("speech_result");
-        private String value;
-
-        Stream(String text) {
-            value = text;
-        }
-
-        public String value() {
-            return value;
-        }
-
-        @JsonCreator
-        public Stream fromString(final String val) {
-            return Stream.getFromString(val);
-        }
-
-        public static Stream getFromString(final String val) {
-            final Stream[] names = Stream.values();
-
-            for (final Stream name: names) {
-                if (name.value.equalsIgnoreCase(val)) {
-                    return name;
-                }
-            }
-
-            throw new IllegalArgumentException(String.format("%s is not a valid Speech KinesisStreamName", val));
-        }
-    }
+public class KinesisProducerConfiguration {
 
     @Valid
     @NotNull
@@ -84,8 +52,8 @@ public class KinesisConfiguration {
     @Valid
     @NotNull
     @JsonProperty("streams")
-    private Map<Stream, String> streams;
-    public ImmutableMap<Stream, String> streams() {
+    private Map< KinesisStream, String> streams;
+    public ImmutableMap<KinesisStream, String> streams() {
         return ImmutableMap.copyOf(streams);
     }
 

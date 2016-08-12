@@ -156,7 +156,7 @@ public class UploadResource {
             final SpeechServiceResult resp = speechClient.stream(body, sampling);
 
             // try to execute command in transcript
-            if(resp.getTranscript().isPresent()) {
+            if (resp.getTranscript().isPresent()) {
 
                 executeResult = handlerExecutor.handle(senseId, accountId, resp.getTranscript().get());
             }

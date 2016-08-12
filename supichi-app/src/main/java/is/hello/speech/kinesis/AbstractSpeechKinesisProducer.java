@@ -2,7 +2,6 @@ package is.hello.speech.kinesis;
 
 
 import io.dropwizard.lifecycle.Managed;
-import is.hello.speech.core.api.SpeechResultsKinesis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +17,7 @@ public abstract class AbstractSpeechKinesisProducer implements Managed {
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractSpeechKinesisProducer.class);
 
     private final String streamName;
-    protected final BlockingQueue<SpeechResultsKinesis.SpeechResultsData> inputQueue;
+    protected final BlockingQueue<KinesisData> inputQueue;
 
     protected final ExecutorService executor;
 
@@ -26,7 +25,7 @@ public abstract class AbstractSpeechKinesisProducer implements Managed {
     protected final AtomicLong recordsPut = new AtomicLong(0);
 
     protected AbstractSpeechKinesisProducer(final String streamName,
-                                            final BlockingQueue<SpeechResultsKinesis.SpeechResultsData> inputQueue,
+                                            final BlockingQueue<KinesisData> inputQueue,
                                             final ExecutorService executor) {
         this.streamName = streamName;
         this.inputQueue = inputQueue;

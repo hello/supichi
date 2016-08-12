@@ -97,6 +97,7 @@ dynamodb:
     device_data: sense_data
     file_manifest: file_manifest
     sleep_hmm: speech_commands  # use "sleep_hmm as placeholder"
+    speech_results: speech_results
     timezone_history: timezone_history
 
   endpoints:
@@ -104,6 +105,7 @@ dynamodb:
     device_data: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
     sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
+    speech_results: http://dynamodb.us-east-1.amazonaws.com
     timezone_history: http://dynamodb.us-east-1.amazonaws.com
 
 sqs_configuration:
@@ -127,3 +129,28 @@ save_audio:
 consumer_enabled: false
 
 forecastio: 69ae5412a3a9bfc16a07ce05f6c7c5a5
+
+kinesis_producer:
+  endpoint: https://kinesis.us-east-1.amazonaws.com
+  region: us-east-1
+  max_connections: 1
+  request_timeout: 10000 # 1 sec
+  record_max_buffered_time: 15000
+  queue_size: 65536
+  streams:
+   audio: dev_speech_audio
+   speech_result: dev_speech_results
+
+kinesis_consumer:
+  endpoint: https://kinesis.us-east-1.amazonaws.com
+  region: us-east-1
+  app_name: SpeechKinesisProcessDev
+  max_records: 100
+  schedule_minutes: 1
+  streams:
+   audio: dev_speech_audio
+   speech_result: dev_speech_results
+
+sense_upload_audio:  # bucket to save audio uploaded from Sense
+  s3_bucket_name: hello-audio
+  s3_audio_prefix: voice/sense_upload_audio
