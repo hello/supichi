@@ -68,6 +68,7 @@ public class SpeechKinesisConsumer implements Managed {
 
     private void consumeKinesisStream() {
         final SpeechKinesisProcessorFactory factory = new SpeechKinesisProcessorFactory(s3Bucket, s3, speechResultDAODynamoDB);
+        LOGGER.info("info=kinesis-initial-position value={}", this.clientConfiguration.getInitialPositionInStream());
         final Worker worker = new Worker(factory, this.clientConfiguration);
         worker.run();
     }

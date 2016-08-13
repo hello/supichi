@@ -235,13 +235,15 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .maxThreads(2)
                 .keepAliveTime(Duration.seconds(2L)).build();
 
+        final ScheduledExecutorService kinesisMetricsExecutor = environment.lifecycle().scheduledExecutorService("kinesis_producer_metrics").threads(1).build();
+
 
         final KinesisStream kinesisStream = KinesisStream.SPEECH_RESULT;
 
         final KinesisProducer kinesisProducer = new KinesisProducer(kplConfig);
         final String kinesisStreamName = kinesisProducerConfiguration.streams().get(kinesisStream);
         final BlockingQueue<KinesisData> kinesisEvents = new ArrayBlockingQueue<>(kinesisProducerConfiguration.queueSize());
-        final SpeechKinesisProducer speechKinesisProducer = new SpeechKinesisProducer(kinesisStreamName, kinesisEvents, kinesisProducer, kinesisExecutor);
+        final SpeechKinesisProducer speechKinesisProducer = new SpeechKinesisProducer(kinesisStreamName, kinesisEvents, kinesisProducer, kinesisExecutor, kinesisMetricsExecutor);
         environment.lifecycle().manage(speechKinesisProducer);
 
         // set up Kinesis Consumer

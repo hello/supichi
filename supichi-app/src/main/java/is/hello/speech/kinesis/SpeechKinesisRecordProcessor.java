@@ -59,12 +59,12 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
             final PutObjectResult putResult = s3.putObject(
                     new PutObjectRequest(s3Bucket, keyname, new ByteArrayInputStream(audioBytes), metadata));
 
-            LOGGER.debug("action=sense-audio-upload-result md5={}", putResult.getContentMd5());
+            LOGGER.debug("action=get-sense-audio-upload-result md5={}", putResult.getContentMd5());
         } catch (AmazonServiceException ase) {
-            LOGGER.error("error=amzn-service-exception status={} error_msg={}", ase.getStatusCode(), ase.getMessage());
+            LOGGER.error("error=aws-exception status={} error_msg={}", ase.getStatusCode(), ase.getMessage());
             return false;
         } catch (AmazonClientException ace) {
-            LOGGER.error("error=amzn-client-exception error_msg={}", ace.getMessage());
+            LOGGER.error("error=aws-client-exception error_msg={}", ace.getMessage());
             return false;
         }
 
@@ -74,14 +74,19 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
     @Override
     public void processRecords(List<Record> records, IRecordProcessorCheckpointer checkpointer) {
         LOGGER.debug("info=number-of-records size={}", records.size());
-        int numSaved = 0;
+        int numProcessed = 0;
+        int numAudio = 0;
         for (final Record record : records) {
             final SpeechResultsKinesis.SpeechResultsData speechResultsData;
             try {
                 speechResultsData = SpeechResultsKinesis.SpeechResultsData.parseFrom(record.getData().array());
                 if (speechResultsData.hasAudio() && speechResultsData.getAudio().getDataSize() > 0) {
-                    saveAudio(speechResultsData);
+                    final boolean saved = saveAudio(speechResultsData);
+                    if (saved) {
+                        numAudio++;
+                    }
                 }
+                numProcessed++;
             } catch (InvalidProtocolBufferException e) {
                 LOGGER.error("error= fail-to-decode-speech-protobuf error_msg={}", e.getMessage());
             } catch (IllegalArgumentException e) {
@@ -89,7 +94,9 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
             }
         }
 
-        if (numSaved == records.size()) {
+        LOGGER.debug("num_records_processed={} audio_saved={}", numProcessed, numAudio);
+
+        if (numProcessed == records.size()) {
             try {
                 checkpointer.checkpoint();
                 LOGGER.debug("action=checkpoint-success");

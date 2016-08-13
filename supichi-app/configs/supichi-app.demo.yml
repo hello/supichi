@@ -145,8 +145,9 @@ kinesis_consumer:
   endpoint: https://kinesis.us-east-1.amazonaws.com
   region: us-east-1
   app_name: SpeechKinesisProcessDev
-  max_records: 100
   schedule_minutes: 1
+  max_records: 100
+  trim_horizon: false
   streams:
    audio: dev_speech_audio
    speech_result: dev_speech_results
