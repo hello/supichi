@@ -1,10 +1,12 @@
-package is.hello.speech.resources.v1;
+package is.hello.speech.resources.demo;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.util.Md5Utils;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
-import com.hello.suripu.core.speech.SpeechResult;
 import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
@@ -13,9 +15,10 @@ import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
 import is.hello.speech.core.models.TextQuery;
-import is.hello.speech.kinesis.SpeechKinesisProducer;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,28 +28,30 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.UUID;
 
 
-@Path("/v1/upload")
+@Path("/upload")
 @Produces(MediaType.APPLICATION_JSON)
 public class UploadResource {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
+    private final static Integer SAMPLING = 8000; // 16000;
+    private final int RAW_AUDIO_BYTES_START = 44; // 60;
 
+    private final AmazonS3 s3;
+    private final String bucketName;
     private final SpeechClient speechClient;
-    private final SignedBodyHandler signedBodyHandler;
     private final HandlerExecutor handlerExecutor;
 
     private final DeviceDAO deviceDAO;
-
-    private final SpeechKinesisProducer speechKinesisProducer;
 
     private final ResponseBuilder responseBuilder;
     private final WatsonResponseBuilder watsonResponseBuilder;
@@ -54,51 +59,71 @@ public class UploadResource {
     @Context
     HttpServletRequest request;
 
-    public UploadResource(final SpeechClient speechClient,
-                          final SignedBodyHandler signedBodyHandler,
+    public UploadResource(final AmazonS3 s3, final String bucketName,
+                          final SpeechClient speechClient,
                           final HandlerExecutor handlerExecutor,
                           final DeviceDAO deviceDAO,
-                          final SpeechKinesisProducer speechKinesisProducer,
                           final ResponseBuilder responseBuilder,
-                          final WatsonResponseBuilder watsonResponseBuilder
-    ) {
+                          final WatsonResponseBuilder watsonResponseBuilder) {
+        this.s3 = s3;
+        this.bucketName = bucketName;
         this.speechClient = speechClient;
-        this.signedBodyHandler = signedBodyHandler;
         this.handlerExecutor = handlerExecutor;
         this.deviceDAO = deviceDAO;
-        this.speechKinesisProducer = speechKinesisProducer;
         this.responseBuilder = responseBuilder;
         this.watsonResponseBuilder = watsonResponseBuilder;
     }
+
+    @Path("{prefix}")
+    @POST
+    @Timed
+    public String sayHello(final @PathParam("prefix") String prefix, byte[] body) throws InterruptedException {
+        final DateTime now = DateTime.now(DateTimeZone.forID("America/Los_Angeles"));
+
+        final String key = String.format("%s/%s", prefix, now.toString().replace(" ", "_"));
+
+        try (final ByteArrayInputStream bas = new ByteArrayInputStream(body)) {
+
+            final String md5 = Md5Utils.md5AsBase64(body);
+            final ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentMD5(md5);
+            metadata.setContentLength(body.length);
+            LOGGER.info("key={} md5={}", key, md5);
+            s3.putObject(bucketName, key, bas, metadata);
+
+            return "OK";
+        } catch (IOException exception) {
+            LOGGER.error("{}", exception.getMessage());
+        }
+        return "KO";
+    }
+
 
     @Path("/audio")
     @POST
     @Timed
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public byte[] streaming(final byte[] signedBody,
+    public byte[] streaming(final byte[] body,
                             @DefaultValue("8000") @QueryParam("r") final Integer sampling,
                             @DefaultValue("false") @QueryParam("pb") final boolean includeProtobuf
     ) throws InterruptedException, IOException {
 
-        LOGGER.debug("action=received-bytes size={}", signedBody.length);
+        LOGGER.debug("action=received-bytes size={}", body.length);
 
         HandlerResult executeResult = HandlerResult.emptyResult();
 
         final String senseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
+        // old default: 8AF6441AF72321F4  C8DAAC353AEFA4A9
+
         if(senseId == null) {
             LOGGER.error("error=missing-sense-id-header");
             throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
         }
-
-        // old default: 8AF6441AF72321F4  C8DAAC353AEFA4A9
-        final byte[] body = signedBodyHandler.extractAudio(senseId, signedBody);
-
-        if(body.length == 0) {
-            throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
-        }
+        // demo 8D6C0F005D469DE7
 
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(senseId);
+
         LOGGER.debug("info=sense-id id={}", senseId);
 
         if (accounts.isEmpty()) {
@@ -115,23 +140,11 @@ public class UploadResource {
         }
 
         LOGGER.debug("action=get-speech-audio sense_id={} account_id={}", senseId, accountId);
-
-        // save audio to Kinesis
-        final String audioUUID = UUID.randomUUID().toString();
-        final SpeechResult speechResult = new SpeechResult.Builder()
-                .withAccountId(accountId)
-                .withSenseId(senseId)
-                .withAudioIndentifier(audioUUID)
-                .build();
-
-        // save to Kinesis
-        speechKinesisProducer.addResult(speechResult, body);
-
         try {
             final SpeechServiceResult resp = speechClient.stream(body, sampling);
 
             // try to execute command in transcript
-            if (resp.getTranscript().isPresent()) {
+            if(resp.getTranscript().isPresent()) {
 
                 executeResult = handlerExecutor.handle(senseId, accountId, resp.getTranscript().get());
             }

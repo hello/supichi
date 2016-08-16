@@ -96,6 +96,7 @@ dynamodb:
     calibration: calibration
     device_data: sense_data
     file_manifest: file_manifest
+    sense_key_store: key_store
     sleep_hmm: speech_commands  # use "sleep_hmm as placeholder"
     speech_results: speech_results
     timezone_history: timezone_history
@@ -104,6 +105,7 @@ dynamodb:
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
+    sense_key_store: http://dynamodb.us-east-1.amazonaws.com
     sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
     speech_results: http://dynamodb.us-east-1.amazonaws.com
     timezone_history: http://dynamodb.us-east-1.amazonaws.com

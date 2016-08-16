@@ -1,4 +1,4 @@
-package is.hello.speech.resources.v1;
+package is.hello.speech.resources.demo;
 
 import com.google.api.client.util.Lists;
 import com.joestelmach.natty.DateGroup;

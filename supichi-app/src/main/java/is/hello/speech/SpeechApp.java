@@ -24,6 +24,7 @@ import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.FileInfoDAO;
 import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
+import com.hello.suripu.core.db.KeyStoreDynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
@@ -63,9 +64,10 @@ import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
 import is.hello.speech.kinesis.KinesisData;
 import is.hello.speech.kinesis.SpeechKinesisConsumer;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
-import is.hello.speech.resources.v1.PCMResource;
-import is.hello.speech.resources.v1.ParseResource;
-import is.hello.speech.resources.v1.QueueMessageResource;
+import is.hello.speech.resources.demo.PCMResource;
+import is.hello.speech.resources.demo.ParseResource;
+import is.hello.speech.resources.demo.QueueMessageResource;
+import is.hello.speech.resources.v1.SignedBodyHandler;
 import is.hello.speech.resources.v1.UploadResource;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
@@ -139,6 +141,9 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
         final SpeechResultDAODynamoDB speechResultDAODynamoDB = SpeechResultDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
+
+        final AmazonDynamoDB keystoreClient= dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_KEY_STORE);
+        final KeyStoreDynamoDB keystore = new KeyStoreDynamoDB(keystoreClient, tableNames.get(DynamoDBTableName.SENSE_KEY_STORE), "hello".getBytes(),10);
 
         // for sleep sound handler
         final MessejiHttpClientConfiguration messejiHttpClientConfiguration = speechAppConfiguration.getMessejiHttpClientConfiguration();
@@ -289,7 +294,9 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
-        environment.jersey().register(new UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
+        final SignedBodyHandler signedBodyHandler = new SignedBodyHandler(keystore);
+        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, responseBuilder, watsonResponseBuilder));
+        environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
 
         environment.jersey().register(new ParseResource());
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.watsonAudioConfiguration().getBucketName()));

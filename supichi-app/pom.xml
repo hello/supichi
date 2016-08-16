@@ -15,6 +15,7 @@
 
     <properties>
         <aws.sdk.version>1.10.34</aws.sdk.version>
+        <!--<aws.sdk.version>1.9.37</aws.sdk.version>-->
         <supichi.version>0.2.0-SNAPSHOT</supichi.version>
         <java.version>1.8</java.version>
         <suripu.version>0.8.5322</suripu.version>
@@ -186,13 +187,8 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.10.34</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.amazonaws</groupId>
-                    <artifactId>aws-java-sdk-core</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>${aws.sdk.version}</version>
+            <!--<version>1.10.34</version>-->
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -202,7 +198,8 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sqs</artifactId>
-            <version>1.9.37</version>
+            <!--<version>1.9.37</version>-->
+            <version>${aws.sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -291,6 +288,23 @@
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
             <version>3.0.0-beta-2</version>
+            </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <version>1.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.9.5</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
