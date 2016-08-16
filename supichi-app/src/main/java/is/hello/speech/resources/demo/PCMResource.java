@@ -1,4 +1,4 @@
-package is.hello.speech.resources.v1;
+package is.hello.speech.resources.demo;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
