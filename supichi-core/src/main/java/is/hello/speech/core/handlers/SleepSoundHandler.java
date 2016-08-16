@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -44,10 +46,14 @@ public class SleepSoundHandler extends BaseHandler {
     private final MessejiClient messejiClient;
     private final SleepSoundsProcessor sleepSoundsProcessor;
 
-    public SleepSoundHandler(final MessejiClient messejiClient, final SpeechCommandDAO speechCommandDAO, final SleepSoundsProcessor sleepSoundsProcessor) {
+    final ScheduledThreadPoolExecutor executor;
+
+
+    public SleepSoundHandler(final MessejiClient messejiClient, final SpeechCommandDAO speechCommandDAO, final SleepSoundsProcessor sleepSoundsProcessor, final int numThreads) {
         super("sleep_sound", speechCommandDAO, getAvailableActions());
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
+        executor = new ScheduledThreadPoolExecutor(numThreads);
     }
 
 
@@ -87,6 +93,8 @@ public class SleepSoundHandler extends BaseHandler {
 
     }
 
+
+
     private Boolean playSleepSound(final String senseId, final Long accountId) {
 
         // TODO: get most recently played sleep_sound_id, order, volume, etc...
@@ -99,22 +107,29 @@ public class SleepSoundHandler extends BaseHandler {
 
         final Integer volumeScalingFactor = convertToSenseVolumePercent(SENSE_MAX_DECIBELS, DEFAULT_SLEEP_SOUND_VOLUME_PERCENT);
 
-        final Optional<Long> messageId = messejiClient.playAudio(
-                senseId,
-                MessejiClient.Sender.fromAccountId(accountId),
-                System.nanoTime(),
-                DEFAULT_SLEEP_SOUND_DURATION,
-                soundOptional.get(),
-                FADE_IN, FADE_OUT,
-                volumeScalingFactor,
-                TIMEOUT_FADE_OUT);
 
-        if (!messageId.isPresent()) {
-            LOGGER.error("error=messeji-request-play-audio-fail sense_id={} account_id={}", senseId, accountId);
-            return false;
-        }
+        executor.schedule((Runnable) () -> {
+            final Optional<Long> messageId = messejiClient.playAudio(
+                    senseId,
+                    MessejiClient.Sender.fromAccountId(accountId),
+                    System.nanoTime(),
+                    DEFAULT_SLEEP_SOUND_DURATION,
+                    soundOptional.get(),
+                    FADE_IN, FADE_OUT,
+                    volumeScalingFactor,
+                    TIMEOUT_FADE_OUT);
+            LOGGER.info("action=messeji-play sense_id={} account_id={}", senseId, accountId);
 
+            if (!messageId.isPresent()) {
+                LOGGER.error("error=messeji-request-play-audio-fail sense_id={} account_id={}", senseId, accountId);
+            }
+
+        }, 2, TimeUnit.SECONDS);
+
+        // returns true regardless of whether message was properly delivered
         return true;
+
+
     }
 
     private Boolean stopSleepSound(final String senseId, final Long accountId) {
