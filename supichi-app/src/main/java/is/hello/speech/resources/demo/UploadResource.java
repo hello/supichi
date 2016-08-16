@@ -31,6 +31,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
@@ -112,9 +113,15 @@ public class UploadResource {
 
         HandlerResult executeResult = HandlerResult.emptyResult();
 
-        final String debugSenseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
+        final String senseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
         // old default: 8AF6441AF72321F4  C8DAAC353AEFA4A9
-        final String senseId = (debugSenseId == null || debugSenseId.equals("0000000000000000")) ? "8AF6441AF72321F4" : debugSenseId;
+
+        if(senseId == null) {
+            LOGGER.error("error=missing-sense-id-header");
+            throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
+        }
+        // demo 8D6C0F005D469DE7
+
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(senseId);
 
         LOGGER.debug("info=sense-id id={}", senseId);

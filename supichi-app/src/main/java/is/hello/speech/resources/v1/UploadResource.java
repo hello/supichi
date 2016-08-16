@@ -77,9 +77,13 @@ public class UploadResource {
 
         HandlerResult executeResult = HandlerResult.emptyResult();
 
-        final String debugSenseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
+        final String senseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
+        if(senseId == null) {
+            LOGGER.error("error=missing-sense-id-header");
+            throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
+        }
+
         // old default: 8AF6441AF72321F4  C8DAAC353AEFA4A9
-        final String senseId = (debugSenseId == null || debugSenseId.equals("0000000000000000")) ? "8AF6441AF72321F4" : debugSenseId;
         final byte[] body = signedBodyHandler.extractAudio(senseId, signedBody);
 
         if(body.length == 0) {
