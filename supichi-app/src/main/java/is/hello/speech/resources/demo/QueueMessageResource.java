@@ -1,4 +1,4 @@
-package is.hello.speech.resources.v1;
+package is.hello.speech.resources.demo;
 
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
