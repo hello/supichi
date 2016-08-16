@@ -202,7 +202,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         clientConfiguration.withMaxErrorRetry(1);
         final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
 
-        // set up text2speech consumer manager
+        // set up text2speech consumer
         final ExecutorService queueConsumerExecutor = environment.lifecycle().executorService("queue_consumer")
                 .minThreads(1)
                 .maxThreads(2)
@@ -222,6 +222,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         }
 
         // set up Kinesis Producer
+        final KinesisStream kinesisStream = KinesisStream.SPEECH_RESULT;
+
         final KinesisProducerConfiguration kinesisProducerConfiguration = speechAppConfiguration.kinesisProducerConfiguration();
         final com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration kplConfig = new com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration()
                 .setRegion(kinesisProducerConfiguration.region())
@@ -237,14 +239,12 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final ScheduledExecutorService kinesisMetricsExecutor = environment.lifecycle().scheduledExecutorService("kinesis_producer_metrics").threads(1).build();
 
-
-        final KinesisStream kinesisStream = KinesisStream.SPEECH_RESULT;
-
         final KinesisProducer kinesisProducer = new KinesisProducer(kplConfig);
         final String kinesisStreamName = kinesisProducerConfiguration.streams().get(kinesisStream);
         final BlockingQueue<KinesisData> kinesisEvents = new ArrayBlockingQueue<>(kinesisProducerConfiguration.queueSize());
         final SpeechKinesisProducer speechKinesisProducer = new SpeechKinesisProducer(kinesisStreamName, kinesisEvents, kinesisProducer, kinesisExecutor, kinesisMetricsExecutor);
         environment.lifecycle().manage(speechKinesisProducer);
+
 
         // set up Kinesis Consumer
         final KinesisConsumerConfiguration kinesisConsumerConfiguration = speechAppConfiguration.kinesisConsumerConfiguration();
