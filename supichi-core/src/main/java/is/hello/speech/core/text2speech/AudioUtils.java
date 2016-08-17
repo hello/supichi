@@ -28,6 +28,10 @@ public class AudioUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(AudioUtils.class);
 
     public static final int WAVE_HEADER_SIZE = 44;
+    public static final float SENSE_SAMPLING_RATE = 16000.0f;
+    public static final com.ibm.watson.developer_cloud.text_to_speech.v1.model.AudioFormat WATSON_AUDIO_FORMAT =
+            com.ibm.watson.developer_cloud.text_to_speech.v1.model.AudioFormat.WAV;
+
 
     // for adding WAV headers to watson stream
     private static final int WATSON_WAVE_HEADER_SIZE = 8;      // The WAVE meta-data header size.
@@ -42,7 +46,6 @@ public class AudioUtils {
     private static final int NUM_EQ_BANDS = 10;
     private static final boolean SIGNED_DATA_TRUE = true;
     private static final boolean BIG_ENDIAN_FALSE = false;
-
     private static final List<Float> EQUALIZED_VALUES = new ArrayList<Float>(NUM_EQ_BANDS) {{
         add(0, 10.0f);  // 32
         add(1, 10.0f);  // 64
@@ -53,7 +56,7 @@ public class AudioUtils {
         add(6, 5.60f);  // 2k
         add(7, 12.9f);  // 4k
         add(8, 16.9f);  // 8k
-        add(9, 16.9f);  // 16k
+        add(9, 17.0f);  // 11K
     }};
 
     public static class AudioBytes {
@@ -76,7 +79,6 @@ public class AudioUtils {
      * Note: from IBM WaveUtils
      * Re-writes the data size in the header(bytes 4-8) of the WAVE(.wav) input stream.<br>
      * It needs to be read in order to calculate the size.
-     *
      * @param inputStream the input stream
      */
     public static AudioBytes convertStreamToBytesWithWavHeader(final InputStream inputStream) {
@@ -84,7 +86,7 @@ public class AudioUtils {
         try {
             audioBytes = IOUtils.toByteArray(inputStream);
         } catch (IOException e) {
-            LOGGER.warn("error=fail-to-convert-inputstream msg={}", e.getMessage());
+            LOGGER.warn("error=fail-to-convert-input-stream error_msg={}", e.getMessage());
             return AudioBytes.empty();
         }
 
@@ -100,7 +102,7 @@ public class AudioUtils {
      * Down-sample audio to a different sampling rate
      * @param bytes raw audio bytes
      * @param targetSampleRate target sample rate
-     * @return data in raw bytes
+     * @return data in AudioBytes
      */
     public static AudioBytes downSampleAudio(final byte[] bytes, Optional<javax.sound.sampled.AudioFormat> optionalSourceFormat, final float targetSampleRate) {
 
@@ -126,11 +128,20 @@ public class AudioUtils {
             final byte[] convertedBytes = IOUtils.toByteArray(convertedStream);
             return new AudioBytes(convertedBytes, convertedBytes.length, targetFormat);
         } catch (IOException e) {
-            LOGGER.error("error=fail-to-convert-stream-to-bytes");
+            LOGGER.error("error=fail-down-sample-convert-stream-to-bytes error_msg={}", e.getMessage());
             return AudioBytes.empty();
         }
     }
 
+    /**
+     * Equalize audio to Sense-specific profile
+     * see:
+     * https://github.com/whamtet/jeq
+     * https://sourceforge.net/projects/jeq/
+     * @param bytes raw audio bytes
+     * @param optionalSourceFormat source audio format
+     * @return data in AudioBytes
+     */
     public static AudioBytes equalize(final byte[] bytes,  Optional<javax.sound.sampled.AudioFormat> optionalSourceFormat) {
 
         final Optional<AudioInputStream> optionalSourceStream = getAudioStream(bytes, optionalSourceFormat);
@@ -165,9 +176,9 @@ public class AudioUtils {
                     output.append(buffer, 0, bytesRead);
                 }
             }
-            LOGGER.debug("action=equalize-audio-success bytes_converted={} original_size={}", output.length(), bufferSize);
+            LOGGER.debug("action=equalize-success bytes_processed={} original_size={}", output.length(), bufferSize);
         } catch (IOException e) {
-            LOGGER.error("error=fail-to-equalize error_msg={}", e.getMessage());
+            LOGGER.error("error=equalize-fail error_msg={}", e.getMessage());
             return AudioBytes.empty();
         }
 
@@ -175,19 +186,11 @@ public class AudioUtils {
     }
 
     /**
-     * Writes an number into an array using 4 bytes
-     *
-     * @param value the number to write
-     * @param array the byte array
-     * @param offset the offset
+     * Convert PCM audio to MP3
+     * @param pcm audio values in PCM
+     * @return mp3 bytes
      */
-    private static void writeInt(int value, byte[] array, int offset) {
-        for (int i = 0; i < 4; i++) {
-            array[offset + i] = (byte) (value >>> (8 * i));
-        }
-    }
-
-    static byte[] encodePcmToMp3(final AudioBytes pcm) {
+    public static byte[] encodePcmToMp3(final AudioBytes pcm) {
 
         if (!pcm.format.isPresent()) {
             LOGGER.error("error=no-pcm-format-found-for-mp3-conversion");
@@ -223,6 +226,24 @@ public class AudioUtils {
         return mp3.toByteArray();
     }
 
+    /**
+     * Writes an number into an array using 4 bytes
+     * @param value the number to write
+     * @param array the byte array
+     * @param offset the offset
+     */
+    private static void writeInt(int value, byte[] array, int offset) {
+        for (int i = 0; i < 4; i++) {
+            array[offset + i] = (byte) (value >>> (8 * i));
+        }
+    }
+
+    /**
+     * convert raw bytes to AudioInputStream
+     * @param bytes raw bytes
+     * @param optionalSourceFormat audio format
+     * @return Optional AudioInputStream
+     */
     private static Optional<AudioInputStream> getAudioStream(final byte[] bytes, Optional<javax.sound.sampled.AudioFormat> optionalSourceFormat) {
 
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
@@ -233,10 +254,10 @@ public class AudioUtils {
             try {
                 sourceStream = AudioSystem.getAudioInputStream(inputStream);
             } catch (UnsupportedAudioFileException e) {
-                LOGGER.error("error=fail-to-get-audio-stream reason=unsupported-audio-file msg={}", e.getMessage());
+                LOGGER.error("error=fail-to-get-audio-stream reason=unsupported-audio-file error_msg={}", e.getMessage());
                 return Optional.absent();
             } catch (IOException e) {
-                LOGGER.error("error=fail-to-convert-bytes-to-audio-stream reason=IO-exception msg={}", e.getMessage());
+                LOGGER.error("error=fail-to-get-audio-stream reason=io-exception error_msg={}", e.getMessage());
                 return Optional.absent();
             }
         }

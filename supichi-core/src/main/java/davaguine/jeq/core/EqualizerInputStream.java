@@ -29,9 +29,9 @@ import java.io.InputStream;
  */
 public class EqualizerInputStream extends InputStream {
     private InputStream stream;
-    public IIR iir;
+    private IIR iir;
 
-    public final static int BUFFER_SIZE = 65536;
+    private final static int BUFFER_SIZE = 65536;
     private byte[] inbuf = new byte[BUFFER_SIZE];
     private int[] workbuf = new int[BUFFER_SIZE];
     private byte[] outbuf = new byte[BUFFER_SIZE];
