@@ -171,12 +171,13 @@ public class IIRControls {
      * @param channel is the index of channel
      * @param value   is the new value
      */
-    void setBandDbValue(int band, int channel, float value) {
+    public void setBandDbValue(int band, int channel, float value) {
         /* Map the gain and preamp values */
         /* -12dB .. 12dB mapping */
-        bands[band][channel] = (float) (2.5220207857061455181125E-01 *
+        float newVal =  (float) (2.5220207857061455181125E-01 *
                 Math.exp(8.0178361802353992349168E-02 * value)
                 - 2.5220207852836562523180E-01);
+        bands[band][channel] = newVal;
     }
 
     /**
