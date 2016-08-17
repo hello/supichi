@@ -6,6 +6,7 @@ import net.sourceforge.lame.lowlevel.LameEncoder;
 import net.sourceforge.lame.mp3.Lame;
 import net.sourceforge.lame.mp3.MPEGMode;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.http.util.ByteArrayBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +18,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by ksg on 8/2/16
@@ -34,6 +37,24 @@ public class AudioUtils {
     private static final int MP3_BITRATE = 44;  // TODO: make this configurable
     private static final boolean USE_VBR = false;
 
+    // Equalization settings
+    private static final int NUM_CHANNELS = 1;
+    private static final int NUM_EQ_BANDS = 10;
+    private static final boolean SIGNED_DATA_TRUE = true;
+    private static final boolean BIG_ENDIAN_FALSE = false;
+
+    private static final List<Float> EQUALIZED_VALUES = new ArrayList<Float>(NUM_EQ_BANDS) {{
+        add(0, 10.0f);  // 32
+        add(1, 10.0f);  // 64
+        add(2, 8.15f);  // 125
+        add(3, 6.98f);  // 250
+        add(4, 2.03f);  // 500
+        add(5, 1.05f);  // 1k
+        add(6, 5.60f);  // 2k
+        add(7, 12.9f);  // 4k
+        add(8, 16.9f);  // 8k
+        add(9, 16.9f);  // 16k
+    }};
 
     public static class AudioBytes {
         public final byte [] bytes;
@@ -83,24 +104,12 @@ public class AudioUtils {
      */
     public static AudioBytes downSampleAudio(final byte[] bytes, Optional<javax.sound.sampled.AudioFormat> optionalSourceFormat, final float targetSampleRate) {
 
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-
-        final AudioInputStream sourceStream;
-        if (optionalSourceFormat.isPresent()) {
-            sourceStream = new AudioInputStream(inputStream, optionalSourceFormat.get(), bytes.length);
-        } else {
-            try {
-                sourceStream = AudioSystem.getAudioInputStream(inputStream);
-            } catch (UnsupportedAudioFileException e) {
-                LOGGER.error("error=downsample-fail-unsupported-audio-file msg={}", e.getMessage());
-                return AudioBytes.empty();
-            } catch (IOException e) {
-                LOGGER.error("error=fail-to-convert-bytes-to-audiostream reason=IO-exception msg={}", e.getMessage());
-                return AudioBytes.empty();
-            }
-
+        final Optional<AudioInputStream> optionalSourceStream = getAudioStream(bytes, optionalSourceFormat);
+        if (!optionalSourceStream.isPresent()) {
+            return AudioBytes.empty();
         }
 
+        final AudioInputStream sourceStream = optionalSourceStream.get();
         final javax.sound.sampled.AudioFormat sourceFormat = sourceStream.getFormat();
         final javax.sound.sampled.AudioFormat targetFormat = new javax.sound.sampled.AudioFormat(
                 sourceFormat.getEncoding(),
@@ -123,50 +132,46 @@ public class AudioUtils {
     }
 
     public static AudioBytes equalize(final byte[] bytes,  Optional<javax.sound.sampled.AudioFormat> optionalSourceFormat) {
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
 
-        final AudioInputStream sourceStream;
-        if (optionalSourceFormat.isPresent()) {
-            sourceStream = new AudioInputStream(inputStream, optionalSourceFormat.get(), bytes.length);
-        } else {
-            try {
-                sourceStream = AudioSystem.getAudioInputStream(inputStream);
-            } catch (UnsupportedAudioFileException e) {
-                LOGGER.error("error=equalize-fail-unsupported-audio-file msg={}", e.getMessage());
-                return AudioBytes.empty();
-            } catch (IOException e) {
-                LOGGER.error("error=fail-to-convert-bytes-to-audiostream reason=IO-exception msg={}", e.getMessage());
-                return AudioBytes.empty();
-            }
-
+        final Optional<AudioInputStream> optionalSourceStream = getAudioStream(bytes, optionalSourceFormat);
+        if (!optionalSourceStream.isPresent()) {
+            return AudioBytes.empty();
         }
 
+        final AudioInputStream sourceStream = optionalSourceStream.get();
         final javax.sound.sampled.AudioFormat sourceFormat = sourceStream.getFormat();
 
-        // TODO: set the right values
-        final EqualizerInputStream equalizer = new EqualizerInputStream(sourceStream, sourceFormat.getSampleRate(), 1, true, sourceFormat.getSampleSizeInBits(), false, 10);
-        equalizer.getControls().setBandDbValue(0, 0, 10.0f); // 32
-        equalizer.getControls().setBandDbValue(1, 0, 10.0f); // 64
-        equalizer.getControls().setBandDbValue(2, 0, 8.15f); // 125
-        equalizer.getControls().setBandDbValue(3, 0, 7.0f); // 250
-        equalizer.getControls().setBandDbValue(4, 0, 2.0f); // 500
-        equalizer.getControls().setBandDbValue(5, 0, 1.05f); // 1k
-        equalizer.getControls().setBandDbValue(6, 0, 5.60f); // 2k
-        equalizer.getControls().setBandDbValue(7, 0, 12.0f); // 4k
-        equalizer.getControls().setBandDbValue(8, 0, 12.0f); // 8k
-        equalizer.getControls().setBandDbValue(9, 0, 12.0f); // 16k
+        final EqualizerInputStream equalizer = new EqualizerInputStream(sourceStream,
+                sourceFormat.getSampleRate(),
+                NUM_CHANNELS,
+                SIGNED_DATA_TRUE,
+                sourceFormat.getSampleSizeInBits(),
+                BIG_ENDIAN_FALSE,
+                NUM_EQ_BANDS);
 
+        for (int band = 0; band < NUM_EQ_BANDS; band++) {
+            equalizer.getControls().setBandDbValue(band, 0, EQUALIZED_VALUES.get(band));
+        }
+
+        // grab output of equalized audio
         final int bufferSize = bytes.length;
-        final byte[] buffer = new byte[bufferSize];
+        final ByteArrayBuffer output = new ByteArrayBuffer(bufferSize);
         try {
-            final int bytesRead = equalizer.read(buffer, 0, buffer.length);
-            LOGGER.debug("action=equalize-audio-success bytes_converted={} original_size={}", bytesRead, bufferSize);
+            byte[] buffer = new byte[bufferSize];
+            int bytesRead = 0;
+            while (bytesRead >= 0) {
+                bytesRead = equalizer.read(buffer, 0, buffer.length);
+                if (bytesRead >= 0) {
+                    output.append(buffer, 0, bytesRead);
+                }
+            }
+            LOGGER.debug("action=equalize-audio-success bytes_converted={} original_size={}", output.length(), bufferSize);
         } catch (IOException e) {
             LOGGER.error("error=fail-to-equalize error_msg={}", e.getMessage());
             return AudioBytes.empty();
         }
 
-        return new AudioBytes(buffer, buffer.length, sourceFormat);
+        return new AudioBytes(output.buffer(), output.length(), sourceFormat);
     }
 
     /**
@@ -216,5 +221,25 @@ public class AudioUtils {
 
         encoder.close();
         return mp3.toByteArray();
+    }
+
+    private static Optional<AudioInputStream> getAudioStream(final byte[] bytes, Optional<javax.sound.sampled.AudioFormat> optionalSourceFormat) {
+
+        final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+        final AudioInputStream sourceStream;
+        if (optionalSourceFormat.isPresent()) {
+            sourceStream = new AudioInputStream(inputStream, optionalSourceFormat.get(), bytes.length);
+        } else {
+            try {
+                sourceStream = AudioSystem.getAudioInputStream(inputStream);
+            } catch (UnsupportedAudioFileException e) {
+                LOGGER.error("error=fail-to-get-audio-stream reason=unsupported-audio-file msg={}", e.getMessage());
+                return Optional.absent();
+            } catch (IOException e) {
+                LOGGER.error("error=fail-to-convert-bytes-to-audio-stream reason=IO-exception msg={}", e.getMessage());
+                return Optional.absent();
+            }
+        }
+        return Optional.of(sourceStream);
     }
 }
