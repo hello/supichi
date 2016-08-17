@@ -136,8 +136,11 @@ public class Text2SpeechQueueConsumer implements Managed {
                                 final String s3RawBucket = String.format("%s/%s/%s", s3KeyRaw, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
                                 uploadToS3(s3RawBucket, String.format("%s-raw.wav", keyname), watsonAudio.bytes);
 
+                                // equalized audio first
+                                final AudioUtils.AudioBytes equalizedBytes = AudioUtils.equalize(watsonAudio.bytes);
+
                                 // down-sample audio from 22050 to 16k, upload converted bytes to S3
-                                final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(watsonAudio.bytes, TARGET_SAMPLING_RATE);
+                                final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(equalizedBytes.bytes, equalizedBytes.format.get(), TARGET_SAMPLING_RATE);
                                 if (downSampledBytes.contentSize != 0) {
                                     final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
                                     uploadToS3(S3Bucket, String.format("%s-16k.wav", keyname), downSampledBytes.bytes);

@@ -34,8 +34,11 @@ public class WatsonResponseBuilder {
         try (final InputStream watsonStream = watson.synthesize(text, watsonVoice, AudioFormat.WAV).execute()) {
             final AudioUtils.AudioBytes watsonAudio = AudioUtils.convertStreamToBytesWithWavHeader(watsonStream);
 
+            // equalized audio first
+            final AudioUtils.AudioBytes equalizedBytes = AudioUtils.equalize(watsonAudio.bytes);
+
             // down-sample audio from 22050 to 16k, upload converted bytes to S3
-            final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(watsonAudio.bytes, 16000.0f);
+            final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(equalizedBytes.bytes, equalizedBytes.format.get(), 16000.0f);
 
             outputStream.write(downSampledBytes.bytes);
         } catch (IOException e) {
