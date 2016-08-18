@@ -123,7 +123,7 @@ watson:
   password: 8riFzRbKOd4c
   voice: en-US_AllisonVoice
 
-save_audio:
+watson_save_audio:
   s3_bucket_name: hello-audio
   s3_audio_prefix_raw: voice/watson-text2speech/raw
   s3_audio_prefix: voice/watson-text2speech/16k  # bucket with responses sent back to Sense
@@ -156,5 +156,5 @@ kinesis_consumer:
    speech_result: dev_speech_results
 
 sense_upload_audio:  # bucket to save audio uploaded from Sense
-  s3_bucket_name: hello-audio
-  s3_audio_prefix: voice/sense_upload_audio
+  s3_bucket_name: hello-sense-audio-upload
+  s3_audio_prefix: dev_sense_1_5

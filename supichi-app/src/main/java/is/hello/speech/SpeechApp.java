@@ -207,8 +207,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         clientConfiguration.withMaxErrorRetry(1);
         final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
 
-        // set up text2speech consumer
-        final ExecutorService queueConsumerExecutor = environment.lifecycle().executorService("queue_consumer")
+        // set up Text2speech Consumer
+        final ExecutorService queueConsumerExecutor = environment.lifecycle().executorService("text2speech_queue_consumer")
                 .minThreads(1)
                 .maxThreads(2)
                 .keepAliveTime(Duration.seconds(2L)).build();
@@ -266,7 +266,6 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .withInitialPositionInStream(initialPositionInStream);
 
         final ScheduledExecutorService scheduledKinesisConsumer = environment.lifecycle().scheduledExecutorService("kinesis_consumer").threads(1).build();
-                // .minThreads(1).maxThreads(2).keepAliveTime(Duration.seconds(5)).build();
 
         final String senseUploadBucket = String.format("%s/%s",
                 speechAppConfiguration.senseUploadAudioConfiguration().getBucketName(),
@@ -295,7 +294,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
         final SignedBodyHandler signedBodyHandler = new SignedBodyHandler(keystore);
-        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, responseBuilder, watsonResponseBuilder));
+        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
         environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
 
         environment.jersey().register(new ParseResource());

@@ -23,6 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by ksg on 8/9/16
@@ -46,7 +47,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
 
     public Boolean addResult(final SpeechResult result, final byte[] audioBytes) {
         try {
-            inputQueue.put(new KinesisData(result, audioBytes));
+            inputQueue.offer(new KinesisData(result, audioBytes), 1000L, TimeUnit.MILLISECONDS);
             return true;
         } catch (InterruptedException e) {
             LOGGER.warn("error=fail-to-put-audio-data-in-queue error_msg={}", e.getMessage());
@@ -56,6 +57,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
 
     @Override
     protected void putData() throws Exception {
+        LOGGER.debug("action=KPL-running");
         do {
             if (!inputQueue.isEmpty()) {
                 LOGGER.debug("action=kpl-put-data queue_size={}", inputQueue.size());
