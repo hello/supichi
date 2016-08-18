@@ -6,7 +6,7 @@
     <parent>
         <groupId>is.hello.speech</groupId>
         <artifactId>supichi</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -14,10 +14,10 @@
     <artifactId>supichi-app</artifactId>
 
     <properties>
-        <aws.sdk.version>1.9.37</aws.sdk.version>
-        <supichi.version>0.2.0-SNAPSHOT</supichi.version>
+        <aws.sdk.version>1.10.34</aws.sdk.version>
+        <supichi.version>0.3.0-SNAPSHOT</supichi.version>
         <java.version>1.8</java.version>
-        <suripu.version>0.8.5322</suripu.version>
+        <suripu.version>0.8.55012</suripu.version>
         <dropwizard.version>0.9.2</dropwizard.version>
         <tcnative.classifier>osx-x86_64</tcnative.classifier>
         <!--<tcnative.classifier>linux-x86_64</tcnative.classifier>-->
