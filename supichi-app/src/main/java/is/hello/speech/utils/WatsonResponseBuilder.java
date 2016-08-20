@@ -1,7 +1,7 @@
 package is.hello.speech.utils;
 
+import com.google.common.base.Optional;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
-import com.ibm.watson.developer_cloud.text_to_speech.v1.model.AudioFormat;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.text2speech.AudioUtils;
@@ -31,11 +31,14 @@ public class WatsonResponseBuilder {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         final String text = executeResult.responseParameters.get("text");
-        try (final InputStream watsonStream = watson.synthesize(text, watsonVoice, AudioFormat.WAV).execute()) {
+        try (final InputStream watsonStream = watson.synthesize(text, watsonVoice, AudioUtils.WATSON_AUDIO_FORMAT).execute()) {
             final AudioUtils.AudioBytes watsonAudio = AudioUtils.convertStreamToBytesWithWavHeader(watsonStream);
 
+            // equalized audio first, 16K not supported
+            final AudioUtils.AudioBytes equalizedBytes = AudioUtils.equalize(watsonAudio.bytes, Optional.absent());
+
             // down-sample audio from 22050 to 16k, upload converted bytes to S3
-            final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(watsonAudio.bytes, 16000.0f);
+            final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(equalizedBytes.bytes, equalizedBytes.format, AudioUtils.SENSE_SAMPLING_RATE);
 
             outputStream.write(downSampledBytes.bytes);
         } catch (IOException e) {

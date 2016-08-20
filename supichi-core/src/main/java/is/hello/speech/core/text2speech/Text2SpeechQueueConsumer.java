@@ -14,7 +14,6 @@ import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
-import com.ibm.watson.developer_cloud.text_to_speech.v1.model.AudioFormat;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
 import io.dropwizard.lifecycle.Managed;
 import is.hello.speech.core.api.Text2SpeechQueue;
@@ -37,8 +36,6 @@ public class Text2SpeechQueueConsumer implements Managed {
     private final Logger LOGGER = LoggerFactory.getLogger(Text2SpeechQueueConsumer.class);
 
     private static final int MAX_RECEIVED_MESSAGES = 10;
-    private static final AudioFormat DEFAULT_AUDIO_FORMAT = AudioFormat.WAV;
-    private static final float TARGET_SAMPLING_RATE = 16000.0f;
 
     private final AmazonS3 amazonS3;
     private final String s3KeyRaw;
@@ -115,7 +112,7 @@ public class Text2SpeechQueueConsumer implements Managed {
                         LOGGER.debug("action=synthesize-text service={} text={}", synthesizeMessage.getService().toString(), text);
 
                         try {
-                            final InputStream watsonStream = watson.synthesize(text, watsonVoice, DEFAULT_AUDIO_FORMAT).execute();
+                            final InputStream watsonStream = watson.synthesize(text, watsonVoice, AudioUtils.WATSON_AUDIO_FORMAT).execute();
 
                             // construct filename
                             String keyname = String.format("%s-%s-%s-%s-%s-%s",
@@ -137,8 +134,11 @@ public class Text2SpeechQueueConsumer implements Managed {
                                 final String s3RawBucket = String.format("%s/%s/%s", s3KeyRaw, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
                                 uploadToS3(s3RawBucket, String.format("%s-raw.wav", keyname), watsonAudio.bytes);
 
+                                // equalized audio first
+                                final AudioUtils.AudioBytes equalizedBytes = AudioUtils.equalize(watsonAudio.bytes, Optional.absent());
+
                                 // down-sample audio from 22050 to 16k, upload converted bytes to S3
-                                final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(watsonAudio.bytes, TARGET_SAMPLING_RATE);
+                                final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(equalizedBytes.bytes, equalizedBytes.format, AudioUtils.SENSE_SAMPLING_RATE);
                                 if (downSampledBytes.contentSize != 0) {
                                     final String S3Bucket = String.format("%s/%s/%s", s3Key, synthesizeMessage.getIntent().toString(), synthesizeMessage.getCategory().toString());
                                     uploadToS3(S3Bucket, String.format("%s-16k.wav", keyname), downSampledBytes.bytes);
