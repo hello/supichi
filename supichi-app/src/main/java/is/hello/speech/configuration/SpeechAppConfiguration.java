@@ -5,6 +5,7 @@ import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.coredw8.configuration.NewDynamoDBConfiguration;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
+import is.hello.speech.core.configuration.KMSConfiguration;
 import is.hello.speech.core.configuration.KinesisConsumerConfiguration;
 import is.hello.speech.core.configuration.KinesisProducerConfiguration;
 import is.hello.speech.core.configuration.SQSConfiguration;
@@ -97,4 +98,11 @@ public class SpeechAppConfiguration extends Configuration {
     private KinesisConsumerConfiguration kinesisConsumerConfiguration;
     public KinesisConsumerConfiguration kinesisConsumerConfiguration() { return kinesisConsumerConfiguration; }
 
+    @JsonProperty("keys_management_service")
+    private KMSConfiguration kmsConfiguration;
+    public KMSConfiguration kmsConfiguration() { return this.kmsConfiguration; }
+
+    @JsonProperty("s3_endpoint")
+    private String s3Endpoint;
+    public String s3Endpoint() { return s3Endpoint; }
 }

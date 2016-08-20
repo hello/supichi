@@ -9,10 +9,12 @@ import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessor;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer;
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason;
 import com.amazonaws.services.kinesis.model.Record;
+import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
 import is.hello.speech.core.api.SpeechResultsKinesis;
@@ -31,11 +33,22 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
 
     private final AmazonS3 s3;
     private final String s3Bucket;
+    private final SSEAwsKeyManagementParams s3SSEKey;
+    private final AWSKMSClient awskmsClient;
+    private final String kmsUUIDKey;
     private final SpeechResultDAODynamoDB speechResultDAODynamoDB;
 
-    public SpeechKinesisRecordProcessor(final String s3Bucket, final AmazonS3 s3, final SpeechResultDAODynamoDB speechResultDAODynamoDB) {
+    public SpeechKinesisRecordProcessor(final String s3Bucket,
+                                        final AmazonS3 s3,
+                                        final SSEAwsKeyManagementParams s3SSEKey,
+                                        final AWSKMSClient awskmsClient,
+                                        final String kmsUUIDKey,
+                                        final SpeechResultDAODynamoDB speechResultDAODynamoDB) {
         this.s3Bucket = s3Bucket;
         this.s3 = s3;
+        this.s3SSEKey = s3SSEKey;
+        this.awskmsClient = awskmsClient;
+        this.kmsUUIDKey = kmsUUIDKey;
         this.speechResultDAODynamoDB = speechResultDAODynamoDB;
     }
 
@@ -52,12 +65,12 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
         metadata.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         metadata.setContentLength(audioBytes.length);
 
-        final String keyname = String.format("%d-%s-%s.raw",
-                speechResultsData.getAccountId(), speechResultsData.getSenseId(), speechResultsData.getAudioUuid());
-
+        final String keyname = String.format("%s.raw", speechResultsData.getAudioUuid());
         try {
             final PutObjectResult putResult = s3.putObject(
-                    new PutObjectRequest(s3Bucket, keyname, new ByteArrayInputStream(audioBytes), metadata));
+                    new PutObjectRequest(s3Bucket, keyname, new ByteArrayInputStream(audioBytes), metadata)
+                            .withSSEAwsKeyManagementParams(s3SSEKey)
+            );
 
             LOGGER.debug("action=get-sense-audio-upload-result md5={}", putResult.getContentMd5());
         } catch (AmazonServiceException ase) {

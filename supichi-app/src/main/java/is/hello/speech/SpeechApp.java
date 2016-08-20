@@ -9,8 +9,10 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
+import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
@@ -50,6 +52,7 @@ import is.hello.speech.cli.WatsonTextToSpeech;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.clients.SpeechClientManaged;
 import is.hello.speech.configuration.SpeechAppConfiguration;
+import is.hello.speech.core.configuration.KMSConfiguration;
 import is.hello.speech.core.configuration.KinesisConsumerConfiguration;
 import is.hello.speech.core.configuration.KinesisProducerConfiguration;
 import is.hello.speech.core.configuration.KinesisStream;
@@ -206,6 +209,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         clientConfiguration.withConnectionTimeout(200); // in ms
         clientConfiguration.withMaxErrorRetry(1);
         final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
+        amazonS3.setRegion(Region.getRegion(Regions.US_EAST_1));
+        amazonS3.setEndpoint(speechAppConfiguration.s3Endpoint());
 
         // set up Text2speech Consumer
         final ExecutorService queueConsumerExecutor = environment.lifecycle().executorService("text2speech_queue_consumer")
@@ -271,12 +276,23 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 speechAppConfiguration.senseUploadAudioConfiguration().getBucketName(),
                 speechAppConfiguration.senseUploadAudioConfiguration().getAudioPrefix());
 
+        // set up KMS stuff
+        final KMSConfiguration kmsConfig = speechAppConfiguration.kmsConfiguration();
+        final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
+        awskmsClient.setEndpoint("https://kms.us-west-2.amazonaws.com");
+
+        final SSEAwsKeyManagementParams s3SSEKey = new SSEAwsKeyManagementParams(kmsConfig.kmsKeys().audio());
+
         final SpeechKinesisConsumer speechKinesisConsumer = new SpeechKinesisConsumer(kinesisClientLibConfiguration,
                 scheduledKinesisConsumer,
                 kinesisConsumerConfiguration.scheduleMinutes(),
                 amazonS3,
                 senseUploadBucket,
+                s3SSEKey,
+                awskmsClient,
+                kmsConfig.kmsKeys().uuid(), // for UUID encryption
                 speechResultDAODynamoDB);
+
         environment.lifecycle().manage(speechKinesisConsumer);
 
 

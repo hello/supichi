@@ -156,5 +156,13 @@ kinesis_consumer:
    speech_result: dev_speech_results
 
 sense_upload_audio:  # bucket to save audio uploaded from Sense
-  s3_bucket_name: hello-sense-audio-upload
-  s3_audio_prefix: dev_sense_1_5
+  s3_bucket_name: hello-voice-upload-dev
+  s3_audio_prefix: sense_1_5
+
+keys_management_service:
+  endpoint: https://kms.us-west-2.amazonaws.com
+  keys:
+    uuid: arn:aws:kms:us-east-1:053216739513:key/1c60acdc-0628-4f8f-8fbc-f1cacb59a845
+    audio: arn:aws:kms:us-east-1:053216739513:key/349ce129-1242-411f-b395-f082a60a274b
+
+s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms
