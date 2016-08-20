@@ -39,6 +39,7 @@ public class TriviaHandler extends BaseHandler {
         tempMap.put("best basketball", SpeechCommand.TRIVIA);
         tempMap.put("how was", SpeechCommand.TRIVIA);
         tempMap.put("sleep last", SpeechCommand.TRIVIA);
+        tempMap.put("favorite retailer", SpeechCommand.TRIVIA);
         return tempMap;
     }
 
@@ -68,12 +69,15 @@ public class TriviaHandler extends BaseHandler {
                 response.put("answer", "next_president");
                 response.put("text", "The next president of the United States will either be Hillary Clinton, or Donald Trump.");
             } else if (text.equalsIgnoreCase("best basketball")) {
-            response.put("result", HandlerResult.Outcome.OK.getValue());
-            response.put("answer", "best_basketball");
-            response.put("text", "The best basketball team in the NBA is the Golden State Warriors.");
+                response.put("result", HandlerResult.Outcome.OK.getValue());
+                response.put("answer", "best_basketball");
+                response.put("text", "The best basketball team in the NBA is the Golden State Warriors.");
+            } else if (text.equals("favorite retailer")) {
+                response.put("result", HandlerResult.Outcome.OK.getValue());
+                response.put("answer", "retailer_best_buy");
+                response.put("text", "Hello's favorite retailer is best buy.");
+            }
         }
-
-    }
         return new HandlerResult(HandlerType.TRIVIA, response);
     }
 }
