@@ -30,6 +30,7 @@ public class UploadResourceTest {
     private ResponseBuilder responseBuilder;
     private WatsonResponseBuilder watsonResponseBuilder;
     private SignedBodyHandler signedBodyHandler;
+    private boolean useMP3 = false;
 
     @Before
     public void setUp() {
@@ -54,7 +55,7 @@ public class UploadResourceTest {
         final HttpServletRequest request = mock(HttpServletRequest.class);
         resource.request = request;
 
-        resource.streaming(new byte[]{}, 8000, false);
+        resource.streaming(new byte[]{}, 8000, false, useMP3);
     }
 
     public void testUploadSignedAudioInvalid() throws IOException, InterruptedException {
@@ -68,7 +69,7 @@ public class UploadResourceTest {
         resource.request = request;
 
         try {
-            resource.streaming(new byte[]{}, 8000, false);
+            resource.streaming(new byte[]{}, 8000, false, useMP3);
         }catch (WebApplicationException w) {
             assertEquals(w.getResponse().getStatus(), Response.Status.BAD_REQUEST);
         }

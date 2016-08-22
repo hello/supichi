@@ -27,7 +27,7 @@ public class WatsonResponseBuilder {
 
     }
 
-    public byte[] response(HandlerResult executeResult) {
+    public byte[] response(final HandlerResult executeResult, final boolean useMP3) {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         final String text = executeResult.responseParameters.get("text");
@@ -40,7 +40,13 @@ public class WatsonResponseBuilder {
             // down-sample audio from 22050 to 16k, upload converted bytes to S3
             final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(equalizedBytes.bytes, equalizedBytes.format, AudioUtils.SENSE_SAMPLING_RATE);
 
-            outputStream.write(downSampledBytes.bytes);
+            if (useMP3) {
+                final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(downSampledBytes);
+                outputStream.write(mp3Bytes);
+            } else {
+                outputStream.write(downSampledBytes.bytes);
+            }
+
         } catch (IOException e) {
             LOGGER.error("action=watson-down-sample-fails error_msg={}", e.getMessage());
         }
