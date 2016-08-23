@@ -107,7 +107,7 @@ public class UploadResource {
             }
         }
 
-        LOGGER.debug("action=get-speech-audio sense_id={} account_id={}", senseId, accountId);
+        LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", senseId, accountId, responseParam.type().name());
         try {
             final SpeechServiceResult resp = speechClient.stream(body, sampling);
 

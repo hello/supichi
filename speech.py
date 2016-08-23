@@ -119,14 +119,25 @@ if __name__ == '__main__':
     if len(sys.argv) == 6:
         pb = sys.argv[5]
 
-    su = SlowUpload(filename)
+    # su = SlowUpload(filename)
     # testing 8AF6441AF72321F4 2095
     # demo C8DAAC353AEFA4A9 62297
+    import hmac
+    import hashlib
+    import base64
+
+    aes_key = "CD0C57B4B5C69D4C28F75AC4FBA5FF22".decode("hex"); # for 8AF6441AF72321F4
+    fp = open(filename, 'rb')
+    file_data = fp.read();
+    hashed = hmac.new(aes_key, file_data, hashlib.sha1)
+    print "length of hash", len(hashed.digest())
+    su = file_data + hashed.digest()
+
     headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "8AF6441AF72321F4"}
     if env == 'local':
-        ENDPOINT = "http://localhost:8181/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
+        ENDPOINT = "http://localhost:8181/v1/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
     elif env == 'dev':
-        ENDPOINT = "http://dev-speech.hello.is/upload/audio?r=%s" % (sampling_rate)
+        ENDPOINT = "http://dev-speech.hello.is/v1/upload/audio?r=%s&response=%s" % (sampling_rate, audio_type)
     elif env == 'goog':
         ENDPOINT = "http://8.34.219.91:8181/upload/audio?r=%s" % (sampling_rate)
     else:
