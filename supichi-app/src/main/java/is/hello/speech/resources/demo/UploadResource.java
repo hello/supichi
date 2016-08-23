@@ -15,6 +15,8 @@ import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
 import is.hello.speech.core.models.TextQuery;
+import is.hello.speech.core.models.UploadResponseParam;
+import is.hello.speech.core.models.UploadResponseType;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 import org.joda.time.DateTime;
@@ -107,7 +109,7 @@ public class UploadResource {
     public byte[] streaming(final byte[] body,
                             @DefaultValue("8000") @QueryParam("r") final Integer sampling,
                             @DefaultValue("false") @QueryParam("pb") final boolean includeProtobuf,
-                            @DefaultValue("false") @QueryParam("mp3") final boolean useMP3
+                            @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
     ) throws InterruptedException, IOException {
 
         LOGGER.debug("action=received-bytes size={}", body.length);
@@ -126,6 +128,8 @@ public class UploadResource {
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(senseId);
 
         LOGGER.debug("info=sense-id id={}", senseId);
+
+        final Boolean useMP3 = responseParam.type().equals(UploadResponseType.MP3);
 
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", senseId);
@@ -173,10 +177,11 @@ public class UploadResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] text(@Valid final TextQuery query,
-                       @DefaultValue("false") @QueryParam("mp3") final boolean useMP3
+                       @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
     ) throws InterruptedException, IOException {
 
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(query.senseId);
+        final Boolean useMP3 = responseParam.type().equals(UploadResponseType.MP3);
 
         LOGGER.debug("info=sense-id id={}", query.senseId);
         if (accounts.isEmpty()) {
