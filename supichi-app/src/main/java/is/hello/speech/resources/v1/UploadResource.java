@@ -13,7 +13,6 @@ import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
 import is.hello.speech.core.models.TextQuery;
 import is.hello.speech.core.models.UploadResponseParam;
-import is.hello.speech.core.models.UploadResponseType;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 import org.slf4j.Logger;
@@ -93,13 +92,11 @@ public class UploadResource {
 
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(senseId);
         LOGGER.debug("info=sense-id id={}", senseId);
-
-        final Boolean useMP3 = responseParam.type().equals(UploadResponseType.MP3);
         HandlerResult executeResult = HandlerResult.emptyResult();
 
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", senseId);
-            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, useMP3);
+            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
         }
 
         // TODO: for now, pick the smallest account-id as the primary id
@@ -121,20 +118,20 @@ public class UploadResource {
             }
 
             if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
-                return watsonResponseBuilder.response(executeResult, useMP3);
+                return watsonResponseBuilder.response(executeResult, responseParam);
             }
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, useMP3);
+                return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
             } else {
-                return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, useMP3);
+                return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
             }
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, useMP3);
+        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
     }
 
     @Path("/text")
@@ -148,12 +145,10 @@ public class UploadResource {
 
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(query.senseId);
 
-        final Boolean useMP3 = responseParam.type().equals(UploadResponseType.MP3);
-
         LOGGER.debug("info=sense-id id={}", query.senseId);
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", query.senseId);
-            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), useMP3);
+            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
         }
 
         // TODO: for now, pick the smallest account-id as the primary id
@@ -170,18 +165,18 @@ public class UploadResource {
             final HandlerResult executeResult = handlerExecutor.handle(query.senseId, accountId, query.transcript);
 
             if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
-                return watsonResponseBuilder.response(executeResult, useMP3);
+                return watsonResponseBuilder.response(executeResult, responseParam);
             }
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                return responseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult, useMP3);
+                return responseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult, responseParam);
             }
-            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, false, executeResult, useMP3);
+            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, false, executeResult, responseParam);
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), useMP3);
+        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
     }
 }

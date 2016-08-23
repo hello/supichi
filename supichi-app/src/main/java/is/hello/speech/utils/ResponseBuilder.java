@@ -4,6 +4,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.google.api.client.util.Maps;
 import is.hello.speech.core.api.Response;
 import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.UploadResponseParam;
+import is.hello.speech.core.models.UploadResponseType;
 import is.hello.speech.core.models.responsebuilder.BuilderResponse;
 import is.hello.speech.core.models.responsebuilder.CurrentTimeResponseBuilder;
 import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
@@ -49,7 +51,7 @@ public class ResponseBuilder {
     public byte[] response(final Response.SpeechResponse.Result result,
                            final boolean includeProtobuf,
                            final HandlerResult handlerResult,
-                           final Boolean useMP3) throws IOException {
+                           final UploadResponseParam responseParam) throws IOException {
 
         LOGGER.debug("action=create-response result={} handler={}", result.toString(), handlerResult.handlerType.toString());
 
@@ -83,7 +85,7 @@ public class ResponseBuilder {
         // return audio only
         if (!includeProtobuf) {
             LOGGER.debug("action=return-audio-only-response size={}", audioBytes.length);
-            if (useMP3) {
+            if (responseParam.type().equals(UploadResponseType.MP3)) {
                 final AudioFormat audioFormat = AudioUtils.DEFAULT_AUDIO_FORMAT;
                 final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(new AudioUtils.AudioBytes(audioBytes, audioBytes.length, audioFormat));
                 outputStream.write(mp3Bytes);

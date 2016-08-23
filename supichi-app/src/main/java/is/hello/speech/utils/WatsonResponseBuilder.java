@@ -4,6 +4,8 @@ import com.google.common.base.Optional;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
 import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.UploadResponseParam;
+import is.hello.speech.core.models.UploadResponseType;
 import is.hello.speech.core.text2speech.AudioUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +29,7 @@ public class WatsonResponseBuilder {
 
     }
 
-    public byte[] response(final HandlerResult executeResult, final boolean useMP3) {
+    public byte[] response(final HandlerResult executeResult, final UploadResponseParam responseParam) {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         final String text = executeResult.responseParameters.get("text");
@@ -40,7 +42,7 @@ public class WatsonResponseBuilder {
             // down-sample audio from 22050 to 16k, upload converted bytes to S3
             final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(equalizedBytes.bytes, equalizedBytes.format, AudioUtils.SENSE_SAMPLING_RATE);
 
-            if (useMP3) {
+            if (responseParam.type().equals(UploadResponseType.MP3)) {
                 final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(downSampledBytes);
                 outputStream.write(mp3Bytes);
             } else {
