@@ -12,6 +12,7 @@ import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
 import is.hello.speech.core.models.TextQuery;
+import is.hello.speech.core.models.UploadResponseParam;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 import org.slf4j.Logger;
@@ -70,12 +71,11 @@ public class UploadResource {
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] streaming(final byte[] signedBody,
                             @DefaultValue("8000") @QueryParam("r") final Integer sampling,
-                            @DefaultValue("false") @QueryParam("pb") final boolean includeProtobuf
+                            @DefaultValue("false") @QueryParam("pb") final boolean includeProtobuf,
+                            @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
     ) throws InterruptedException, IOException {
 
         LOGGER.debug("action=received-bytes size={}", signedBody.length);
-
-        HandlerResult executeResult = HandlerResult.emptyResult();
 
         final String senseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
         if(senseId == null) {
@@ -92,10 +92,11 @@ public class UploadResource {
 
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(senseId);
         LOGGER.debug("info=sense-id id={}", senseId);
+        HandlerResult executeResult = HandlerResult.emptyResult();
 
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", senseId);
-            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult);
+            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
         }
 
         // TODO: for now, pick the smallest account-id as the primary id
@@ -117,20 +118,20 @@ public class UploadResource {
             }
 
             if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
-                return watsonResponseBuilder.response(executeResult);
+                return watsonResponseBuilder.response(executeResult, responseParam);
             }
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult);
+                return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
             } else {
-                return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult);
+                return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
             }
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult);
+        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
     }
 
     @Path("/text")
@@ -138,14 +139,16 @@ public class UploadResource {
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public byte[] text(@Valid final TextQuery query) throws InterruptedException, IOException {
+    public byte[] text(@Valid final TextQuery query,
+                       @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
+    ) throws InterruptedException, IOException {
 
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(query.senseId);
 
         LOGGER.debug("info=sense-id id={}", query.senseId);
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", query.senseId);
-            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult());
+            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
         }
 
         // TODO: for now, pick the smallest account-id as the primary id
@@ -162,19 +165,18 @@ public class UploadResource {
             final HandlerResult executeResult = handlerExecutor.handle(query.senseId, accountId, query.transcript);
 
             if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
-                return watsonResponseBuilder.response(executeResult);
+                return watsonResponseBuilder.response(executeResult, responseParam);
             }
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                return responseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult);
+                return responseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult, responseParam);
             }
-            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, false, executeResult);
+            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, false, executeResult, responseParam);
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult());
+        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
     }
-
 }

@@ -32,20 +32,23 @@ public class AudioUtils {
     public static final com.ibm.watson.developer_cloud.text_to_speech.v1.model.AudioFormat WATSON_AUDIO_FORMAT =
             com.ibm.watson.developer_cloud.text_to_speech.v1.model.AudioFormat.WAV;
 
-
     // for adding WAV headers to watson stream
     private static final int WATSON_WAVE_HEADER_SIZE = 8;      // The WAVE meta-data header size.
     private static final int WATSON_WAVE_SIZE_POS = 4;         // The WAVE meta-data size position.
     private static final int WATSON_WAVE_METADATA_POS = 74;    // The WAVE meta-data position in bytes.
 
+    // MP3 settings
     private static final int MP3_BITRATE = 44;  // TODO: make this configurable
     private static final boolean USE_VBR = false;
+    public static final int DEFAULT_SAMPLE_SIZE_BITS = 16;
+    public static final int DEFAULT_FRAME_SIZE = 2;
+    public static final AudioFormat.Encoding DEFAULT_ENCODING = AudioFormat.Encoding.PCM_SIGNED;
 
     // Equalization settings
-    private static final int NUM_CHANNELS = 1;
+    public static final int NUM_CHANNELS = 1;
     private static final int NUM_EQ_BANDS = 10;
     private static final boolean SIGNED_DATA_TRUE = true;
-    private static final boolean BIG_ENDIAN_FALSE = false;
+    public static final boolean BIG_ENDIAN_FALSE = false;
     private static final List<Float> EQUALIZED_VALUES = new ArrayList<Float>(NUM_EQ_BANDS) {{
         add(0, 10.0f);  // 32
         add(1, 10.0f);  // 64
@@ -59,12 +62,22 @@ public class AudioUtils {
         add(9, 17.0f);  // 11K
     }};
 
+    // For mp3 conversion
+    public final static AudioFormat DEFAULT_AUDIO_FORMAT = new AudioFormat(
+            DEFAULT_ENCODING,
+            SENSE_SAMPLING_RATE,
+            DEFAULT_SAMPLE_SIZE_BITS,
+            NUM_CHANNELS,
+            DEFAULT_FRAME_SIZE,
+            SENSE_SAMPLING_RATE,
+            BIG_ENDIAN_FALSE);
+
     public static class AudioBytes {
         public final byte [] bytes;
         public final int contentSize;
         public final Optional<AudioFormat> format;
 
-        private AudioBytes(byte[] bytes, int contentSize, javax.sound.sampled.AudioFormat format) {
+        public AudioBytes(byte[] bytes, int contentSize, javax.sound.sampled.AudioFormat format) {
             this.bytes = bytes;
             this.contentSize = contentSize;
             this.format = Optional.fromNullable(format);

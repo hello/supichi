@@ -3,16 +3,20 @@ package is.hello.speech.utils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.google.api.client.util.Maps;
 import is.hello.speech.core.api.Response;
-import is.hello.speech.core.models.responsebuilder.BuilderResponse;
 import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.UploadResponseParam;
+import is.hello.speech.core.models.UploadResponseType;
+import is.hello.speech.core.models.responsebuilder.BuilderResponse;
 import is.hello.speech.core.models.responsebuilder.CurrentTimeResponseBuilder;
 import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.speech.core.models.responsebuilder.ResponseUtils;
 import is.hello.speech.core.models.responsebuilder.RoomConditionsResponseBuilder;
 import is.hello.speech.core.models.responsebuilder.TriviaResponseBuilder;
+import is.hello.speech.core.text2speech.AudioUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sound.sampled.AudioFormat;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -44,7 +48,10 @@ public class ResponseBuilder {
      * @return bytes
      * @throws IOException
      */
-    public byte[] response(final Response.SpeechResponse.Result result, final boolean includeProtobuf, final HandlerResult handlerResult) throws IOException {
+    public byte[] response(final Response.SpeechResponse.Result result,
+                           final boolean includeProtobuf,
+                           final HandlerResult handlerResult,
+                           final UploadResponseParam responseParam) throws IOException {
 
         LOGGER.debug("action=create-response result={} handler={}", result.toString(), handlerResult.handlerType.toString());
 
@@ -78,7 +85,13 @@ public class ResponseBuilder {
         // return audio only
         if (!includeProtobuf) {
             LOGGER.debug("action=return-audio-only-response size={}", audioBytes.length);
-            outputStream.write(audioBytes);
+            if (responseParam.type().equals(UploadResponseType.MP3)) {
+                final AudioFormat audioFormat = AudioUtils.DEFAULT_AUDIO_FORMAT;
+                final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(new AudioUtils.AudioBytes(audioBytes, audioBytes.length, audioFormat));
+                outputStream.write(mp3Bytes);
+            } else {
+                outputStream.write(audioBytes);
+            }
             return outputStream.toByteArray();
         }
 

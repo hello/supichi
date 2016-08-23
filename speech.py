@@ -109,17 +109,22 @@ if __name__ == '__main__':
     filename = sys.argv[1]
     sampling_rate = sys.argv[2]
     env = sys.argv[3]
+    audio_type = sys.argv[4]
 
-    pb = "true"
-    if len(sys.argv) == 5:
-        pb = sys.argv[4]
+    if audio_type not in ['mp3', 'adpcm']:
+        print "audio type needs to be mp3 or adpcm"
+        sys.exit()
+
+    pb = "false"
+    if len(sys.argv) == 6:
+        pb = sys.argv[5]
 
     su = SlowUpload(filename)
     # testing 8AF6441AF72321F4 2095
     # demo C8DAAC353AEFA4A9 62297
     headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "8AF6441AF72321F4"}
     if env == 'local':
-        ENDPOINT = "http://localhost:8181/upload/audio?r=%s&pb=%s" % (sampling_rate, pb)
+        ENDPOINT = "http://localhost:8181/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
     elif env == 'dev':
         ENDPOINT = "http://dev-speech.hello.is/upload/audio?r=%s" % (sampling_rate)
     elif env == 'goog':
@@ -149,7 +154,10 @@ if __name__ == '__main__':
         msg = get_message(r.content, response_pb2.SpeechResponse)
         print "protobuf:\n", msg
     else:
-        fp = open('./tmp1.wav', 'wb')
+        if audio_type == "mp3":
+            fp = open('./tmp1.mp3', 'wb')
+        else:
+            fp = open('./tmp1.wav', 'wb')
         fp.write(r.content)
         fp.close()
 
