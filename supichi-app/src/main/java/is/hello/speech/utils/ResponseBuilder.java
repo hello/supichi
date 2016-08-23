@@ -86,6 +86,7 @@ public class ResponseBuilder {
         if (!includeProtobuf) {
             LOGGER.debug("action=return-audio-only-response size={}", audioBytes.length);
             if (responseParam.type().equals(UploadResponseType.MP3)) {
+                LOGGER.debug("action=convert-pcm-to-mp3 size={}", audioBytes.length);
                 final AudioFormat audioFormat = AudioUtils.DEFAULT_AUDIO_FORMAT;
                 final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(new AudioUtils.AudioBytes(audioBytes, audioBytes.length, audioFormat));
                 outputStream.write(mp3Bytes);

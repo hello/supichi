@@ -43,9 +43,11 @@ public class WatsonResponseBuilder {
             final AudioUtils.AudioBytes downSampledBytes = AudioUtils.downSampleAudio(equalizedBytes.bytes, equalizedBytes.format, AudioUtils.SENSE_SAMPLING_RATE);
 
             if (responseParam.type().equals(UploadResponseType.MP3)) {
+                LOGGER.debug("action=convert-pcm-to-mp3 size={}", downSampledBytes.contentSize);
                 final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(downSampledBytes);
                 outputStream.write(mp3Bytes);
             } else {
+                LOGGER.debug("action=return-PCM-audio size={}", downSampledBytes.contentSize);
                 outputStream.write(downSampledBytes.bytes);
             }
 
