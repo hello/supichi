@@ -7,6 +7,7 @@ import com.hello.suripu.core.db.KeyStore;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.core.models.UploadResponseParam;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 import org.junit.Before;
@@ -32,6 +33,7 @@ public class UploadResourceTest {
     private ResponseBuilder responseBuilder;
     private WatsonResponseBuilder watsonResponseBuilder;
     private SignedBodyHandler signedBodyHandler;
+    private UploadResponseParam responseParam = new UploadResponseParam("adpcm");
 
     @Before
     public void setUp() {
@@ -57,7 +59,7 @@ public class UploadResourceTest {
         final HttpServletRequest request = mock(HttpServletRequest.class);
         resource.request = request;
 
-        resource.streaming(new byte[]{}, 8000, false);
+        resource.streaming(new byte[]{}, 8000, false, responseParam);
     }
 
     public void testUploadSignedAudioInvalid() throws IOException, InterruptedException {
@@ -71,7 +73,7 @@ public class UploadResourceTest {
         resource.request = request;
 
         try {
-            resource.streaming(new byte[]{}, 8000, false);
+            resource.streaming(new byte[]{}, 8000, false, responseParam);
         }catch (WebApplicationException w) {
             assertEquals(w.getResponse().getStatus(), Response.Status.BAD_REQUEST);
         }
