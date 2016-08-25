@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
+import com.hello.suripu.core.speech.SpeechResult;
 import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
@@ -12,9 +13,12 @@ import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
 import is.hello.speech.core.models.TextQuery;
+import is.hello.speech.kinesis.SpeechKinesisProducer;
 import is.hello.speech.core.models.UploadResponseParam;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +34,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.util.UUID;
 
 
 @Path("/v1/upload")
@@ -44,6 +49,8 @@ public class UploadResource {
 
     private final DeviceDAO deviceDAO;
 
+    private final SpeechKinesisProducer speechKinesisProducer;
+
     private final ResponseBuilder responseBuilder;
     private final WatsonResponseBuilder watsonResponseBuilder;
 
@@ -54,12 +61,15 @@ public class UploadResource {
                           final SignedBodyHandler signedBodyHandler,
                           final HandlerExecutor handlerExecutor,
                           final DeviceDAO deviceDAO,
+                          final SpeechKinesisProducer speechKinesisProducer,
                           final ResponseBuilder responseBuilder,
-                          final WatsonResponseBuilder watsonResponseBuilder) {
+                          final WatsonResponseBuilder watsonResponseBuilder
+    ) {
         this.speechClient = speechClient;
         this.signedBodyHandler = signedBodyHandler;
         this.handlerExecutor = handlerExecutor;
         this.deviceDAO = deviceDAO;
+        this.speechKinesisProducer = speechKinesisProducer;
         this.responseBuilder = responseBuilder;
         this.watsonResponseBuilder = watsonResponseBuilder;
     }
@@ -108,11 +118,23 @@ public class UploadResource {
         }
 
         LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", senseId, accountId, responseParam.type().name());
+
+        // save audio to Kinesis
+        final String audioUUID = UUID.randomUUID().toString();
+        final SpeechResult speechResult = new SpeechResult.Builder()
+                .withAccountId(accountId)
+                .withSenseId(senseId)
+                .withAudioIndentifier(audioUUID)
+                .withDateTimeUTC(DateTime.now(DateTimeZone.UTC))
+                .build();
+        speechKinesisProducer.addResult(speechResult, body);
+
+        // process audio
         try {
             final SpeechServiceResult resp = speechClient.stream(body, sampling);
 
             // try to execute command in transcript
-            if(resp.getTranscript().isPresent()) {
+            if (resp.getTranscript().isPresent()) {
 
                 executeResult = handlerExecutor.handle(senseId, accountId, resp.getTranscript().get());
             }

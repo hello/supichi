@@ -6,6 +6,7 @@ import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.KeyStore;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.handlers.executors.HandlerExecutor;
+import is.hello.speech.kinesis.SpeechKinesisProducer;
 import is.hello.speech.core.models.UploadResponseParam;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
@@ -28,6 +29,7 @@ public class UploadResourceTest {
     private KeyStore keystore;
     private HandlerExecutor executor;
     private DeviceDAO deviceDAO;
+    private SpeechKinesisProducer kinesisProducer;
     private ResponseBuilder responseBuilder;
     private WatsonResponseBuilder watsonResponseBuilder;
     private SignedBodyHandler signedBodyHandler;
@@ -42,6 +44,7 @@ public class UploadResourceTest {
         responseBuilder = mock(ResponseBuilder.class);
         watsonResponseBuilder = mock(WatsonResponseBuilder.class);
         signedBodyHandler = mock(SignedBodyHandler.class);
+        kinesisProducer = mock(SpeechKinesisProducer.class);
 
     }
 
@@ -51,7 +54,7 @@ public class UploadResourceTest {
         when(signedBodyHandler.extractAudio(any(String.class), any(byte[].class))).thenReturn(new byte[]{});
         when(deviceDAO.getAccountIdsForDeviceId(any(String.class))).thenReturn(ImmutableList.of());
         final UploadResource resource = new UploadResource(client, signedBodyHandler, executor,
-                deviceDAO, responseBuilder, watsonResponseBuilder);
+                deviceDAO, kinesisProducer, responseBuilder, watsonResponseBuilder);
 
         final HttpServletRequest request = mock(HttpServletRequest.class);
         resource.request = request;
@@ -64,7 +67,7 @@ public class UploadResourceTest {
         when(signedBodyHandler.extractAudio(any(String.class), any(byte[].class))).thenReturn(new byte[]{});
         when(deviceDAO.getAccountIdsForDeviceId(any(String.class))).thenReturn(ImmutableList.of());
         final UploadResource resource = new UploadResource(client, signedBodyHandler, executor,
-                deviceDAO, responseBuilder, watsonResponseBuilder);
+                deviceDAO, kinesisProducer, responseBuilder, watsonResponseBuilder);
 
         final HttpServletRequest request = mock(HttpServletRequest.class);
         resource.request = request;

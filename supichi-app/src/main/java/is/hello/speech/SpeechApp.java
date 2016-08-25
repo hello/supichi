@@ -6,8 +6,13 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
+import com.amazonaws.services.kinesis.producer.KinesisProducer;
+import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
@@ -28,6 +33,11 @@ import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
+import com.hello.suripu.core.speech.KmsVault;
+import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
+import com.hello.suripu.core.speech.SpeechTimelineIngestDAO;
+import com.hello.suripu.core.speech.SpeechTimelineIngestDAODynamoDB;
+import com.hello.suripu.core.speech.Vault;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.clients.MessejiHttpClient;
@@ -46,6 +56,10 @@ import is.hello.speech.cli.WatsonTextToSpeech;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.clients.SpeechClientManaged;
 import is.hello.speech.configuration.SpeechAppConfiguration;
+import is.hello.speech.core.configuration.KMSConfiguration;
+import is.hello.speech.core.configuration.KinesisConsumerConfiguration;
+import is.hello.speech.core.configuration.KinesisProducerConfiguration;
+import is.hello.speech.core.configuration.KinesisStream;
 import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
@@ -54,6 +68,9 @@ import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.core.handlers.executors.UnigramHandlerExecutor;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
+import is.hello.speech.kinesis.KinesisData;
+import is.hello.speech.kinesis.SpeechKinesisConsumer;
+import is.hello.speech.kinesis.SpeechKinesisProducer;
 import is.hello.speech.resources.demo.PCMResource;
 import is.hello.speech.resources.demo.ParseResource;
 import is.hello.speech.resources.demo.QueueMessageResource;
@@ -62,15 +79,16 @@ import is.hello.speech.resources.v1.UploadResource;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SpeechApp.class);
 
     public static void main(String[] args) throws Exception {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
@@ -109,7 +127,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
 
         final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
-        final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider, new ClientConfiguration(), speechAppConfiguration.dynamoDBConfiguration());
+        final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider, speechAppConfiguration.dynamoDBConfiguration());
 
         final ImmutableMap<DynamoDBTableName, String> tableNames = speechAppConfiguration.dynamoDBConfiguration().tables();
 
@@ -127,6 +145,9 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final AmazonDynamoDB timezoneClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.TIMEZONE_HISTORY);
         final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = new TimeZoneHistoryDAODynamoDB(timezoneClient, tableNames.get(DynamoDBTableName.TIMEZONE_HISTORY));
+
+        final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
+        final SpeechResultDAODynamoDB speechResultDAODynamoDB = SpeechResultDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
 
         final AmazonDynamoDB keystoreClient= dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_KEY_STORE);
         final KeyStoreDynamoDB keystore = new KeyStoreDynamoDB(keystoreClient, tableNames.get(DynamoDBTableName.SENSE_KEY_STORE), "hello".getBytes(),10);
@@ -192,26 +213,99 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         clientConfiguration.withConnectionTimeout(200); // in ms
         clientConfiguration.withMaxErrorRetry(1);
         final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
+        amazonS3.setRegion(Region.getRegion(Regions.US_EAST_1));
+        amazonS3.setEndpoint(speechAppConfiguration.s3Endpoint());
 
-        // set up text2speech consumer manager
-        final ExecutorService consumerExecutor = environment.lifecycle().executorService("queue_consumer")
+        // set up Text2speech Consumer
+        final ExecutorService queueConsumerExecutor = environment.lifecycle().executorService("text2speech_queue_consumer")
                 .minThreads(1)
                 .maxThreads(2)
                 .keepAliveTime(Duration.seconds(2L)).build();
 
-        final String speechBucket = speechAppConfiguration.getSaveAudioConfiguration().getBucketName();
+        final String speechBucket = speechAppConfiguration.watsonAudioConfiguration().getBucketName();
         if(speechAppConfiguration.consumerEnabled()) {
-            final Text2SpeechQueueConsumer consumer = new Text2SpeechQueueConsumer(
+            final Text2SpeechQueueConsumer text2SpeechQueueConsumer = new Text2SpeechQueueConsumer(
                     amazonS3, speechBucket,
-                    speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefixRaw(),
-                    speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefix(),
+                    speechAppConfiguration.watsonAudioConfiguration().getAudioPrefixRaw(),
+                    speechAppConfiguration.watsonAudioConfiguration().getAudioPrefix(),
                     watson, watsonConfiguration.getVoiceName(),
                     sqsClient, sqsQueueUrl, speechAppConfiguration.getSqsConfiguration(),
-                    consumerExecutor);
+                    queueConsumerExecutor);
 
-            environment.lifecycle().manage(consumer);
+            environment.lifecycle().manage(text2SpeechQueueConsumer);
         }
 
+        // set up Kinesis Producer
+        final KinesisStream kinesisStream = KinesisStream.SPEECH_RESULT;
+
+        final KinesisProducerConfiguration kinesisProducerConfiguration = speechAppConfiguration.kinesisProducerConfiguration();
+        final com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration kplConfig = new com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration()
+                .setRegion(kinesisProducerConfiguration.region())
+                .setCredentialsProvider(awsCredentialsProvider)
+                .setMaxConnections(kinesisProducerConfiguration.maxConnections())
+                .setRequestTimeout(kinesisProducerConfiguration.requstTimeout())
+                .setRecordMaxBufferedTime(kinesisProducerConfiguration.recordMaxBufferedTime());
+
+        final ExecutorService kinesisExecutor = environment.lifecycle().executorService("kinesis_producer")
+                .minThreads(1)
+                .maxThreads(2)
+                .keepAliveTime(Duration.seconds(2L)).build();
+
+        final ScheduledExecutorService kinesisMetricsExecutor = environment.lifecycle().scheduledExecutorService("kinesis_producer_metrics").threads(1).build();
+
+        final KinesisProducer kinesisProducer = new KinesisProducer(kplConfig);
+        final String kinesisStreamName = kinesisProducerConfiguration.streams().get(kinesisStream);
+        final BlockingQueue<KinesisData> kinesisEvents = new ArrayBlockingQueue<>(kinesisProducerConfiguration.queueSize());
+        final SpeechKinesisProducer speechKinesisProducer = new SpeechKinesisProducer(kinesisStreamName, kinesisEvents, kinesisProducer, kinesisExecutor, kinesisMetricsExecutor);
+        environment.lifecycle().manage(speechKinesisProducer);
+
+
+        // set up Kinesis Consumer
+        final KinesisConsumerConfiguration kinesisConsumerConfiguration = speechAppConfiguration.kinesisConsumerConfiguration();
+        final String workerId = InetAddress.getLocalHost().getCanonicalHostName();
+        final InitialPositionInStream initialPositionInStream = (kinesisConsumerConfiguration.trimHorizon()) ? InitialPositionInStream.TRIM_HORIZON : InitialPositionInStream.LATEST;
+
+        final KinesisClientLibConfiguration kinesisClientLibConfiguration = new KinesisClientLibConfiguration(
+                kinesisConsumerConfiguration.appName(),
+                kinesisConsumerConfiguration.streams().get(kinesisStream),
+                awsCredentialsProvider,
+                workerId)
+                .withKinesisEndpoint(kinesisConsumerConfiguration.endpoint())
+                .withMaxRecords(kinesisConsumerConfiguration.maxRecord())
+                .withInitialPositionInStream(initialPositionInStream);
+
+        final ExecutorService scheduledKinesisConsumer = environment.lifecycle().executorService("kinesis_consumer")
+                .minThreads(1)
+                .maxThreads(2)
+                .keepAliveTime(Duration.seconds(2L)).build();
+
+        final String senseUploadBucket = String.format("%s/%s",
+                speechAppConfiguration.senseUploadAudioConfiguration().getBucketName(),
+                speechAppConfiguration.senseUploadAudioConfiguration().getAudioPrefix());
+
+        // set up KMS for timeline encryption
+        final KMSConfiguration kmsConfig = speechAppConfiguration.kmsConfiguration();
+        final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
+        awskmsClient.setEndpoint(kmsConfig.endpoint());
+        final Vault kmsVault = new KmsVault(awskmsClient, kmsConfig.kmsKeys().uuid());
+
+        final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
+        final SpeechTimelineIngestDAO speechTimelineIngestDAO = SpeechTimelineIngestDAODynamoDB.create(speechTimelineClient, tableNames.get(DynamoDBTableName.SPEECH_TIMELINE), kmsVault);
+
+        final SSEAwsKeyManagementParams s3SSEKey = new SSEAwsKeyManagementParams(kmsConfig.kmsKeys().audio());
+
+        final SpeechKinesisConsumer speechKinesisConsumer = new SpeechKinesisConsumer(kinesisClientLibConfiguration,
+                scheduledKinesisConsumer,
+                amazonS3,
+                senseUploadBucket,
+                s3SSEKey,
+                speechTimelineIngestDAO,
+                speechResultDAODynamoDB);
+
+        environment.lifecycle().manage(speechKinesisConsumer);
+
+
+        // set up speech client
         final SpeechClient client = new SpeechClient(
                 speechAppConfiguration.getGoogleAPIHost(),
                 speechAppConfiguration.getGoogleAPIPort(),
@@ -220,15 +314,15 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
         environment.lifecycle().manage(speechClientManaged);
 
-        final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.getSaveAudioConfiguration().getAudioPrefix());
+        final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.watsonAudioConfiguration().getAudioPrefix());
 
         final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
         final SignedBodyHandler signedBodyHandler = new SignedBodyHandler(keystore);
-        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, responseBuilder, watsonResponseBuilder));
-        environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, responseBuilder, watsonResponseBuilder));
+        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
+        environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
 
         environment.jersey().register(new ParseResource());
-        environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.getSaveAudioConfiguration().getBucketName()));
+        environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.watsonAudioConfiguration().getBucketName()));
     }
 }

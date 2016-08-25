@@ -25,6 +25,7 @@ import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -196,7 +197,14 @@ public class Text2SpeechQueueConsumer implements Managed {
                 .withVisibilityTimeout(this.sqsConfiguration.getSqsVisibilityTimeoutSeconds())
                 .withWaitTimeSeconds(this.sqsConfiguration.getSqsWaitTimeSeconds());
 
-        final ReceiveMessageResult rx = sqsClient.receiveMessage(receiveMessageRequest);
+        final ReceiveMessageResult rx;
+        try {
+            rx = sqsClient.receiveMessage(receiveMessageRequest);
+        } catch (Exception e) {
+            LOGGER.error("error=fail-to-receive-sqs-message error_msg={}", e.getMessage());
+            return Collections.emptyList();
+        }
+
         final List<Message> messages = rx.getMessages();
 
         final List<Text2SpeechMessage> decodedMessages = Lists.newArrayListWithExpectedSize(messages.size());

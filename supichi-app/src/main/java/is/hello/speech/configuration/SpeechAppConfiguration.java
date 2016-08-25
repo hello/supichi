@@ -5,8 +5,11 @@ import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.coredw8.configuration.NewDynamoDBConfiguration;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
+import is.hello.speech.core.configuration.KMSConfiguration;
+import is.hello.speech.core.configuration.KinesisConsumerConfiguration;
+import is.hello.speech.core.configuration.KinesisProducerConfiguration;
 import is.hello.speech.core.configuration.SQSConfiguration;
-import is.hello.speech.core.configuration.SaveAudioConfiguration;
+import is.hello.speech.core.configuration.S3AudioConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
 
 import javax.validation.Valid;
@@ -65,9 +68,15 @@ public class SpeechAppConfiguration extends Configuration {
 
     @Valid
     @NotNull
-    @JsonProperty("save_audio")
-    private SaveAudioConfiguration saveAudioConfiguration;
-    public SaveAudioConfiguration getSaveAudioConfiguration() { return saveAudioConfiguration;}
+    @JsonProperty("watson_save_audio")
+    private S3AudioConfiguration watsonAudioConfiguration;
+    public S3AudioConfiguration watsonAudioConfiguration() { return watsonAudioConfiguration;}
+
+    @Valid
+    @NotNull
+    @JsonProperty("sense_upload_audio")
+    private S3AudioConfiguration senseUploadAudioConfiguration;
+    public S3AudioConfiguration senseUploadAudioConfiguration() { return senseUploadAudioConfiguration;}
 
     @JsonProperty("consumer_enabled")
     private Boolean consumerEnabled = false;
@@ -80,4 +89,20 @@ public class SpeechAppConfiguration extends Configuration {
     public String forecastio() {
         return forecastio;
     }
+
+    @JsonProperty("kinesis_producer")
+    private KinesisProducerConfiguration kinesisProducerConfiguration;
+    public KinesisProducerConfiguration kinesisProducerConfiguration() { return kinesisProducerConfiguration; }
+
+    @JsonProperty("kinesis_consumer")
+    private KinesisConsumerConfiguration kinesisConsumerConfiguration;
+    public KinesisConsumerConfiguration kinesisConsumerConfiguration() { return kinesisConsumerConfiguration; }
+
+    @JsonProperty("keys_management_service")
+    private KMSConfiguration kmsConfiguration;
+    public KMSConfiguration kmsConfiguration() { return this.kmsConfiguration; }
+
+    @JsonProperty("s3_endpoint")
+    private String s3Endpoint;
+    public String s3Endpoint() { return s3Endpoint; }
 }

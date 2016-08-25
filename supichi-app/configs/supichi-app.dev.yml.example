@@ -47,9 +47,9 @@ dynamodb:
     file_manifest: file_manifest
     sense_key_store: key_store
     speech_commands: speech_commands
+    speech_results: speech_results
+    speech_timeline: speech_timeline
     timezone_history: timezone_history
-
-
 
   endpoints:
     calibration: http://dynamodb.us-east-1.amazonaws.com
@@ -57,6 +57,8 @@ dynamodb:
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
     sense_key_store: http://dynamodb.us-east-1.amazonaws.com
     speech_commands: http://dynamodb.us-east-1.amazonaws.com
+    speech_results: http://dynamodb.us-east-1.amazonaws.com
+    speech_timeline: http://dynamodb.us-east-1.amazonaws.com
     timezone_history: http://dynamodb.us-east-1.amazonaws.com
 
 
@@ -112,7 +114,7 @@ watson:
   voice: en-US_AllisonVoice
   #voice: en-US_MichaelVoice
 
-save_audio:
+watson_save_audio:
   s3_bucket_name: hello-audio
   s3_audio_prefix_raw: voice/watson-text2speech/raw
   s3_audio_prefix: voice/watson-text2speech/16k  # bucket with responses sent back to Sense
@@ -120,3 +122,38 @@ save_audio:
 consumer_enabled: true
 
 forecastio: 69ae5412a3a9bfc16a07ce05f6c7c5a5
+
+
+kinesis_producer:
+  endpoint: https://kinesis.us-east-1.amazonaws.com
+  region: us-east-1
+  max_connections: 1
+  request_timeout: 10000 # 1 sec
+  record_max_buffered_time: 15000
+  queue_size: 65536
+  streams:
+   audio: dev_speech_audio
+   speech_result: dev_speech_results
+
+kinesis_consumer:
+  endpoint: https://kinesis.us-east-1.amazonaws.com
+  region: us-east-1
+  app_name: SpeechKinesisProcessDev
+  max_records: 100
+  trim_horizon: false
+  streams:
+   audio: dev_speech_audio
+   speech_result: dev_speech_results
+
+sense_upload_audio:  # bucket to save audio uploaded from Sense
+  s3_bucket_name: hello-voice-upload-dev
+  s3_audio_prefix: sense_1_5
+
+keys_management_service:
+  endpoint: https://kms.us-east-1.amazonaws.com
+  keys:
+    uuid: arn:aws:kms:us-east-1:053216739513:key/1c60acdc-0628-4f8f-8fbc-f1cacb59a845
+    audio: arn:aws:kms:us-east-1:053216739513:key/349ce129-1242-411f-b395-f082a60a274b
+
+s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms
+
