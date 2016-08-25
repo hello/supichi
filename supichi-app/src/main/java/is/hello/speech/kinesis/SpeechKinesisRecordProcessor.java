@@ -55,64 +55,6 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
     @Override
     public void initialize(String shardId) {}
 
-    private void saveTimeline(final SpeechResultsKinesis.SpeechResultsData speechResultsData, final String sequenceNumber) {
-        // save timeline
-        final SpeechTimeline speechTimeline = new SpeechTimeline(
-                speechResultsData.getAccountId(),
-                new DateTime(speechResultsData.getCreated(), DateTimeZone.UTC),
-                speechResultsData.getSenseId(),
-                speechResultsData.getAudioUuid());
-
-        try {
-            final boolean savedTimeline = speechTimelineIngestDAO.putItem(speechTimeline);
-            if (!savedTimeline) {
-                LOGGER.error("error=fail-to-save-speech-timeline account_id={} sense_id={} sequence_number={}",
-                        speechResultsData.getAccountId(), speechResultsData.getSenseId(), sequenceNumber);
-            }
-        } catch (AmazonServiceException ase) {
-            LOGGER.error("error=aws-service-exception status={} error_msg={} action=save-speech-timeline-exiting sequence_number={}",
-                    ase.getStatusCode(), ase.getMessage(), sequenceNumber);
-            try {
-                Thread.sleep(2000L);
-            } catch (InterruptedException ignored) {
-            }
-            System.exit(1);
-        } catch (AmazonClientException ace) {
-            LOGGER.error("error=aws-client-exception error_msg={} action=speech-timeline sequence_number={}", ace.getMessage(), sequenceNumber);
-        }
-    }
-
-    private boolean saveAudio(final SpeechResultsKinesis.SpeechResultsData speechResultsData, final String sequenceNumber) {
-        final Long accountId = speechResultsData.getAccountId();
-        final String senseId = speechResultsData.getSenseId();
-        LOGGER.debug("action=save-sense-upload-audio account_id={} sense_id={} uuid={} audio_size={}",
-                accountId, senseId,
-                speechResultsData.getAudioUuid(), speechResultsData.getAudio().getDataSize());
-
-        final byte[] audioBytes = speechResultsData.getAudio().getData().toByteArray();
-        final ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        metadata.setContentLength(audioBytes.length);
-
-        final String keyname = String.format("%s.raw", speechResultsData.getAudioUuid());
-        try {
-            final PutObjectResult putResult = s3.putObject(
-                    new PutObjectRequest(s3Bucket, keyname, new ByteArrayInputStream(audioBytes), metadata)
-                            .withSSEAwsKeyManagementParams(s3SSEKey)
-            );
-            LOGGER.debug("action=get-sense-audio-upload-result md5={}", putResult.getContentMd5());
-
-        } catch (AmazonServiceException ase) {
-            LOGGER.error("error=aws-exception status={} error_msg={} action=s3 sequence_number={}",
-                    ase.getStatusCode(), ase.getMessage(), sequenceNumber);
-        } catch (AmazonClientException ace) {
-            LOGGER.error("error=aws-client-exception error_msg={} action=s3 sequence_number={}",
-                    ace.getMessage(), sequenceNumber);
-        }
-
-        return true;
-    }
-
     @Override
     public void processRecords(List<Record> records, IRecordProcessorCheckpointer checkpointer) {
         LOGGER.debug("info=number-of-records size={}", records.size());
@@ -162,5 +104,63 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
                 LOGGER.error("error=fail-to-checkpoint-before-shutting-down error_msg={}", e.getMessage());
             }
         }
+    }
+
+
+    private void saveTimeline(final SpeechResultsKinesis.SpeechResultsData speechResultsData, final String sequenceNumber) {
+
+        final SpeechTimeline speechTimeline = new SpeechTimeline(
+                speechResultsData.getAccountId(),
+                new DateTime(speechResultsData.getCreated(), DateTimeZone.UTC),
+                speechResultsData.getSenseId(),
+                speechResultsData.getAudioUuid());
+
+        try {
+            final boolean savedTimeline = speechTimelineIngestDAO.putItem(speechTimeline);
+            if (!savedTimeline) {
+                LOGGER.error("error=fail-to-save-speech-timeline account_id={} sense_id={} sequence_number={}",
+                        speechResultsData.getAccountId(), speechResultsData.getSenseId(), sequenceNumber);
+            }
+        } catch (AmazonServiceException ase) {
+            LOGGER.error("error=aws-service-exception status={} error_msg={} action=exiting sequence_number={}",
+                    ase.getStatusCode(), ase.getMessage(), sequenceNumber);
+            try {
+                Thread.sleep(2000L);
+            } catch (InterruptedException ignored) {
+            }
+            System.exit(1);
+        } catch (AmazonClientException ace) {
+            LOGGER.error("error=aws-client-exception error_msg={} sequence_number={}", ace.getMessage(), sequenceNumber);
+        }
+    }
+
+    private boolean saveAudio(final SpeechResultsKinesis.SpeechResultsData speechResultsData, final String sequenceNumber) {
+
+        LOGGER.debug("action=save-sense-upload-audio account_id={} sense_id={} audio_size={}",
+                speechResultsData.getAccountId(),
+                speechResultsData.getSenseId(),
+                speechResultsData.getAudio().getDataSize());
+
+        final byte[] audioBytes = speechResultsData.getAudio().getData().toByteArray();
+
+        final ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        metadata.setContentLength(audioBytes.length);
+
+        final String keyname = String.format("%s.raw", speechResultsData.getAudioUuid());
+
+        try {
+            final PutObjectResult putResult = s3.putObject(
+                    new PutObjectRequest(s3Bucket, keyname, new ByteArrayInputStream(audioBytes), metadata)
+                            .withSSEAwsKeyManagementParams(s3SSEKey));
+        } catch (AmazonServiceException ase) {
+            LOGGER.error("error=aws-s3-service-exception status={} error_msg={} sequence_number={}",
+                    ase.getStatusCode(), ase.getMessage(), sequenceNumber);
+        } catch (AmazonClientException ace) {
+            LOGGER.error("error=aws-s3-client-exception error_msg={} sequence_number={}",
+                    ace.getMessage(), sequenceNumber);
+        }
+
+        return true;
     }
 }

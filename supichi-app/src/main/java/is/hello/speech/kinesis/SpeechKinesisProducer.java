@@ -121,7 +121,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
     public void stop() {
         try {
             LOGGER.debug("action=stop-kinesis-producer-sleep time=1-second why=wait-for-other-sleep-to-complete");
-            Thread.sleep(2);
+            Thread.sleep(2000L);
         } catch (InterruptedException e) {
             LOGGER.warn("warning=stop-sleep-interrupted!");
         }
