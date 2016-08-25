@@ -109,17 +109,22 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
 
     private void saveTimeline(final SpeechResultsKinesis.SpeechResultsData speechResultsData, final String sequenceNumber) {
 
+        final Long accountId = speechResultsData.getAccountId();
+        final String senseId = speechResultsData.getSenseId();
+
         final SpeechTimeline speechTimeline = new SpeechTimeline(
-                speechResultsData.getAccountId(),
+                accountId,
                 new DateTime(speechResultsData.getCreated(), DateTimeZone.UTC),
-                speechResultsData.getSenseId(),
+                senseId,
                 speechResultsData.getAudioUuid());
 
         try {
             final boolean savedTimeline = speechTimelineIngestDAO.putItem(speechTimeline);
+            LOGGER.debug("action=save-speech-timeline sense_id={} account_id={} result={}",
+                    accountId, senseId, savedTimeline);
             if (!savedTimeline) {
                 LOGGER.error("error=fail-to-save-speech-timeline account_id={} sense_id={} sequence_number={}",
-                        speechResultsData.getAccountId(), speechResultsData.getSenseId(), sequenceNumber);
+                        accountId, senseId, sequenceNumber);
             }
         } catch (AmazonServiceException ase) {
             LOGGER.error("error=aws-service-exception status={} error_msg={} action=exiting sequence_number={}",
