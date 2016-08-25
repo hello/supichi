@@ -34,12 +34,6 @@ public class KinesisConsumerConfiguration {
 
     @Valid
     @NotNull
-    @JsonProperty("schedule_minutes")
-    private long scheduleMinutes;
-    public long scheduleMinutes() { return scheduleMinutes; }
-
-    @Valid
-    @NotNull
     @JsonProperty("app_name")
     private String appName;
     public String appName() { return appName; }

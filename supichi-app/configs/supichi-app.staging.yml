@@ -98,6 +98,7 @@ dynamodb:
     sense_key_store: key_store
     speech_commands: speech_commands
     speech_results: speech_results
+    speech_timeline: speech_timeline
     timezone_history: timezone_history
 
   endpoints:
@@ -107,6 +108,7 @@ dynamodb:
     sense_key_store: http://dynamodb.us-east-1.amazonaws.com
     speech_commands: http://dynamodb.us-east-1.amazonaws.com
     speech_results: http://dynamodb.us-east-1.amazonaws.com
+    speech_timeline: http://dynamodb.us-east-1.amazonaws.com
     timezone_history: http://dynamodb.us-east-1.amazonaws.com
 
 
@@ -148,7 +150,6 @@ kinesis_consumer:
   endpoint: https://kinesis.us-east-1.amazonaws.com
   region: us-east-1
   app_name: SpeechKinesisProcessDev
-  schedule_minutes: 1
   max_records: 100
   trim_horizon: false
   streams:

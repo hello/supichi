@@ -10,8 +10,7 @@ import io.dropwizard.lifecycle.Managed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Created by ksg on 8/11/16
@@ -20,8 +19,7 @@ public class SpeechKinesisConsumer implements Managed {
     private final Logger LOGGER = LoggerFactory.getLogger(SpeechKinesisConsumer.class);
 
     private final KinesisClientLibConfiguration clientConfiguration;
-    private final ScheduledExecutorService consumerExecutor;
-    private final long scheduledIntervalMinutes;
+    private final ExecutorService consumerExecutor;
 
     private final AmazonS3 s3;
     private final String s3Bucket;
@@ -34,8 +32,7 @@ public class SpeechKinesisConsumer implements Managed {
     private boolean isRunning = false;
 
     public SpeechKinesisConsumer(final KinesisClientLibConfiguration clientConfiguration,
-                                 final ScheduledExecutorService consumerExecutor,
-                                 final long scheduledIntervalMinutes,
+                                 final ExecutorService consumerExecutor,
                                  final AmazonS3 s3,
                                  final String s3Bucket,
                                  final SSEAwsKeyManagementParams s3SSEKey,
@@ -43,7 +40,6 @@ public class SpeechKinesisConsumer implements Managed {
                                  final SpeechResultDAODynamoDB speechResultDAODynamoDB) {
         this.clientConfiguration = clientConfiguration;
         this.consumerExecutor = consumerExecutor;
-        this.scheduledIntervalMinutes = scheduledIntervalMinutes;
         this.s3 = s3;
         this.s3SSEKey = s3SSEKey;
         this.s3Bucket = s3Bucket;
@@ -54,7 +50,7 @@ public class SpeechKinesisConsumer implements Managed {
     @Override
     public void start() throws Exception {
         LOGGER.debug("action=start-kinesis-consumer running={}", isRunning);
-        consumerExecutor.scheduleAtFixedRate(() -> {
+        consumerExecutor.execute(() -> {
             try {
                 isRunning = true;
                 consumeKinesisStream();
@@ -67,7 +63,7 @@ public class SpeechKinesisConsumer implements Managed {
                     LOGGER.warn("warning=kinesis-consumer-exit-interrupted-sleep");
                 }
                 System.exit(1);
-            }}, scheduledIntervalMinutes, scheduledIntervalMinutes, TimeUnit.MINUTES);
+            }});
     }
 
     @Override

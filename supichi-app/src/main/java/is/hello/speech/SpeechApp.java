@@ -274,7 +274,10 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .withMaxRecords(kinesisConsumerConfiguration.maxRecord())
                 .withInitialPositionInStream(initialPositionInStream);
 
-        final ScheduledExecutorService scheduledKinesisConsumer = environment.lifecycle().scheduledExecutorService("kinesis_consumer").threads(1).build();
+        final ExecutorService scheduledKinesisConsumer = environment.lifecycle().executorService("kinesis_consumer")
+                .minThreads(1)
+                .maxThreads(2)
+                .keepAliveTime(Duration.seconds(2L)).build();
 
         final String senseUploadBucket = String.format("%s/%s",
                 speechAppConfiguration.senseUploadAudioConfiguration().getBucketName(),
@@ -283,7 +286,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         // set up KMS for timeline encryption
         final KMSConfiguration kmsConfig = speechAppConfiguration.kmsConfiguration();
         final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
-        awskmsClient.setEndpoint("https://kms.us-west-2.amazonaws.com");
+        awskmsClient.setEndpoint(kmsConfig.endpoint());
         final Vault kmsVault = new KmsVault(awskmsClient, kmsConfig.kmsKeys().uuid());
 
         final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
@@ -293,7 +296,6 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final SpeechKinesisConsumer speechKinesisConsumer = new SpeechKinesisConsumer(kinesisClientLibConfiguration,
                 scheduledKinesisConsumer,
-                kinesisConsumerConfiguration.scheduleMinutes(),
                 amazonS3,
                 senseUploadBucket,
                 s3SSEKey,
