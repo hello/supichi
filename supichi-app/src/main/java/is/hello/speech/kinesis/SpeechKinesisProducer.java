@@ -152,7 +152,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
 
             return builder.setAccountId(data.speechResult.accountId)
                     .setSenseId(data.speechResult.senseId)
-                    .setCreated(DateTime.now(DateTimeZone.UTC).getMillis())
+                    .setCreated(data.speechResult.dateTimeUTC.getMillis())
                     .setAudioUuid(data.speechResult.audioIdentifier)
                     .setAudio(audioData)
                     .build();

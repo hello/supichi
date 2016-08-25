@@ -33,7 +33,11 @@ import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
+import com.hello.suripu.core.speech.KmsVault;
 import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
+import com.hello.suripu.core.speech.SpeechTimelineIngestDAO;
+import com.hello.suripu.core.speech.SpeechTimelineIngestDAODynamoDB;
+import com.hello.suripu.core.speech.Vault;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.clients.MessejiHttpClient;
@@ -123,7 +127,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
 
         final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
-        final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider, new ClientConfiguration(), speechAppConfiguration.dynamoDBConfiguration());
+        final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider, speechAppConfiguration.dynamoDBConfiguration());
 
         final ImmutableMap<DynamoDBTableName, String> tableNames = speechAppConfiguration.dynamoDBConfiguration().tables();
 
@@ -276,10 +280,14 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 speechAppConfiguration.senseUploadAudioConfiguration().getBucketName(),
                 speechAppConfiguration.senseUploadAudioConfiguration().getAudioPrefix());
 
-        // set up KMS stuff
+        // set up KMS for timeline encryption
         final KMSConfiguration kmsConfig = speechAppConfiguration.kmsConfiguration();
         final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
         awskmsClient.setEndpoint("https://kms.us-west-2.amazonaws.com");
+        final Vault kmsVault = new KmsVault(awskmsClient, kmsConfig.kmsKeys().uuid());
+
+        final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
+        final SpeechTimelineIngestDAO speechTimelineIngestDAO = SpeechTimelineIngestDAODynamoDB.create(speechTimelineClient, tableNames.get(DynamoDBTableName.SPEECH_TIMELINE), kmsVault);
 
         final SSEAwsKeyManagementParams s3SSEKey = new SSEAwsKeyManagementParams(kmsConfig.kmsKeys().audio());
 
@@ -289,8 +297,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 amazonS3,
                 senseUploadBucket,
                 s3SSEKey,
-                awskmsClient,
-                kmsConfig.kmsKeys().uuid(), // for UUID encryption
+                speechTimelineIngestDAO,
                 speechResultDAODynamoDB);
 
         environment.lifecycle().manage(speechKinesisConsumer);

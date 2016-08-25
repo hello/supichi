@@ -2,10 +2,10 @@ package is.hello.speech.kinesis;
 
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.Worker;
-import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
+import com.hello.suripu.core.speech.SpeechTimelineIngestDAO;
 import io.dropwizard.lifecycle.Managed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,10 +26,9 @@ public class SpeechKinesisConsumer implements Managed {
     private final AmazonS3 s3;
     private final String s3Bucket;
 
-    private final AWSKMSClient awskmsClient;
-    private final String kmsUUIDKey;
     private final SSEAwsKeyManagementParams s3SSEKey;
 
+    private final SpeechTimelineIngestDAO speechTimelineIngestDAO;
     private final SpeechResultDAODynamoDB speechResultDAODynamoDB;
 
     private boolean isRunning = false;
@@ -40,17 +39,15 @@ public class SpeechKinesisConsumer implements Managed {
                                  final AmazonS3 s3,
                                  final String s3Bucket,
                                  final SSEAwsKeyManagementParams s3SSEKey,
-                                 final AWSKMSClient awskmsClient,
-                                 final String kmsUUIDKey,
+                                 final SpeechTimelineIngestDAO speechTimelineIngestDAO,
                                  final SpeechResultDAODynamoDB speechResultDAODynamoDB) {
         this.clientConfiguration = clientConfiguration;
         this.consumerExecutor = consumerExecutor;
         this.scheduledIntervalMinutes = scheduledIntervalMinutes;
         this.s3 = s3;
-        this.awskmsClient = awskmsClient;
         this.s3SSEKey = s3SSEKey;
-        this.kmsUUIDKey = kmsUUIDKey;
         this.s3Bucket = s3Bucket;
+        this.speechTimelineIngestDAO = speechTimelineIngestDAO;
         this.speechResultDAODynamoDB = speechResultDAODynamoDB;
     }
 
@@ -80,7 +77,7 @@ public class SpeechKinesisConsumer implements Managed {
     }
 
     private void consumeKinesisStream() {
-        final SpeechKinesisProcessorFactory factory = new SpeechKinesisProcessorFactory(s3Bucket, s3, s3SSEKey, awskmsClient, kmsUUIDKey, speechResultDAODynamoDB);
+        final SpeechKinesisProcessorFactory factory = new SpeechKinesisProcessorFactory(s3Bucket, s3, s3SSEKey, speechTimelineIngestDAO, speechResultDAODynamoDB);
         LOGGER.info("info=kinesis-initial-position value={}", this.clientConfiguration.getInitialPositionInStream());
         final Worker worker = new Worker(factory, this.clientConfiguration);
         worker.run();

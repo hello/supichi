@@ -16,6 +16,8 @@ import is.hello.speech.core.models.TextQuery;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,6 +124,7 @@ public class UploadResource {
                 .withAccountId(accountId)
                 .withSenseId(senseId)
                 .withAudioIndentifier(audioUUID)
+                .withDateTimeUTC(DateTime.now(DateTimeZone.UTC))
                 .build();
 
         // save to Kinesis
