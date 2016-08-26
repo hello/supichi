@@ -1,29 +1,24 @@
 package is.hello.speech.resources.demo;
 
+import com.google.common.collect.ImmutableList;
+
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.util.Md5Utils;
 import com.codahale.metrics.annotation.Timed;
-import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.speech.SpeechResult;
 import com.hello.suripu.core.util.HelloHttpHeader;
-import is.hello.speech.clients.SpeechClient;
-import is.hello.speech.core.api.Response;
-import is.hello.speech.core.handlers.executors.HandlerExecutor;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechServiceResult;
-import is.hello.speech.core.models.TextQuery;
-import is.hello.speech.kinesis.SpeechKinesisProducer;
-import is.hello.speech.core.models.UploadResponseParam;
-import is.hello.speech.utils.ResponseBuilder;
-import is.hello.speech.utils.WatsonResponseBuilder;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -37,9 +32,18 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.UUID;
+
+import is.hello.speech.clients.SpeechClient;
+import is.hello.speech.core.api.Response;
+import is.hello.speech.core.handlers.executors.HandlerExecutor;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechServiceResult;
+import is.hello.speech.core.models.TextQuery;
+import is.hello.speech.core.models.UploadResponseParam;
+import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.utils.ResponseBuilder;
+import is.hello.speech.utils.WatsonResponseBuilder;
 
 
 @Path("/upload")

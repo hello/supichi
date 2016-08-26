@@ -1,5 +1,7 @@
 package is.hello.speech;
 
+import com.google.common.collect.ImmutableMap;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -16,7 +18,6 @@ import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
-import com.google.common.collect.ImmutableMap;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -43,6 +44,15 @@ import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.clients.MessejiHttpClient;
 import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
+
+import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -183,7 +193,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.SLEEP_SOUNDS, handlerFactory.sleepSoundHandler())
                 .register(HandlerType.ROOM_CONDITIONS, handlerFactory.roomConditionsHandler())
                 .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
-                .register(HandlerType.TRIVIA, handlerFactory.triviaHandler());
+                .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
+                .register(HandlerType.HUE, handlerFactory.hueHandler());
 
         // setup SQS for QueueMessage API
         final SQSConfiguration sqsConfig = speechAppConfiguration.getSqsConfiguration();

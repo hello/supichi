@@ -1,6 +1,7 @@
 package is.hello.speech.core.models;
 
 import is.hello.speech.core.handlers.AlarmHandler;
+import is.hello.speech.core.handlers.HueHandler;
 import is.hello.speech.core.handlers.RoomConditionsHandler;
 import is.hello.speech.core.handlers.SleepSoundHandler;
 import is.hello.speech.core.handlers.TimeHandler;
@@ -15,6 +16,7 @@ public enum SpeechCommand {
     SLEEP_SOUND_STOP("sleep_sound_stop", SleepSoundHandler.class),
     ALARM_SET("alarm_set", AlarmHandler.class),
     ALARM_DELETE("alarm_delete", AlarmHandler.class),
+    LIGHT_SET("light_set", HueHandler.class),
     ROOM_TEMPERATURE("room_temperature", RoomConditionsHandler.class),
     ROOM_HUMIDITY("room_humidity", RoomConditionsHandler.class),
     ROOM_LIGHT("room_light", RoomConditionsHandler.class),
