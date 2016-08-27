@@ -137,7 +137,7 @@ if __name__ == '__main__':
     if env == 'local':
         ENDPOINT = "http://localhost:8181/v1/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
     elif env == 'dev':
-        ENDPOINT = "http://dev-speech.hello.is/v1/upload/audio?r=%s&response=%s" % (sampling_rate, audio_type)
+        ENDPOINT = "https://dev-speech.hello.is/v1/upload/audio?r=%s&response=%s" % (sampling_rate, audio_type)
     elif env == 'goog':
         ENDPOINT = "http://8.34.219.91:8181/upload/audio?r=%s" % (sampling_rate)
     else:
