@@ -13,21 +13,17 @@ import java.util.Map;
 /**
  * Created by ksg on 6/17/16
  */
-public class AlarmHandler extends BaseHandler {
+public class TimelineHandler extends BaseHandler {
 
-    public AlarmHandler(SpeechCommandDAO speechCommandDAO) {
-        super("alarm", speechCommandDAO, getAvailableActions());
+    public TimelineHandler(SpeechCommandDAO speechCommandDAO) {
+        super("timeline", speechCommandDAO, getAvailableActions());
     }
 
     private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
-        tempMap.put("set alarm", SpeechCommand.ALARM_SET);
-        tempMap.put("unset alarm", SpeechCommand.ALARM_DELETE);
-        tempMap.put("remove alarm", SpeechCommand.ALARM_DELETE);
-        tempMap.put("delete alarm", SpeechCommand.ALARM_DELETE);
-        tempMap.put("wake me", SpeechCommand.ALARM_SET);
-        tempMap.put("me up", SpeechCommand.ALARM_SET);
+        tempMap.put("sleep last", SpeechCommand.TIMELINE);
+        tempMap.put("last night", SpeechCommand.TIMELINE);
         return tempMap;
     }
 
@@ -41,7 +37,7 @@ public class AlarmHandler extends BaseHandler {
         if (optionalCommand.isPresent()) {
 
             response.put("result", HandlerResult.Outcome.OK.getValue());
-            response.put("text", "Ok, alarm set.");
+            response.put("text", "Your sleep score was 75");
         }
 
         return new HandlerResult(HandlerType.ALARM, response);

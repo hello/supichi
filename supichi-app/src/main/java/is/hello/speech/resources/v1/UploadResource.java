@@ -13,10 +13,10 @@ import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
 import is.hello.speech.core.models.TextQuery;
-import is.hello.speech.kinesis.SpeechKinesisProducer;
 import is.hello.speech.core.models.UploadResponseParam;
-import is.hello.speech.utils.ResponseBuilder;
-import is.hello.speech.utils.WatsonResponseBuilder;
+import is.hello.speech.core.response.SupichiResponseBuilder;
+import is.hello.speech.core.response.SupichiResponseType;
+import is.hello.speech.kinesis.SpeechKinesisProducer;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -34,6 +34,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -51,8 +52,9 @@ public class UploadResource {
 
     private final SpeechKinesisProducer speechKinesisProducer;
 
-    private final ResponseBuilder responseBuilder;
-    private final WatsonResponseBuilder watsonResponseBuilder;
+
+    private final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders;
+    private final Map<HandlerType, SupichiResponseType> handlerMap;
 
     @Context
     HttpServletRequest request;
@@ -62,16 +64,15 @@ public class UploadResource {
                           final HandlerExecutor handlerExecutor,
                           final DeviceDAO deviceDAO,
                           final SpeechKinesisProducer speechKinesisProducer,
-                          final ResponseBuilder responseBuilder,
-                          final WatsonResponseBuilder watsonResponseBuilder
-    ) {
+                          final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders,
+                          final Map<HandlerType, SupichiResponseType> handlerMap) {
         this.speechClient = speechClient;
         this.signedBodyHandler = signedBodyHandler;
         this.handlerExecutor = handlerExecutor;
         this.deviceDAO = deviceDAO;
         this.speechKinesisProducer = speechKinesisProducer;
-        this.responseBuilder = responseBuilder;
-        this.watsonResponseBuilder = watsonResponseBuilder;
+        this.responseBuilders = responseBuilders;
+        this.handlerMap = handlerMap;
     }
 
     @Path("/audio")
@@ -106,7 +107,7 @@ public class UploadResource {
 
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", senseId);
-            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
+            return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
         }
 
         // TODO: for now, pick the smallest account-id as the primary id
@@ -139,21 +140,20 @@ public class UploadResource {
                 executeResult = handlerExecutor.handle(senseId, accountId, resp.getTranscript().get());
             }
 
-            if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
-                return watsonResponseBuilder.response(executeResult, responseParam);
-            }
+            final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.WATSON);
+            final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
                 return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
-            } else {
-                return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
             }
+
+            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
+        return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
     }
 
     @Path("/text")
@@ -165,12 +165,13 @@ public class UploadResource {
                        @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
     ) throws InterruptedException, IOException {
 
+        final boolean includeProtobuf = false;
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(query.senseId);
 
         LOGGER.debug("info=sense-id id={}", query.senseId);
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", query.senseId);
-            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
+            return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
         }
 
         // TODO: for now, pick the smallest account-id as the primary id
@@ -186,19 +187,19 @@ public class UploadResource {
 
             final HandlerResult executeResult = handlerExecutor.handle(query.senseId, accountId, query.transcript);
 
-            if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
-                return watsonResponseBuilder.response(executeResult, responseParam);
-            }
+            final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.WATSON);
+            final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                return responseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult, responseParam);
+                return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
             }
-            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, false, executeResult, responseParam);
+
+            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
+        return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
     }
 }

@@ -12,6 +12,7 @@ import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.speech.core.models.responsebuilder.ResponseUtils;
 import is.hello.speech.core.models.responsebuilder.RoomConditionsResponseBuilder;
 import is.hello.speech.core.models.responsebuilder.TriviaResponseBuilder;
+import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.text2speech.AudioUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,8 +26,8 @@ import java.util.Map;
 /**
  * Created by ksg on 7/26/16
  */
-public class ResponseBuilder {
-    private final static Logger LOGGER = LoggerFactory.getLogger(ResponseBuilder.class);
+public class S3ResponseBuilder implements SupichiResponseBuilder {
+    private final static Logger LOGGER = LoggerFactory.getLogger(S3ResponseBuilder.class);
 
     private final AmazonS3 s3;
     private final String bucketName;
@@ -34,7 +35,7 @@ public class ResponseBuilder {
     private final String voiceName;
     private final Map<String, byte []> audioCache = Maps.newHashMap();
 
-    public ResponseBuilder(final AmazonS3 s3, final String bucketName, final String voiceService, final String voiceName) {
+    public S3ResponseBuilder(final AmazonS3 s3, final String bucketName, final String voiceService, final String voiceName) {
         this.s3 = s3;
         this.bucketName = bucketName;
         this.voiceService = voiceService;
@@ -48,10 +49,11 @@ public class ResponseBuilder {
      * @return bytes
      * @throws IOException
      */
+    @Override
     public byte[] response(final Response.SpeechResponse.Result result,
                            final boolean includeProtobuf,
                            final HandlerResult handlerResult,
-                           final UploadResponseParam responseParam) throws IOException {
+                           final UploadResponseParam responseParam) {
 
         LOGGER.debug("action=create-response result={} handler={}", result.toString(), handlerResult.handlerType.toString());
 
@@ -84,14 +86,18 @@ public class ResponseBuilder {
 
         // return audio only
         if (!includeProtobuf) {
-            LOGGER.debug("action=return-audio-only-response size={}", audioBytes.length);
-            if (responseParam.type().equals(UploadResponseType.MP3)) {
-                LOGGER.debug("action=convert-pcm-to-mp3 size={}", audioBytes.length);
-                final AudioFormat audioFormat = AudioUtils.DEFAULT_AUDIO_FORMAT;
-                final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(new AudioUtils.AudioBytes(audioBytes, audioBytes.length, audioFormat));
-                outputStream.write(mp3Bytes);
-            } else {
-                outputStream.write(audioBytes);
+            try {
+                LOGGER.debug("action=return-audio-only-response size={}", audioBytes.length);
+                if (responseParam.type().equals(UploadResponseType.MP3)) {
+                    LOGGER.debug("action=convert-pcm-to-mp3 size={}", audioBytes.length);
+                    final AudioFormat audioFormat = AudioUtils.DEFAULT_AUDIO_FORMAT;
+                    final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(new AudioUtils.AudioBytes(audioBytes, audioBytes.length, audioFormat));
+                    outputStream.write(mp3Bytes);
+                } else {
+                    outputStream.write(audioBytes);
+                }
+            } catch (IOException exception) {
+                LOGGER.error("action=response-builder-error_msg={}", exception.getMessage());
             }
             return outputStream.toByteArray();
         }
@@ -108,15 +114,20 @@ public class ResponseBuilder {
         final Integer responsePBSize = speechResponse.getSerializedSize();
         LOGGER.info("action=create-response response_size={}", responsePBSize);
 
-        final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
-        dataOutputStream.writeInt(responsePBSize);
-        speechResponse.writeTo(dataOutputStream);
+        try {
+            final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
+            dataOutputStream.writeInt(responsePBSize);
+            speechResponse.writeTo(dataOutputStream);
 
-        LOGGER.info("action=create-response audio_size={}", audioBytes.length);
-        dataOutputStream.write(audioBytes);
+            LOGGER.info("action=create-response audio_size={}", audioBytes.length);
+            dataOutputStream.write(audioBytes);
 
-        LOGGER.info("action=get-output-stream-size size={}", outputStream.size());
-        return outputStream.toByteArray();
+            LOGGER.info("action=get-output-stream-size size={}", outputStream.size());
+            return outputStream.toByteArray();
+        } catch (IOException exception) {
+            LOGGER.error("action=response-builder-error_msg={}", exception.getMessage());
+            return new byte[]{};
+        }
     }
 
 

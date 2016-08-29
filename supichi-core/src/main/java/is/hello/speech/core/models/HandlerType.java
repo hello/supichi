@@ -9,6 +9,7 @@ public enum HandlerType {
     ALARM("alarm"),
     ROOM_CONDITIONS("room_conditions"),
     TIME_REPORT("time_report"),
+    TIMELINE("timeline"),
     TRIVIA("trivia"),
     WEATHER("weather");
 

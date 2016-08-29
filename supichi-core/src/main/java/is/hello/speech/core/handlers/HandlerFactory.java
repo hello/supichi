@@ -90,4 +90,8 @@ public class HandlerFactory {
     public SleepSoundHandler sleepSoundHandler() {
         return new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor,5);
     }
+
+    public TimelineHandler timelineHandler() {
+        return new TimelineHandler(speechCommandDAO);
+    }
 }
