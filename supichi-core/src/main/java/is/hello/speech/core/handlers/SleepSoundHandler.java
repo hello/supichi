@@ -90,7 +90,7 @@ public class SleepSoundHandler extends BaseHandler {
         }
 
         response.put("result", String.valueOf(result));
-        response.put("text", "ok");
+        response.put("text", "Goodnight");
         return new HandlerResult(HandlerType.SLEEP_SOUNDS, response);
 
     }
