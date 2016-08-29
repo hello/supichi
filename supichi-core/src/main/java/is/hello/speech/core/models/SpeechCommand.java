@@ -4,6 +4,7 @@ import is.hello.speech.core.handlers.AlarmHandler;
 import is.hello.speech.core.handlers.RoomConditionsHandler;
 import is.hello.speech.core.handlers.SleepSoundHandler;
 import is.hello.speech.core.handlers.TimeHandler;
+import is.hello.speech.core.handlers.TimelineHandler;
 import is.hello.speech.core.handlers.TriviaHandler;
 import is.hello.speech.core.handlers.WeatherHandler;
 
@@ -22,8 +23,8 @@ public enum SpeechCommand {
     PARTICULATES("particulates", RoomConditionsHandler.class),
     TIME_REPORT("time_report",TimeHandler.class),
     TRIVIA("trivia", TriviaHandler.class),
-    WEATHER("weather", WeatherHandler.class);
-
+    WEATHER("weather", WeatherHandler.class),
+    TIMELINE("timeline",TimelineHandler.class);
 
     private String value;
     private Class commandClass;

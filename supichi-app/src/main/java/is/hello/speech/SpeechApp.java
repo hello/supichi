@@ -17,6 +17,7 @@ import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -67,6 +68,8 @@ import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.core.handlers.executors.UnigramHandlerExecutor;
 import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.response.SupichiResponseBuilder;
+import is.hello.speech.core.response.SupichiResponseType;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
 import is.hello.speech.kinesis.KinesisData;
 import is.hello.speech.kinesis.SpeechKinesisConsumer;
@@ -76,7 +79,7 @@ import is.hello.speech.resources.demo.ParseResource;
 import is.hello.speech.resources.demo.QueueMessageResource;
 import is.hello.speech.resources.v1.SignedBodyHandler;
 import is.hello.speech.resources.v1.UploadResource;
-import is.hello.speech.utils.ResponseBuilder;
+import is.hello.speech.utils.S3ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 import org.skife.jdbi.v2.DBI;
 
@@ -183,7 +186,9 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.SLEEP_SOUNDS, handlerFactory.sleepSoundHandler())
                 .register(HandlerType.ROOM_CONDITIONS, handlerFactory.roomConditionsHandler())
                 .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
-                .register(HandlerType.TRIVIA, handlerFactory.triviaHandler());
+                .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
+                .register(HandlerType.TIMELINE, handlerFactory.timelineHandler());
+
 
         // setup SQS for QueueMessage API
         final SQSConfiguration sqsConfig = speechAppConfiguration.getSqsConfiguration();
@@ -316,11 +321,18 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.watsonAudioConfiguration().getAudioPrefix());
 
-        final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
+        final S3ResponseBuilder s3ResponseBuilder = new S3ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
         final SignedBodyHandler signedBodyHandler = new SignedBodyHandler(keystore);
-        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
-        environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
+
+        final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
+        responseBuilders.put(SupichiResponseType.S3, s3ResponseBuilder);
+        responseBuilders.put(SupichiResponseType.WATSON, watsonResponseBuilder);
+
+        final Map<HandlerType, SupichiResponseType> handlersToBuilders = handlerExecutor.responseBuilders();
+
+        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, speechKinesisProducer, s3ResponseBuilder, watsonResponseBuilder));
+        environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
 
         environment.jersey().register(new ParseResource());
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.watsonAudioConfiguration().getBucketName()));

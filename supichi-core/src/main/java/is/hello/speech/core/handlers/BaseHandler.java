@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.response.SupichiResponseType;
 
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +35,9 @@ public abstract class BaseHandler {
         return Optional.absent();
     }
 
-
     public abstract HandlerResult executeCommand(final String text, final String senseId, final Long accountId);
+
+    public SupichiResponseType responseType() {
+        return SupichiResponseType.S3;
+    };
 }

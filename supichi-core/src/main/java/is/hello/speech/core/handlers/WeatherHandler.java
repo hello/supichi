@@ -11,6 +11,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +72,11 @@ public class WeatherHandler extends BaseHandler {
 
         LOGGER.info("action=get-forecast result={}", accountId, defaultText);
         return new HandlerResult(HandlerType.WEATHER, params);
+    }
+
+    @Override
+    public SupichiResponseType responseType() {
+        return SupichiResponseType.WATSON;
     }
 
 //    ForecastIO fio = new ForecastIO(your_api_key); //instantiate the class with the API key.
