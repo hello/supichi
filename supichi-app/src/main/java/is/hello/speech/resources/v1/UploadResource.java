@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.speech.SpeechResult;
+import com.hello.suripu.core.speech.WakeWord;
 import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
@@ -42,6 +43,8 @@ import java.util.UUID;
 public class UploadResource {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
+
+    private final static byte[] EMPTY_BYTE = new byte[0];
 
     private final SpeechClient speechClient;
     private final SignedBodyHandler signedBodyHandler;
@@ -121,11 +124,12 @@ public class UploadResource {
 
         // save audio to Kinesis
         final String audioUUID = UUID.randomUUID().toString();
+        final DateTime speechCreated = DateTime.now(DateTimeZone.UTC);
         final SpeechResult speechResult = new SpeechResult.Builder()
                 .withAccountId(accountId)
                 .withSenseId(senseId)
                 .withAudioIndentifier(audioUUID)
-                .withDateTimeUTC(DateTime.now(DateTimeZone.UTC))
+                .withDateTimeUTC(speechCreated)
                 .build();
         speechKinesisProducer.addResult(speechResult, body);
 
@@ -136,7 +140,22 @@ public class UploadResource {
             // try to execute command in transcript
             if (resp.getTranscript().isPresent()) {
 
-                executeResult = handlerExecutor.handle(senseId, accountId, resp.getTranscript().get());
+                // save transcript results to Kinesis
+                final String transcribedText = resp.getTranscript().get();
+                final SpeechResult speechResultWithTranscript = new SpeechResult.Builder()
+                        .withAudioIndentifier(audioUUID)
+                        .withDateTimeUTC(speechCreated)
+                        .withText(transcribedText)
+                        .withConfidence(resp.getConfidence())
+                        .withWakeWord(WakeWord.OKAY_SENSE)
+                        .withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
+                        .build();
+                speechKinesisProducer.addResult(speechResultWithTranscript, EMPTY_BYTE);
+
+                // try to execute text command
+                executeResult = handlerExecutor.handle(senseId, accountId, transcribedText);
+
+
             }
 
             if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
