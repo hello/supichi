@@ -10,6 +10,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +90,7 @@ public class SleepSoundHandler extends BaseHandler {
         }
 
         response.put("result", String.valueOf(result));
+        response.put("text", "ok");
         return new HandlerResult(HandlerType.SLEEP_SOUNDS, response);
 
     }
@@ -158,5 +160,10 @@ public class SleepSoundHandler extends BaseHandler {
         final double decibelOffsetFromMaximum = 33.22 * Math.log10(volumePercent / 100.0);
         final double decibels = maxDecibels + decibelOffsetFromMaximum;
         return (int) Math.round((decibels / maxDecibels) * 100);
+    }
+
+    @Override
+    public SupichiResponseType responseType() {
+        return SupichiResponseType.WATSON;
     }
 }
