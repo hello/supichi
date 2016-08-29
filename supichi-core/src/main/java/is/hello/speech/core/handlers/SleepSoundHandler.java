@@ -81,11 +81,15 @@ public class SleepSoundHandler extends BaseHandler {
         final Optional<SpeechCommand> command = getCommand(text);
         final Map<String, String> response = Maps.newHashMap();
         boolean result = false;
-        if (command.isPresent()) {
-            if (command.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
-                result = playSleepSound(senseId, accountId);
-            } else if (command.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
-                result = stopSleepSound(senseId, accountId);
+        // disabling sleep sounds for video/demo purposes.
+        // Sense crashes right now if it attempts to play sleep sounds
+        if(result) {
+            if (command.isPresent()) {
+                if (command.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
+                    result = playSleepSound(senseId, accountId);
+                } else if (command.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
+                    result = stopSleepSound(senseId, accountId);
+                }
             }
         }
 
