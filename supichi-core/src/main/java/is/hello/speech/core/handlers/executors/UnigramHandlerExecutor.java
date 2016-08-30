@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import is.hello.speech.core.handlers.BaseHandler;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +15,7 @@ public class UnigramHandlerExecutor implements HandlerExecutor {
 
     private Map<HandlerType, BaseHandler> availableHandlers = Maps.newConcurrentMap();
     private Map<String, HandlerType> commandToHandlerMap = Maps.newConcurrentMap();
+    private Map<HandlerType, SupichiResponseType> responseBuilders = Maps.newConcurrentMap();
 
     private final static Logger LOGGER = LoggerFactory.getLogger(UnigramHandlerExecutor.class);
 
@@ -57,6 +59,7 @@ public class UnigramHandlerExecutor implements HandlerExecutor {
         }
 
         availableHandlers.put(handlerType, baseHandler);
+        responseBuilders.put(handlerType, baseHandler.responseType());
         return this;
     }
 
@@ -69,5 +72,10 @@ public class UnigramHandlerExecutor implements HandlerExecutor {
             }
         }
         return Optional.absent();
+    }
+
+    @Override
+    public Map<HandlerType, SupichiResponseType> responseBuilders() {
+        return responseBuilders;
     }
 }

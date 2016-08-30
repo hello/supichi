@@ -162,11 +162,13 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
         // final Set<Number> confidences = SpeechUtils.wakewordsMapToDDBAttribute(data.speechResult.wakeWordsConfidence);
         final Long currentTimestamp = DateTime.now(DateTimeZone.UTC).getMillis();
 
+        final String text = (data.speechResult.text.isEmpty()) ? SpeechResult.EMPTY_STRING_PLACEHOLDER : data.speechResult.text;
+        final String responseText = (data.speechResult.responseText.isEmpty()) ? SpeechResult.EMPTY_STRING_PLACEHOLDER : data.speechResult.responseText;
         return builder.setAccountId(data.speechResult.accountId)
                 .setSenseId(data.speechResult.senseId)
                 .setCreated(data.speechResult.dateTimeUTC.getMillis())
                 .setAudioUuid(data.speechResult.audioIdentifier)
-                .setText(data.speechResult.text)
+                .setText(text)
                 .setService(data.speechResult.service.toString())
                 .setConfidence(data.speechResult.confidence)
                 .setHandlerType(data.speechResult.handlerType)
@@ -175,7 +177,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
                 .setWakeId(data.speechResult.wakeWord.getId())
 //                .setWakeConfidence(confidences)
                 .setResult(data.speechResult.result.toString())
-                .setResponseText(data.speechResult.responseText)
+                .setResponseText(responseText)
                 .setUpdated(currentTimestamp)
                 .build();
     }

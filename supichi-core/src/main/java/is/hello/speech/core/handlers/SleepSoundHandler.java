@@ -10,6 +10,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,16 +83,21 @@ public class SleepSoundHandler extends BaseHandler {
         boolean result = false;
         String command = HandlerResult.EMPTY_COMMAND;
 
-        if (optionalCommand.isPresent()) {
-            command = optionalCommand.get().getValue();
-            if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
-                result = playSleepSound(senseId, accountId);
-            } else if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
-                result = stopSleepSound(senseId, accountId);
+        // disabling sleep sounds for video/demo purposes.
+        // Sense crashes right now if it attempts to play sleep sounds
+        if(result) {
+            if (optionalCommand.isPresent()) {
+                command = optionalCommand.get().getValue();
+                if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
+                    result = playSleepSound(senseId, accountId);
+                } else if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
+                    result = stopSleepSound(senseId, accountId);
+                }
             }
         }
 
         response.put("result", String.valueOf(result));
+        response.put("text", "Goodnight");
         return new HandlerResult(HandlerType.SLEEP_SOUNDS, command, response);
 
     }
@@ -161,5 +167,10 @@ public class SleepSoundHandler extends BaseHandler {
         final double decibelOffsetFromMaximum = 33.22 * Math.log10(volumePercent / 100.0);
         final double decibels = maxDecibels + decibelOffsetFromMaximum;
         return (int) Math.round((decibels / maxDecibels) * 100);
+    }
+
+    @Override
+    public SupichiResponseType responseType() {
+        return SupichiResponseType.WATSON;
     }
 }

@@ -1,15 +1,17 @@
 package is.hello.speech.resources.v1;
 
+import com.google.api.client.util.Maps;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.KeyStore;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.handlers.executors.HandlerExecutor;
-import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.UploadResponseParam;
-import is.hello.speech.utils.ResponseBuilder;
-import is.hello.speech.utils.WatsonResponseBuilder;
+import is.hello.speech.core.response.SupichiResponseBuilder;
+import is.hello.speech.core.response.SupichiResponseType;
+import is.hello.speech.kinesis.SpeechKinesisProducer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -17,6 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Matchers.any;
@@ -30,10 +33,11 @@ public class UploadResourceTest {
     private HandlerExecutor executor;
     private DeviceDAO deviceDAO;
     private SpeechKinesisProducer kinesisProducer;
-    private ResponseBuilder responseBuilder;
-    private WatsonResponseBuilder watsonResponseBuilder;
     private SignedBodyHandler signedBodyHandler;
     private UploadResponseParam responseParam = new UploadResponseParam("adpcm");
+
+    final Map<HandlerType, SupichiResponseType> handlersToBuilders = Maps.newHashMap();
+    final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
 
     @Before
     public void setUp() {
@@ -41,8 +45,6 @@ public class UploadResourceTest {
         keystore = mock(KeyStore.class);
         executor = mock(HandlerExecutor.class);
         deviceDAO = mock(DeviceDAO.class);
-        responseBuilder = mock(ResponseBuilder.class);
-        watsonResponseBuilder = mock(WatsonResponseBuilder.class);
         signedBodyHandler = mock(SignedBodyHandler.class);
         kinesisProducer = mock(SpeechKinesisProducer.class);
 
@@ -54,7 +56,7 @@ public class UploadResourceTest {
         when(signedBodyHandler.extractAudio(any(String.class), any(byte[].class))).thenReturn(new byte[]{});
         when(deviceDAO.getAccountIdsForDeviceId(any(String.class))).thenReturn(ImmutableList.of());
         final UploadResource resource = new UploadResource(client, signedBodyHandler, executor,
-                deviceDAO, kinesisProducer, responseBuilder, watsonResponseBuilder);
+                deviceDAO, kinesisProducer, responseBuilders, handlersToBuilders);
 
         final HttpServletRequest request = mock(HttpServletRequest.class);
         resource.request = request;
@@ -67,7 +69,7 @@ public class UploadResourceTest {
         when(signedBodyHandler.extractAudio(any(String.class), any(byte[].class))).thenReturn(new byte[]{});
         when(deviceDAO.getAccountIdsForDeviceId(any(String.class))).thenReturn(ImmutableList.of());
         final UploadResource resource = new UploadResource(client, signedBodyHandler, executor,
-                deviceDAO, kinesisProducer, responseBuilder, watsonResponseBuilder);
+                deviceDAO, kinesisProducer, responseBuilders, handlersToBuilders);
 
         final HttpServletRequest request = mock(HttpServletRequest.class);
         resource.request = request;
