@@ -659,127 +659,112 @@ public final class SpeechResultsKinesis {
      */
     float getConfidence();
 
-    // optional string intent = 9;
+    // optional string s3_keyname = 9;
     /**
-     * <code>optional string intent = 9;</code>
+     * <code>optional string s3_keyname = 9;</code>
      */
-    boolean hasIntent();
+    boolean hasS3Keyname();
     /**
-     * <code>optional string intent = 9;</code>
+     * <code>optional string s3_keyname = 9;</code>
      */
-    java.lang.String getIntent();
+    java.lang.String getS3Keyname();
     /**
-     * <code>optional string intent = 9;</code>
-     */
-    com.google.protobuf.ByteString
-        getIntentBytes();
-
-    // optional string action = 10;
-    /**
-     * <code>optional string action = 10;</code>
-     */
-    boolean hasAction();
-    /**
-     * <code>optional string action = 10;</code>
-     */
-    java.lang.String getAction();
-    /**
-     * <code>optional string action = 10;</code>
+     * <code>optional string s3_keyname = 9;</code>
      */
     com.google.protobuf.ByteString
-        getActionBytes();
+        getS3KeynameBytes();
 
-    // optional string intent_category = 11;
+    // optional string handler_type = 10;
     /**
-     * <code>optional string intent_category = 11;</code>
+     * <code>optional string handler_type = 10;</code>
      */
-    boolean hasIntentCategory();
+    boolean hasHandlerType();
     /**
-     * <code>optional string intent_category = 11;</code>
+     * <code>optional string handler_type = 10;</code>
      */
-    java.lang.String getIntentCategory();
+    java.lang.String getHandlerType();
     /**
-     * <code>optional string intent_category = 11;</code>
+     * <code>optional string handler_type = 10;</code>
      */
     com.google.protobuf.ByteString
-        getIntentCategoryBytes();
+        getHandlerTypeBytes();
 
-    // optional string command = 12;
+    // optional string command = 11;
     /**
-     * <code>optional string command = 12;</code>
+     * <code>optional string command = 11;</code>
      */
     boolean hasCommand();
     /**
-     * <code>optional string command = 12;</code>
+     * <code>optional string command = 11;</code>
      */
     java.lang.String getCommand();
     /**
-     * <code>optional string command = 12;</code>
+     * <code>optional string command = 11;</code>
      */
     com.google.protobuf.ByteString
         getCommandBytes();
 
-    // optional int32 wake_id = 13;
+    // optional int32 wake_id = 12;
     /**
-     * <code>optional int32 wake_id = 13;</code>
+     * <code>optional int32 wake_id = 12;</code>
      */
     boolean hasWakeId();
     /**
-     * <code>optional int32 wake_id = 13;</code>
+     * <code>optional int32 wake_id = 12;</code>
      */
     int getWakeId();
 
-    // repeated float wake_confidence = 14;
+    // repeated float wake_confidence = 13;
     /**
-     * <code>repeated float wake_confidence = 14;</code>
+     * <code>repeated float wake_confidence = 13;</code>
      */
     java.util.List<java.lang.Float> getWakeConfidenceList();
     /**
-     * <code>repeated float wake_confidence = 14;</code>
+     * <code>repeated float wake_confidence = 13;</code>
      */
     int getWakeConfidenceCount();
     /**
-     * <code>repeated float wake_confidence = 14;</code>
+     * <code>repeated float wake_confidence = 13;</code>
      */
     float getWakeConfidence(int index);
 
-    // optional string result = 15;
+    // optional string result = 14;
     /**
-     * <code>optional string result = 15;</code>
+     * <code>optional string result = 14;</code>
      */
     boolean hasResult();
     /**
-     * <code>optional string result = 15;</code>
+     * <code>optional string result = 14;</code>
      */
     java.lang.String getResult();
     /**
-     * <code>optional string result = 15;</code>
+     * <code>optional string result = 14;</code>
      */
     com.google.protobuf.ByteString
         getResultBytes();
 
-    // optional string response_text = 16;
+    // optional string response_text = 15;
     /**
-     * <code>optional string response_text = 16;</code>
+     * <code>optional string response_text = 15;</code>
      */
     boolean hasResponseText();
     /**
-     * <code>optional string response_text = 16;</code>
+     * <code>optional string response_text = 15;</code>
      */
     java.lang.String getResponseText();
     /**
-     * <code>optional string response_text = 16;</code>
+     * <code>optional string response_text = 15;</code>
      */
     com.google.protobuf.ByteString
         getResponseTextBytes();
 
-    // optional int64 updated = 17;
+    // optional int64 updated = 16;
     /**
-     * <code>optional int64 updated = 17;</code>
+     * <code>optional int64 updated = 16;</code>
      */
     boolean hasUpdated();
     /**
-     * <code>optional int64 updated = 17;</code>
+     * <code>optional int64 updated = 16;</code>
      */
     long getUpdated();
   }
@@ -884,43 +869,38 @@ public final class SpeechResultsKinesis {
             }
             case 74: {
               bitField0_ |= 0x00000100;
-              intent_ = input.readBytes();
+              s3Keyname_ = input.readBytes();
               break;
             }
             case 82: {
               bitField0_ |= 0x00000200;
-              action_ = input.readBytes();
+              handlerType_ = input.readBytes();
               break;
             }
             case 90: {
               bitField0_ |= 0x00000400;
-              intentCategory_ = input.readBytes();
-              break;
-            }
-            case 98: {
-              bitField0_ |= 0x00000800;
               command_ = input.readBytes();
               break;
             }
-            case 104: {
-              bitField0_ |= 0x00001000;
+            case 96: {
+              bitField0_ |= 0x00000800;
               wakeId_ = input.readInt32();
               break;
             }
-            case 117: {
-              if (!((mutable_bitField0_ & 0x00002000) == 0x00002000)) {
+            case 109: {
+              if (!((mutable_bitField0_ & 0x00001000) == 0x00001000)) {
                 wakeConfidence_ = new java.util.ArrayList<java.lang.Float>();
-                mutable_bitField0_ |= 0x00002000;
+                mutable_bitField0_ |= 0x00001000;
               }
               wakeConfidence_.add(input.readFloat());
               break;
             }
-            case 114: {
+            case 106: {
               int length = input.readRawVarint32();
               int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00002000) == 0x00002000) && input.getBytesUntilLimit() > 0) {
+              if (!((mutable_bitField0_ & 0x00001000) == 0x00001000) && input.getBytesUntilLimit() > 0) {
                 wakeConfidence_ = new java.util.ArrayList<java.lang.Float>();
-                mutable_bitField0_ |= 0x00002000;
+                mutable_bitField0_ |= 0x00001000;
               }
               while (input.getBytesUntilLimit() > 0) {
                 wakeConfidence_.add(input.readFloat());
@@ -928,18 +908,18 @@ public final class SpeechResultsKinesis {
               input.popLimit(limit);
               break;
             }
-            case 122: {
-              bitField0_ |= 0x00002000;
+            case 114: {
+              bitField0_ |= 0x00001000;
               result_ = input.readBytes();
               break;
             }
-            case 130: {
-              bitField0_ |= 0x00004000;
+            case 122: {
+              bitField0_ |= 0x00002000;
               responseText_ = input.readBytes();
               break;
             }
-            case 136: {
-              bitField0_ |= 0x00008000;
+            case 128: {
+              bitField0_ |= 0x00004000;
               updated_ = input.readInt64();
               break;
             }
@@ -951,7 +931,7 @@ public final class SpeechResultsKinesis {
         throw new com.google.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
-        if (((mutable_bitField0_ & 0x00002000) == 0x00002000)) {
+        if (((mutable_bitField0_ & 0x00001000) == 0x00001000)) {
           wakeConfidence_ = java.util.Collections.unmodifiableList(wakeConfidence_);
         }
         this.unknownFields = unknownFields.build();
@@ -1228,20 +1208,20 @@ public final class SpeechResultsKinesis {
       return confidence_;
     }
 
-    // optional string intent = 9;
-    public static final int INTENT_FIELD_NUMBER = 9;
-    private java.lang.Object intent_;
+    // optional string s3_keyname = 9;
+    public static final int S3_KEYNAME_FIELD_NUMBER = 9;
+    private java.lang.Object s3Keyname_;
     /**
-     * <code>optional string intent = 9;</code>
+     * <code>optional string s3_keyname = 9;</code>
      */
-    public boolean hasIntent() {
+    public boolean hasS3Keyname() {
       return ((bitField0_ & 0x00000100) == 0x00000100);
     }
     /**
-     * <code>optional string intent = 9;</code>
+     * <code>optional string s3_keyname = 9;</code>
      */
-    public java.lang.String getIntent() {
-      java.lang.Object ref = intent_;
+    public java.lang.String getS3Keyname() {
+      java.lang.Object ref = s3Keyname_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
@@ -1249,42 +1229,42 @@ public final class SpeechResultsKinesis {
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
-          intent_ = s;
+          s3Keyname_ = s;
         }
         return s;
       }
     }
     /**
-     * <code>optional string intent = 9;</code>
+     * <code>optional string s3_keyname = 9;</code>
      */
     public com.google.protobuf.ByteString
-        getIntentBytes() {
-      java.lang.Object ref = intent_;
+        getS3KeynameBytes() {
+      java.lang.Object ref = s3Keyname_;
       if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        intent_ = b;
+        s3Keyname_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
 
-    // optional string action = 10;
-    public static final int ACTION_FIELD_NUMBER = 10;
-    private java.lang.Object action_;
+    // optional string handler_type = 10;
+    public static final int HANDLER_TYPE_FIELD_NUMBER = 10;
+    private java.lang.Object handlerType_;
     /**
-     * <code>optional string action = 10;</code>
+     * <code>optional string handler_type = 10;</code>
      */
-    public boolean hasAction() {
+    public boolean hasHandlerType() {
       return ((bitField0_ & 0x00000200) == 0x00000200);
     }
     /**
-     * <code>optional string action = 10;</code>
+     * <code>optional string handler_type = 10;</code>
      */
-    public java.lang.String getAction() {
-      java.lang.Object ref = action_;
+    public java.lang.String getHandlerType() {
+      java.lang.Object ref = handlerType_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
@@ -1292,82 +1272,39 @@ public final class SpeechResultsKinesis {
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
-          action_ = s;
+          handlerType_ = s;
         }
         return s;
       }
     }
     /**
-     * <code>optional string action = 10;</code>
+     * <code>optional string handler_type = 10;</code>
      */
     public com.google.protobuf.ByteString
-        getActionBytes() {
-      java.lang.Object ref = action_;
+        getHandlerTypeBytes() {
+      java.lang.Object ref = handlerType_;
       if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        action_ = b;
+        handlerType_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
 
-    // optional string intent_category = 11;
-    public static final int INTENT_CATEGORY_FIELD_NUMBER = 11;
-    private java.lang.Object intentCategory_;
+    // optional string command = 11;
+    public static final int COMMAND_FIELD_NUMBER = 11;
+    private java.lang.Object command_;
     /**
-     * <code>optional string intent_category = 11;</code>
+     * <code>optional string command = 11;</code>
      */
-    public boolean hasIntentCategory() {
+    public boolean hasCommand() {
       return ((bitField0_ & 0x00000400) == 0x00000400);
     }
     /**
-     * <code>optional string intent_category = 11;</code>
-     */
-    public java.lang.String getIntentCategory() {
-      java.lang.Object ref = intentCategory_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          intentCategory_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>optional string intent_category = 11;</code>
-     */
-    public com.google.protobuf.ByteString
-        getIntentCategoryBytes() {
-      java.lang.Object ref = intentCategory_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        intentCategory_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    // optional string command = 12;
-    public static final int COMMAND_FIELD_NUMBER = 12;
-    private java.lang.Object command_;
-    /**
-     * <code>optional string command = 12;</code>
-     */
-    public boolean hasCommand() {
-      return ((bitField0_ & 0x00000800) == 0x00000800);
-    }
-    /**
-     * <code>optional string command = 12;</code>
+     * <code>optional string command = 11;</code>
      */
     public java.lang.String getCommand() {
       java.lang.Object ref = command_;
@@ -1384,7 +1321,7 @@ public final class SpeechResultsKinesis {
       }
     }
     /**
-     * <code>optional string command = 12;</code>
+     * <code>optional string command = 11;</code>
      */
     public com.google.protobuf.ByteString
         getCommandBytes() {
@@ -1400,56 +1337,56 @@ public final class SpeechResultsKinesis {
       }
     }
 
-    // optional int32 wake_id = 13;
-    public static final int WAKE_ID_FIELD_NUMBER = 13;
+    // optional int32 wake_id = 12;
+    public static final int WAKE_ID_FIELD_NUMBER = 12;
     private int wakeId_;
     /**
-     * <code>optional int32 wake_id = 13;</code>
+     * <code>optional int32 wake_id = 12;</code>
      */
     public boolean hasWakeId() {
-      return ((bitField0_ & 0x00001000) == 0x00001000);
+      return ((bitField0_ & 0x00000800) == 0x00000800);
     }
     /**
-     * <code>optional int32 wake_id = 13;</code>
+     * <code>optional int32 wake_id = 12;</code>
      */
     public int getWakeId() {
       return wakeId_;
     }
 
-    // repeated float wake_confidence = 14;
-    public static final int WAKE_CONFIDENCE_FIELD_NUMBER = 14;
+    // repeated float wake_confidence = 13;
+    public static final int WAKE_CONFIDENCE_FIELD_NUMBER = 13;
     private java.util.List<java.lang.Float> wakeConfidence_;
     /**
-     * <code>repeated float wake_confidence = 14;</code>
+     * <code>repeated float wake_confidence = 13;</code>
      */
     public java.util.List<java.lang.Float>
         getWakeConfidenceList() {
       return wakeConfidence_;
     }
     /**
-     * <code>repeated float wake_confidence = 14;</code>
+     * <code>repeated float wake_confidence = 13;</code>
      */
     public int getWakeConfidenceCount() {
       return wakeConfidence_.size();
     }
     /**
-     * <code>repeated float wake_confidence = 14;</code>
+     * <code>repeated float wake_confidence = 13;</code>
      */
     public float getWakeConfidence(int index) {
       return wakeConfidence_.get(index);
     }
 
-    // optional string result = 15;
-    public static final int RESULT_FIELD_NUMBER = 15;
+    // optional string result = 14;
+    public static final int RESULT_FIELD_NUMBER = 14;
     private java.lang.Object result_;
     /**
-     * <code>optional string result = 15;</code>
+     * <code>optional string result = 14;</code>
      */
     public boolean hasResult() {
-      return ((bitField0_ & 0x00002000) == 0x00002000);
+      return ((bitField0_ & 0x00001000) == 0x00001000);
     }
     /**
-     * <code>optional string result = 15;</code>
+     * <code>optional string result = 14;</code>
      */
     public java.lang.String getResult() {
       java.lang.Object ref = result_;
@@ -1466,7 +1403,7 @@ public final class SpeechResultsKinesis {
       }
     }
     /**
-     * <code>optional string result = 15;</code>
+     * <code>optional string result = 14;</code>
      */
     public com.google.protobuf.ByteString
         getResultBytes() {
@@ -1482,17 +1419,17 @@ public final class SpeechResultsKinesis {
       }
     }
 
-    // optional string response_text = 16;
-    public static final int RESPONSE_TEXT_FIELD_NUMBER = 16;
+    // optional string response_text = 15;
+    public static final int RESPONSE_TEXT_FIELD_NUMBER = 15;
     private java.lang.Object responseText_;
     /**
-     * <code>optional string response_text = 16;</code>
+     * <code>optional string response_text = 15;</code>
      */
     public boolean hasResponseText() {
-      return ((bitField0_ & 0x00004000) == 0x00004000);
+      return ((bitField0_ & 0x00002000) == 0x00002000);
     }
     /**
-     * <code>optional string response_text = 16;</code>
+     * <code>optional string response_text = 15;</code>
      */
     public java.lang.String getResponseText() {
       java.lang.Object ref = responseText_;
@@ -1509,7 +1446,7 @@ public final class SpeechResultsKinesis {
       }
     }
     /**
-     * <code>optional string response_text = 16;</code>
+     * <code>optional string response_text = 15;</code>
      */
     public com.google.protobuf.ByteString
         getResponseTextBytes() {
@@ -1525,17 +1462,17 @@ public final class SpeechResultsKinesis {
       }
     }
 
-    // optional int64 updated = 17;
-    public static final int UPDATED_FIELD_NUMBER = 17;
+    // optional int64 updated = 16;
+    public static final int UPDATED_FIELD_NUMBER = 16;
     private long updated_;
     /**
-     * <code>optional int64 updated = 17;</code>
+     * <code>optional int64 updated = 16;</code>
      */
     public boolean hasUpdated() {
-      return ((bitField0_ & 0x00008000) == 0x00008000);
+      return ((bitField0_ & 0x00004000) == 0x00004000);
     }
     /**
-     * <code>optional int64 updated = 17;</code>
+     * <code>optional int64 updated = 16;</code>
      */
     public long getUpdated() {
       return updated_;
@@ -1550,9 +1487,8 @@ public final class SpeechResultsKinesis {
       text_ = "";
       service_ = "";
       confidence_ = 0F;
-      intent_ = "";
-      action_ = "";
-      intentCategory_ = "";
+      s3Keyname_ = "";
+      handlerType_ = "";
       command_ = "";
       wakeId_ = 0;
       wakeConfidence_ = java.util.Collections.emptyList();
@@ -1597,31 +1533,28 @@ public final class SpeechResultsKinesis {
         output.writeFloat(8, confidence_);
       }
       if (((bitField0_ & 0x00000100) == 0x00000100)) {
-        output.writeBytes(9, getIntentBytes());
+        output.writeBytes(9, getS3KeynameBytes());
       }
       if (((bitField0_ & 0x00000200) == 0x00000200)) {
-        output.writeBytes(10, getActionBytes());
+        output.writeBytes(10, getHandlerTypeBytes());
       }
       if (((bitField0_ & 0x00000400) == 0x00000400)) {
-        output.writeBytes(11, getIntentCategoryBytes());
+        output.writeBytes(11, getCommandBytes());
       }
       if (((bitField0_ & 0x00000800) == 0x00000800)) {
-        output.writeBytes(12, getCommandBytes());
-      }
-      if (((bitField0_ & 0x00001000) == 0x00001000)) {
-        output.writeInt32(13, wakeId_);
+        output.writeInt32(12, wakeId_);
       }
       for (int i = 0; i < wakeConfidence_.size(); i++) {
-        output.writeFloat(14, wakeConfidence_.get(i));
+        output.writeFloat(13, wakeConfidence_.get(i));
+      }
+      if (((bitField0_ & 0x00001000) == 0x00001000)) {
+        output.writeBytes(14, getResultBytes());
       }
       if (((bitField0_ & 0x00002000) == 0x00002000)) {
-        output.writeBytes(15, getResultBytes());
+        output.writeBytes(15, getResponseTextBytes());
       }
       if (((bitField0_ & 0x00004000) == 0x00004000)) {
-        output.writeBytes(16, getResponseTextBytes());
-      }
-      if (((bitField0_ & 0x00008000) == 0x00008000)) {
-        output.writeInt64(17, updated_);
+        output.writeInt64(16, updated_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -1666,23 +1599,19 @@ public final class SpeechResultsKinesis {
       }
       if (((bitField0_ & 0x00000100) == 0x00000100)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(9, getIntentBytes());
+          .computeBytesSize(9, getS3KeynameBytes());
       }
       if (((bitField0_ & 0x00000200) == 0x00000200)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(10, getActionBytes());
+          .computeBytesSize(10, getHandlerTypeBytes());
       }
       if (((bitField0_ & 0x00000400) == 0x00000400)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(11, getIntentCategoryBytes());
+          .computeBytesSize(11, getCommandBytes());
       }
       if (((bitField0_ & 0x00000800) == 0x00000800)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(12, getCommandBytes());
-      }
-      if (((bitField0_ & 0x00001000) == 0x00001000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(13, wakeId_);
+          .computeInt32Size(12, wakeId_);
       }
       {
         int dataSize = 0;
@@ -1690,17 +1619,17 @@ public final class SpeechResultsKinesis {
         size += dataSize;
         size += 1 * getWakeConfidenceList().size();
       }
+      if (((bitField0_ & 0x00001000) == 0x00001000)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(14, getResultBytes());
+      }
       if (((bitField0_ & 0x00002000) == 0x00002000)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(15, getResultBytes());
+          .computeBytesSize(15, getResponseTextBytes());
       }
       if (((bitField0_ & 0x00004000) == 0x00004000)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(16, getResponseTextBytes());
-      }
-      if (((bitField0_ & 0x00008000) == 0x00008000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(17, updated_);
+          .computeInt64Size(16, updated_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1839,24 +1768,22 @@ public final class SpeechResultsKinesis {
         bitField0_ = (bitField0_ & ~0x00000040);
         confidence_ = 0F;
         bitField0_ = (bitField0_ & ~0x00000080);
-        intent_ = "";
+        s3Keyname_ = "";
         bitField0_ = (bitField0_ & ~0x00000100);
-        action_ = "";
+        handlerType_ = "";
         bitField0_ = (bitField0_ & ~0x00000200);
-        intentCategory_ = "";
-        bitField0_ = (bitField0_ & ~0x00000400);
         command_ = "";
-        bitField0_ = (bitField0_ & ~0x00000800);
+        bitField0_ = (bitField0_ & ~0x00000400);
         wakeId_ = 0;
-        bitField0_ = (bitField0_ & ~0x00001000);
+        bitField0_ = (bitField0_ & ~0x00000800);
         wakeConfidence_ = java.util.Collections.emptyList();
-        bitField0_ = (bitField0_ & ~0x00002000);
+        bitField0_ = (bitField0_ & ~0x00001000);
         result_ = "";
-        bitField0_ = (bitField0_ & ~0x00004000);
+        bitField0_ = (bitField0_ & ~0x00002000);
         responseText_ = "";
-        bitField0_ = (bitField0_ & ~0x00008000);
+        bitField0_ = (bitField0_ & ~0x00004000);
         updated_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00010000);
+        bitField0_ = (bitField0_ & ~0x00008000);
         return this;
       }
 
@@ -1924,38 +1851,34 @@ public final class SpeechResultsKinesis {
         if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
           to_bitField0_ |= 0x00000100;
         }
-        result.intent_ = intent_;
+        result.s3Keyname_ = s3Keyname_;
         if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
           to_bitField0_ |= 0x00000200;
         }
-        result.action_ = action_;
+        result.handlerType_ = handlerType_;
         if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
           to_bitField0_ |= 0x00000400;
         }
-        result.intentCategory_ = intentCategory_;
+        result.command_ = command_;
         if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
           to_bitField0_ |= 0x00000800;
         }
-        result.command_ = command_;
-        if (((from_bitField0_ & 0x00001000) == 0x00001000)) {
-          to_bitField0_ |= 0x00001000;
-        }
         result.wakeId_ = wakeId_;
-        if (((bitField0_ & 0x00002000) == 0x00002000)) {
+        if (((bitField0_ & 0x00001000) == 0x00001000)) {
           wakeConfidence_ = java.util.Collections.unmodifiableList(wakeConfidence_);
-          bitField0_ = (bitField0_ & ~0x00002000);
+          bitField0_ = (bitField0_ & ~0x00001000);
         }
         result.wakeConfidence_ = wakeConfidence_;
+        if (((from_bitField0_ & 0x00002000) == 0x00002000)) {
+          to_bitField0_ |= 0x00001000;
+        }
+        result.result_ = result_;
         if (((from_bitField0_ & 0x00004000) == 0x00004000)) {
           to_bitField0_ |= 0x00002000;
         }
-        result.result_ = result_;
+        result.responseText_ = responseText_;
         if (((from_bitField0_ & 0x00008000) == 0x00008000)) {
           to_bitField0_ |= 0x00004000;
-        }
-        result.responseText_ = responseText_;
-        if (((from_bitField0_ & 0x00010000) == 0x00010000)) {
-          to_bitField0_ |= 0x00008000;
         }
         result.updated_ = updated_;
         result.bitField0_ = to_bitField0_;
@@ -2006,23 +1929,18 @@ public final class SpeechResultsKinesis {
         if (other.hasConfidence()) {
           setConfidence(other.getConfidence());
         }
-        if (other.hasIntent()) {
+        if (other.hasS3Keyname()) {
           bitField0_ |= 0x00000100;
-          intent_ = other.intent_;
+          s3Keyname_ = other.s3Keyname_;
           onChanged();
         }
-        if (other.hasAction()) {
+        if (other.hasHandlerType()) {
           bitField0_ |= 0x00000200;
-          action_ = other.action_;
-          onChanged();
-        }
-        if (other.hasIntentCategory()) {
-          bitField0_ |= 0x00000400;
-          intentCategory_ = other.intentCategory_;
+          handlerType_ = other.handlerType_;
           onChanged();
         }
         if (other.hasCommand()) {
-          bitField0_ |= 0x00000800;
+          bitField0_ |= 0x00000400;
           command_ = other.command_;
           onChanged();
         }
@@ -2032,7 +1950,7 @@ public final class SpeechResultsKinesis {
         if (!other.wakeConfidence_.isEmpty()) {
           if (wakeConfidence_.isEmpty()) {
             wakeConfidence_ = other.wakeConfidence_;
-            bitField0_ = (bitField0_ & ~0x00002000);
+            bitField0_ = (bitField0_ & ~0x00001000);
           } else {
             ensureWakeConfidenceIsMutable();
             wakeConfidence_.addAll(other.wakeConfidence_);
@@ -2040,12 +1958,12 @@ public final class SpeechResultsKinesis {
           onChanged();
         }
         if (other.hasResult()) {
-          bitField0_ |= 0x00004000;
+          bitField0_ |= 0x00002000;
           result_ = other.result_;
           onChanged();
         }
         if (other.hasResponseText()) {
-          bitField0_ |= 0x00008000;
+          bitField0_ |= 0x00004000;
           responseText_ = other.responseText_;
           onChanged();
         }
@@ -2591,238 +2509,164 @@ public final class SpeechResultsKinesis {
         return this;
       }
 
-      // optional string intent = 9;
-      private java.lang.Object intent_ = "";
+      // optional string s3_keyname = 9;
+      private java.lang.Object s3Keyname_ = "";
       /**
-       * <code>optional string intent = 9;</code>
+       * <code>optional string s3_keyname = 9;</code>
        */
-      public boolean hasIntent() {
+      public boolean hasS3Keyname() {
         return ((bitField0_ & 0x00000100) == 0x00000100);
       }
       /**
-       * <code>optional string intent = 9;</code>
+       * <code>optional string s3_keyname = 9;</code>
        */
-      public java.lang.String getIntent() {
-        java.lang.Object ref = intent_;
+      public java.lang.String getS3Keyname() {
+        java.lang.Object ref = s3Keyname_;
         if (!(ref instanceof java.lang.String)) {
           java.lang.String s = ((com.google.protobuf.ByteString) ref)
               .toStringUtf8();
-          intent_ = s;
+          s3Keyname_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
       /**
-       * <code>optional string intent = 9;</code>
+       * <code>optional string s3_keyname = 9;</code>
        */
       public com.google.protobuf.ByteString
-          getIntentBytes() {
-        java.lang.Object ref = intent_;
+          getS3KeynameBytes() {
+        java.lang.Object ref = s3Keyname_;
         if (ref instanceof String) {
           com.google.protobuf.ByteString b = 
               com.google.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          intent_ = b;
+          s3Keyname_ = b;
           return b;
         } else {
           return (com.google.protobuf.ByteString) ref;
         }
       }
       /**
-       * <code>optional string intent = 9;</code>
+       * <code>optional string s3_keyname = 9;</code>
        */
-      public Builder setIntent(
+      public Builder setS3Keyname(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000100;
-        intent_ = value;
+        s3Keyname_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string intent = 9;</code>
+       * <code>optional string s3_keyname = 9;</code>
        */
-      public Builder clearIntent() {
+      public Builder clearS3Keyname() {
         bitField0_ = (bitField0_ & ~0x00000100);
-        intent_ = getDefaultInstance().getIntent();
+        s3Keyname_ = getDefaultInstance().getS3Keyname();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string intent = 9;</code>
+       * <code>optional string s3_keyname = 9;</code>
        */
-      public Builder setIntentBytes(
+      public Builder setS3KeynameBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000100;
-        intent_ = value;
+        s3Keyname_ = value;
         onChanged();
         return this;
       }
 
-      // optional string action = 10;
-      private java.lang.Object action_ = "";
+      // optional string handler_type = 10;
+      private java.lang.Object handlerType_ = "";
       /**
-       * <code>optional string action = 10;</code>
+       * <code>optional string handler_type = 10;</code>
        */
-      public boolean hasAction() {
+      public boolean hasHandlerType() {
         return ((bitField0_ & 0x00000200) == 0x00000200);
       }
       /**
-       * <code>optional string action = 10;</code>
+       * <code>optional string handler_type = 10;</code>
        */
-      public java.lang.String getAction() {
-        java.lang.Object ref = action_;
+      public java.lang.String getHandlerType() {
+        java.lang.Object ref = handlerType_;
         if (!(ref instanceof java.lang.String)) {
           java.lang.String s = ((com.google.protobuf.ByteString) ref)
               .toStringUtf8();
-          action_ = s;
+          handlerType_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
       /**
-       * <code>optional string action = 10;</code>
+       * <code>optional string handler_type = 10;</code>
        */
       public com.google.protobuf.ByteString
-          getActionBytes() {
-        java.lang.Object ref = action_;
+          getHandlerTypeBytes() {
+        java.lang.Object ref = handlerType_;
         if (ref instanceof String) {
           com.google.protobuf.ByteString b = 
               com.google.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          action_ = b;
+          handlerType_ = b;
           return b;
         } else {
           return (com.google.protobuf.ByteString) ref;
         }
       }
       /**
-       * <code>optional string action = 10;</code>
+       * <code>optional string handler_type = 10;</code>
        */
-      public Builder setAction(
+      public Builder setHandlerType(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000200;
-        action_ = value;
+        handlerType_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string action = 10;</code>
+       * <code>optional string handler_type = 10;</code>
        */
-      public Builder clearAction() {
+      public Builder clearHandlerType() {
         bitField0_ = (bitField0_ & ~0x00000200);
-        action_ = getDefaultInstance().getAction();
+        handlerType_ = getDefaultInstance().getHandlerType();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string action = 10;</code>
+       * <code>optional string handler_type = 10;</code>
        */
-      public Builder setActionBytes(
+      public Builder setHandlerTypeBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000200;
-        action_ = value;
+        handlerType_ = value;
         onChanged();
         return this;
       }
 
-      // optional string intent_category = 11;
-      private java.lang.Object intentCategory_ = "";
+      // optional string command = 11;
+      private java.lang.Object command_ = "";
       /**
-       * <code>optional string intent_category = 11;</code>
+       * <code>optional string command = 11;</code>
        */
-      public boolean hasIntentCategory() {
+      public boolean hasCommand() {
         return ((bitField0_ & 0x00000400) == 0x00000400);
       }
       /**
-       * <code>optional string intent_category = 11;</code>
-       */
-      public java.lang.String getIntentCategory() {
-        java.lang.Object ref = intentCategory_;
-        if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          intentCategory_ = s;
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>optional string intent_category = 11;</code>
-       */
-      public com.google.protobuf.ByteString
-          getIntentCategoryBytes() {
-        java.lang.Object ref = intentCategory_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          intentCategory_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>optional string intent_category = 11;</code>
-       */
-      public Builder setIntentCategory(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000400;
-        intentCategory_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string intent_category = 11;</code>
-       */
-      public Builder clearIntentCategory() {
-        bitField0_ = (bitField0_ & ~0x00000400);
-        intentCategory_ = getDefaultInstance().getIntentCategory();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string intent_category = 11;</code>
-       */
-      public Builder setIntentCategoryBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000400;
-        intentCategory_ = value;
-        onChanged();
-        return this;
-      }
-
-      // optional string command = 12;
-      private java.lang.Object command_ = "";
-      /**
-       * <code>optional string command = 12;</code>
-       */
-      public boolean hasCommand() {
-        return ((bitField0_ & 0x00000800) == 0x00000800);
-      }
-      /**
-       * <code>optional string command = 12;</code>
+       * <code>optional string command = 11;</code>
        */
       public java.lang.String getCommand() {
         java.lang.Object ref = command_;
@@ -2836,7 +2680,7 @@ public final class SpeechResultsKinesis {
         }
       }
       /**
-       * <code>optional string command = 12;</code>
+       * <code>optional string command = 11;</code>
        */
       public com.google.protobuf.ByteString
           getCommandBytes() {
@@ -2852,103 +2696,103 @@ public final class SpeechResultsKinesis {
         }
       }
       /**
-       * <code>optional string command = 12;</code>
+       * <code>optional string command = 11;</code>
        */
       public Builder setCommand(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000800;
+  bitField0_ |= 0x00000400;
         command_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string command = 12;</code>
+       * <code>optional string command = 11;</code>
        */
       public Builder clearCommand() {
-        bitField0_ = (bitField0_ & ~0x00000800);
+        bitField0_ = (bitField0_ & ~0x00000400);
         command_ = getDefaultInstance().getCommand();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string command = 12;</code>
+       * <code>optional string command = 11;</code>
        */
       public Builder setCommandBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000800;
+  bitField0_ |= 0x00000400;
         command_ = value;
         onChanged();
         return this;
       }
 
-      // optional int32 wake_id = 13;
+      // optional int32 wake_id = 12;
       private int wakeId_ ;
       /**
-       * <code>optional int32 wake_id = 13;</code>
+       * <code>optional int32 wake_id = 12;</code>
        */
       public boolean hasWakeId() {
-        return ((bitField0_ & 0x00001000) == 0x00001000);
+        return ((bitField0_ & 0x00000800) == 0x00000800);
       }
       /**
-       * <code>optional int32 wake_id = 13;</code>
+       * <code>optional int32 wake_id = 12;</code>
        */
       public int getWakeId() {
         return wakeId_;
       }
       /**
-       * <code>optional int32 wake_id = 13;</code>
+       * <code>optional int32 wake_id = 12;</code>
        */
       public Builder setWakeId(int value) {
-        bitField0_ |= 0x00001000;
+        bitField0_ |= 0x00000800;
         wakeId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int32 wake_id = 13;</code>
+       * <code>optional int32 wake_id = 12;</code>
        */
       public Builder clearWakeId() {
-        bitField0_ = (bitField0_ & ~0x00001000);
+        bitField0_ = (bitField0_ & ~0x00000800);
         wakeId_ = 0;
         onChanged();
         return this;
       }
 
-      // repeated float wake_confidence = 14;
+      // repeated float wake_confidence = 13;
       private java.util.List<java.lang.Float> wakeConfidence_ = java.util.Collections.emptyList();
       private void ensureWakeConfidenceIsMutable() {
-        if (!((bitField0_ & 0x00002000) == 0x00002000)) {
+        if (!((bitField0_ & 0x00001000) == 0x00001000)) {
           wakeConfidence_ = new java.util.ArrayList<java.lang.Float>(wakeConfidence_);
-          bitField0_ |= 0x00002000;
+          bitField0_ |= 0x00001000;
          }
       }
       /**
-       * <code>repeated float wake_confidence = 14;</code>
+       * <code>repeated float wake_confidence = 13;</code>
        */
       public java.util.List<java.lang.Float>
           getWakeConfidenceList() {
         return java.util.Collections.unmodifiableList(wakeConfidence_);
       }
       /**
-       * <code>repeated float wake_confidence = 14;</code>
+       * <code>repeated float wake_confidence = 13;</code>
        */
       public int getWakeConfidenceCount() {
         return wakeConfidence_.size();
       }
       /**
-       * <code>repeated float wake_confidence = 14;</code>
+       * <code>repeated float wake_confidence = 13;</code>
        */
       public float getWakeConfidence(int index) {
         return wakeConfidence_.get(index);
       }
       /**
-       * <code>repeated float wake_confidence = 14;</code>
+       * <code>repeated float wake_confidence = 13;</code>
        */
       public Builder setWakeConfidence(
           int index, float value) {
@@ -2958,7 +2802,7 @@ public final class SpeechResultsKinesis {
         return this;
       }
       /**
-       * <code>repeated float wake_confidence = 14;</code>
+       * <code>repeated float wake_confidence = 13;</code>
        */
       public Builder addWakeConfidence(float value) {
         ensureWakeConfidenceIsMutable();
@@ -2967,7 +2811,7 @@ public final class SpeechResultsKinesis {
         return this;
       }
       /**
-       * <code>repeated float wake_confidence = 14;</code>
+       * <code>repeated float wake_confidence = 13;</code>
        */
       public Builder addAllWakeConfidence(
           java.lang.Iterable<? extends java.lang.Float> values) {
@@ -2977,25 +2821,25 @@ public final class SpeechResultsKinesis {
         return this;
       }
       /**
-       * <code>repeated float wake_confidence = 14;</code>
+       * <code>repeated float wake_confidence = 13;</code>
        */
       public Builder clearWakeConfidence() {
         wakeConfidence_ = java.util.Collections.emptyList();
-        bitField0_ = (bitField0_ & ~0x00002000);
+        bitField0_ = (bitField0_ & ~0x00001000);
         onChanged();
         return this;
       }
 
-      // optional string result = 15;
+      // optional string result = 14;
       private java.lang.Object result_ = "";
       /**
-       * <code>optional string result = 15;</code>
+       * <code>optional string result = 14;</code>
        */
       public boolean hasResult() {
-        return ((bitField0_ & 0x00004000) == 0x00004000);
+        return ((bitField0_ & 0x00002000) == 0x00002000);
       }
       /**
-       * <code>optional string result = 15;</code>
+       * <code>optional string result = 14;</code>
        */
       public java.lang.String getResult() {
         java.lang.Object ref = result_;
@@ -3009,7 +2853,7 @@ public final class SpeechResultsKinesis {
         }
       }
       /**
-       * <code>optional string result = 15;</code>
+       * <code>optional string result = 14;</code>
        */
       public com.google.protobuf.ByteString
           getResultBytes() {
@@ -3025,51 +2869,51 @@ public final class SpeechResultsKinesis {
         }
       }
       /**
-       * <code>optional string result = 15;</code>
+       * <code>optional string result = 14;</code>
        */
       public Builder setResult(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00004000;
+  bitField0_ |= 0x00002000;
         result_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string result = 15;</code>
+       * <code>optional string result = 14;</code>
        */
       public Builder clearResult() {
-        bitField0_ = (bitField0_ & ~0x00004000);
+        bitField0_ = (bitField0_ & ~0x00002000);
         result_ = getDefaultInstance().getResult();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string result = 15;</code>
+       * <code>optional string result = 14;</code>
        */
       public Builder setResultBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00004000;
+  bitField0_ |= 0x00002000;
         result_ = value;
         onChanged();
         return this;
       }
 
-      // optional string response_text = 16;
+      // optional string response_text = 15;
       private java.lang.Object responseText_ = "";
       /**
-       * <code>optional string response_text = 16;</code>
+       * <code>optional string response_text = 15;</code>
        */
       public boolean hasResponseText() {
-        return ((bitField0_ & 0x00008000) == 0x00008000);
+        return ((bitField0_ & 0x00004000) == 0x00004000);
       }
       /**
-       * <code>optional string response_text = 16;</code>
+       * <code>optional string response_text = 15;</code>
        */
       public java.lang.String getResponseText() {
         java.lang.Object ref = responseText_;
@@ -3083,7 +2927,7 @@ public final class SpeechResultsKinesis {
         }
       }
       /**
-       * <code>optional string response_text = 16;</code>
+       * <code>optional string response_text = 15;</code>
        */
       public com.google.protobuf.ByteString
           getResponseTextBytes() {
@@ -3099,69 +2943,69 @@ public final class SpeechResultsKinesis {
         }
       }
       /**
-       * <code>optional string response_text = 16;</code>
+       * <code>optional string response_text = 15;</code>
        */
       public Builder setResponseText(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00008000;
+  bitField0_ |= 0x00004000;
         responseText_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string response_text = 16;</code>
+       * <code>optional string response_text = 15;</code>
        */
       public Builder clearResponseText() {
-        bitField0_ = (bitField0_ & ~0x00008000);
+        bitField0_ = (bitField0_ & ~0x00004000);
         responseText_ = getDefaultInstance().getResponseText();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string response_text = 16;</code>
+       * <code>optional string response_text = 15;</code>
        */
       public Builder setResponseTextBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00008000;
+  bitField0_ |= 0x00004000;
         responseText_ = value;
         onChanged();
         return this;
       }
 
-      // optional int64 updated = 17;
+      // optional int64 updated = 16;
       private long updated_ ;
       /**
-       * <code>optional int64 updated = 17;</code>
+       * <code>optional int64 updated = 16;</code>
        */
       public boolean hasUpdated() {
-        return ((bitField0_ & 0x00010000) == 0x00010000);
+        return ((bitField0_ & 0x00008000) == 0x00008000);
       }
       /**
-       * <code>optional int64 updated = 17;</code>
+       * <code>optional int64 updated = 16;</code>
        */
       public long getUpdated() {
         return updated_;
       }
       /**
-       * <code>optional int64 updated = 17;</code>
+       * <code>optional int64 updated = 16;</code>
        */
       public Builder setUpdated(long value) {
-        bitField0_ |= 0x00010000;
+        bitField0_ |= 0x00008000;
         updated_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int64 updated = 17;</code>
+       * <code>optional int64 updated = 16;</code>
        */
       public Builder clearUpdated() {
-        bitField0_ = (bitField0_ & ~0x00010000);
+        bitField0_ = (bitField0_ & ~0x00008000);
         updated_ = 0L;
         onChanged();
         return this;
@@ -3198,17 +3042,17 @@ public final class SpeechResultsKinesis {
   static {
     java.lang.String[] descriptorData = {
       "\n\024speech_results.proto\",\n\tAudioData\022\021\n\td" +
-      "ata_size\030\001 \001(\r\022\014\n\004data\030\002 \001(\014\"\330\002\n\021SpeechR" +
+      "ata_size\030\001 \001(\r\022\014\n\004data\030\002 \001(\014\"\311\002\n\021SpeechR" +
       "esultsData\022\022\n\naccount_id\030\001 \001(\003\022\020\n\010sense_" +
       "id\030\002 \001(\t\022\017\n\007created\030\003 \001(\003\022\022\n\naudio_uuid\030" +
       "\004 \001(\t\022\031\n\005audio\030\005 \001(\0132\n.AudioData\022\014\n\004text" +
       "\030\006 \001(\t\022\017\n\007service\030\007 \001(\t\022\022\n\nconfidence\030\010 " +
-      "\001(\002\022\016\n\006intent\030\t \001(\t\022\016\n\006action\030\n \001(\t\022\027\n\017i" +
-      "ntent_category\030\013 \001(\t\022\017\n\007command\030\014 \001(\t\022\017\n" +
-      "\007wake_id\030\r \001(\005\022\027\n\017wake_confidence\030\016 \003(\002\022" +
-      "\016\n\006result\030\017 \001(\t\022\025\n\rresponse_text\030\020 \001(\t\022\017",
-      "\n\007updated\030\021 \001(\003B0\n\030is.hello.speech.core." +
-      "apiB\024SpeechResultsKinesis"
+      "\001(\002\022\022\n\ns3_keyname\030\t \001(\t\022\024\n\014handler_type\030" +
+      "\n \001(\t\022\017\n\007command\030\013 \001(\t\022\017\n\007wake_id\030\014 \001(\005\022" +
+      "\027\n\017wake_confidence\030\r \003(\002\022\016\n\006result\030\016 \001(\t" +
+      "\022\025\n\rresponse_text\030\017 \001(\t\022\017\n\007updated\030\020 \001(\003",
+      "B0\n\030is.hello.speech.core.apiB\024SpeechResu" +
+      "ltsKinesis"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -3226,7 +3070,7 @@ public final class SpeechResultsKinesis {
           internal_static_SpeechResultsData_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SpeechResultsData_descriptor,
-              new java.lang.String[] { "AccountId", "SenseId", "Created", "AudioUuid", "Audio", "Text", "Service", "Confidence", "Intent", "Action", "IntentCategory", "Command", "WakeId", "WakeConfidence", "Result", "ResponseText", "Updated", });
+              new java.lang.String[] { "AccountId", "SenseId", "Created", "AudioUuid", "Audio", "Text", "Service", "Confidence", "S3Keyname", "HandlerType", "Command", "WakeId", "WakeConfidence", "Result", "ResponseText", "Updated", });
           return null;
         }
       };

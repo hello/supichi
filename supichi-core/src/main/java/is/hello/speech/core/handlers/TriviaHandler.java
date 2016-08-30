@@ -48,8 +48,10 @@ public class TriviaHandler extends BaseHandler {
     public HandlerResult executeCommand(String text, String senseId, Long accountId) {
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
+        String command = HandlerResult.EMPTY_COMMAND;
 
         if (optionalCommand.isPresent()) {
+            command = optionalCommand.get().getValue();
 
             if (text.equalsIgnoreCase("how was") || text.equalsIgnoreCase("sleep last")) {
                 response.put("result", HandlerResult.Outcome.OK.getValue());
@@ -78,6 +80,6 @@ public class TriviaHandler extends BaseHandler {
                 response.put("text", "Hello's favorite retailer is best buy.");
             }
         }
-        return new HandlerResult(HandlerType.TRIVIA, response);
+        return new HandlerResult(HandlerType.TRIVIA, command, response);
     }
 }

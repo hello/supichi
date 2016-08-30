@@ -77,19 +77,22 @@ public class SleepSoundHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final String text, final String senseId, final Long accountId) {
-        final Optional<SpeechCommand> command = getCommand(text);
+        final Optional<SpeechCommand> optionalCommand = getCommand(text);
         final Map<String, String> response = Maps.newHashMap();
         boolean result = false;
-        if (command.isPresent()) {
-            if (command.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
+        String command = HandlerResult.EMPTY_COMMAND;
+
+        if (optionalCommand.isPresent()) {
+            command = optionalCommand.get().getValue();
+            if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
                 result = playSleepSound(senseId, accountId);
-            } else if (command.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
+            } else if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
                 result = stopSleepSound(senseId, accountId);
             }
         }
 
         response.put("result", String.valueOf(result));
-        return new HandlerResult(HandlerType.SLEEP_SOUNDS, response);
+        return new HandlerResult(HandlerType.SLEEP_SOUNDS, command, response);
 
     }
 
