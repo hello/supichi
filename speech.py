@@ -129,6 +129,8 @@ if __name__ == '__main__':
     aes_key = "CD0C57B4B5C69D4C28F75AC4FBA5FF22".decode("hex"); # for 8AF6441AF72321F4
     fp = open(filename, 'rb')
     file_data = fp.read();
+    fp.close()
+    file_data = "12345"
     hashed = hmac.new(aes_key, file_data, hashlib.sha1)
     print "length of hash", len(hashed.digest())
     su = file_data + hashed.digest()

@@ -9,7 +9,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
-import com.hello.suripu.core.speech.SpeechResult;
+import com.hello.suripu.core.speech.models.SpeechResult;
 import is.hello.speech.core.api.SpeechResultsKinesis;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
@@ -45,9 +45,9 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
         this.streamName = streamName;
     }
 
-    public Boolean addResult(final SpeechResult result, final byte[] audioBytes) {
+    public Boolean addResult(final SpeechResult result, final SpeechResultsKinesis.SpeechResultsData.Action action, final byte[] audioBytes) {
         try {
-            inputQueue.offer(new KinesisData(result, audioBytes), 1000L, TimeUnit.MILLISECONDS);
+            inputQueue.offer(new KinesisData(result, action, audioBytes), 1000L, TimeUnit.MILLISECONDS);
             return true;
         } catch (InterruptedException e) {
             LOGGER.warn("error=fail-to-put-audio-data-in-queue error_msg={}", e.getMessage());
@@ -138,8 +138,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
     }
 
     private SpeechResultsKinesis.SpeechResultsData getSpeechResultsData(final KinesisData data) {
-        LOGGER.debug("action=adding-to-kpl account_id={} sense_id={} uuid={} audio_size={}",
-                data.speechResult.accountId, data.speechResult.senseId,
+        LOGGER.debug("action=adding-to-kpl uuid={} audio_size={}",
                 data.speechResult.audioIdentifier, data.audioData.length);
 
         final SpeechResultsKinesis.SpeechResultsData.Builder builder = SpeechResultsKinesis.SpeechResultsData.newBuilder();
@@ -150,35 +149,58 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
                     .setData(ByteString.copyFrom(data.audioData))
                     .build();
 
-            return builder.setAccountId(data.speechResult.accountId)
+            final Long accountId = (data.speechResult.accountId.isPresent()) ? data.speechResult.accountId.get() : 0L;
+            return builder
+                    .setAccountId(accountId)
                     .setSenseId(data.speechResult.senseId)
                     .setCreated(data.speechResult.dateTimeUTC.getMillis())
                     .setAudioUuid(data.speechResult.audioIdentifier)
                     .setAudio(audioData)
+                    .setAction(data.action)
                     .build();
         }
 
-        // TODO
         // final Set<Number> confidences = SpeechUtils.wakewordsMapToDDBAttribute(data.speechResult.wakeWordsConfidence);
         final Long currentTimestamp = DateTime.now(DateTimeZone.UTC).getMillis();
 
-        final String text = (data.speechResult.text.isEmpty()) ? SpeechResult.EMPTY_STRING_PLACEHOLDER : data.speechResult.text;
-        final String responseText = (data.speechResult.responseText.isEmpty()) ? SpeechResult.EMPTY_STRING_PLACEHOLDER : data.speechResult.responseText;
-        return builder.setAccountId(data.speechResult.accountId)
+        // set non-optional fields
+        builder.setAudioUuid(data.speechResult.audioIdentifier)
                 .setSenseId(data.speechResult.senseId)
                 .setCreated(data.speechResult.dateTimeUTC.getMillis())
-                .setAudioUuid(data.speechResult.audioIdentifier)
-                .setText(text)
+                .setUpdated(currentTimestamp)
                 .setService(data.speechResult.service.toString())
-                .setConfidence(data.speechResult.confidence)
-                .setHandlerType(data.speechResult.handlerType)
-                .setS3Keyname(data.speechResult.s3ResponseKeyname)
-                .setCommand(data.speechResult.command)
                 .setWakeId(data.speechResult.wakeWord.getId())
 //                .setWakeConfidence(confidences)
                 .setResult(data.speechResult.result.toString())
-                .setResponseText(responseText)
-                .setUpdated(currentTimestamp)
-                .build();
+                .setAction(data.action);
+
+        if (data.speechResult.accountId.isPresent()) {
+            builder.setAccountId(data.speechResult.accountId.get());
+        }
+
+        if (data.speechResult.text.isPresent()) {
+            builder.setText(data.speechResult.text.get());
+        }
+
+        if (data.speechResult.confidence.isPresent()) {
+            builder.setConfidence(data.speechResult.confidence.get());
+        }
+
+        if (data.speechResult.handlerType.isPresent()) {
+            builder.setHandlerType(data.speechResult.handlerType.get());
+        }
+
+        if (data.speechResult.s3ResponseKeyname.isPresent()) {
+            builder.setS3Keyname(data.speechResult.s3ResponseKeyname.get());
+        }
+        if (data.speechResult.command.isPresent()) {
+            builder.setCommand(data.speechResult.command.get());
+        }
+
+        if (data.speechResult.responseText.isPresent()) {
+            builder.setResponseText(data.speechResult.responseText.get());
+        }
+
+        return builder.build();
     }
 }

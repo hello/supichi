@@ -4,12 +4,14 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
-import com.hello.suripu.core.speech.Result;
-import com.hello.suripu.core.speech.SpeechResult;
-import com.hello.suripu.core.speech.WakeWord;
+import com.hello.suripu.core.speech.models.Result;
+import com.hello.suripu.core.speech.models.SpeechResult;
+import com.hello.suripu.core.speech.models.SpeechToTextService;
+import com.hello.suripu.core.speech.models.WakeWord;
 import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
+import is.hello.speech.core.api.SpeechResultsKinesis;
 import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -125,7 +127,7 @@ public class UploadResource {
 
         LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", senseId, accountId, responseParam.type().name());
 
-        // save audio to Kinesis
+        // save audio to Kinesis, and save speech-timeline
         final String audioUUID = UUID.randomUUID().toString();
         final DateTime speechCreated = DateTime.now(DateTimeZone.UTC);
         SpeechResult.Builder builder = new SpeechResult.Builder();
@@ -133,7 +135,7 @@ public class UploadResource {
                 .withSenseId(senseId)
                 .withAudioIndentifier(audioUUID)
                 .withDateTimeUTC(speechCreated);
-        speechKinesisProducer.addResult(builder.build(), body);
+        speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
 
         // process audio
         try {
@@ -145,33 +147,40 @@ public class UploadResource {
                 // save transcript results to Kinesis
                 final String transcribedText = resp.getTranscript().get();
                 builder.withText(transcribedText)
+                        .withService(SpeechToTextService.GOOGLE)
                         .withConfidence(resp.getConfidence())
                         .withWakeWord(WakeWord.OKAY_SENSE)
                         .withUpdatedUTC(DateTime.now(DateTimeZone.UTC));
-                speechKinesisProducer.addResult(builder.build(), EMPTY_BYTE);
+                 speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
                 // try to execute text command
                 executeResult = handlerExecutor.handle(senseId, accountId, transcribedText);
             }
 
-            builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                    .withCommand(executeResult.command)
-                    .withHandlerType(executeResult.handlerType.value)
-                    .withResponseText(executeResult.getResponseText());
-
-            final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.WATSON);
+            final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.S3);
             final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
 
-            // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                builder.withResult(Result.OK);
-                speechKinesisProducer.addResult(builder.build(), EMPTY_BYTE);
+                // save OK speech results
+                builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
+                        .withCommand(executeResult.command)
+                        .withHandlerType(executeResult.handlerType.value)
+                        .withResponseText(executeResult.getResponseText())
+                        .withResult(Result.OK);
+                speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.UPDATE_ITEM, EMPTY_BYTE);
+
                 return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
             }
 
-            builder.withResult(Result.TRY_AGAIN);
-            builder.withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN));
-            speechKinesisProducer.addResult(builder.build(), EMPTY_BYTE);
+            // save TRY_AGAIN speech results
+            builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
+                    .withResult(Result.TRY_AGAIN)
+                    .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN));
+            final SpeechResultsKinesis.SpeechResultsData.Action saveAction = (resp.getTranscript().isPresent()) ?
+                    SpeechResultsKinesis.SpeechResultsData.Action.UPDATE_ITEM :
+                    SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM;
+            speechKinesisProducer.addResult(builder.build(), saveAction, EMPTY_BYTE);
+
             return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
 
         } catch (Exception e) {
@@ -179,13 +188,12 @@ public class UploadResource {
         }
 
         // no text or command found
-        builder.withText("NONE")
-                .withConfidence(0.0f)
+        builder.withService(SpeechToTextService.GOOGLE)
                 .withWakeWord(WakeWord.OKAY_SENSE)
                 .withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                 .withResult(Result.REJECTED)
                 .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.REJECTED));
-        speechKinesisProducer.addResult(builder.build(), EMPTY_BYTE);
+         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
         return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
     }

@@ -767,6 +767,16 @@ public final class SpeechResultsKinesis {
      * <code>optional int64 updated = 16;</code>
      */
     long getUpdated();
+
+    // optional .SpeechResultsData.Action action = 17;
+    /**
+     * <code>optional .SpeechResultsData.Action action = 17;</code>
+     */
+    boolean hasAction();
+    /**
+     * <code>optional .SpeechResultsData.Action action = 17;</code>
+     */
+    is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action getAction();
   }
   /**
    * Protobuf type {@code SpeechResultsData}
@@ -923,6 +933,17 @@ public final class SpeechResultsKinesis {
               updated_ = input.readInt64();
               break;
             }
+            case 136: {
+              int rawValue = input.readEnum();
+              is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action value = is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action.valueOf(rawValue);
+              if (value == null) {
+                unknownFields.mergeVarintField(17, rawValue);
+              } else {
+                bitField0_ |= 0x00008000;
+                action_ = value;
+              }
+              break;
+            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -963,6 +984,97 @@ public final class SpeechResultsKinesis {
     @java.lang.Override
     public com.google.protobuf.Parser<SpeechResultsData> getParserForType() {
       return PARSER;
+    }
+
+    /**
+     * Protobuf enum {@code SpeechResultsData.Action}
+     */
+    public enum Action
+        implements com.google.protobuf.ProtocolMessageEnum {
+      /**
+       * <code>PUT_ITEM = 1;</code>
+       */
+      PUT_ITEM(0, 1),
+      /**
+       * <code>UPDATE_ITEM = 2;</code>
+       */
+      UPDATE_ITEM(1, 2),
+      /**
+       * <code>TIMELINE = 3;</code>
+       */
+      TIMELINE(2, 3),
+      ;
+
+      /**
+       * <code>PUT_ITEM = 1;</code>
+       */
+      public static final int PUT_ITEM_VALUE = 1;
+      /**
+       * <code>UPDATE_ITEM = 2;</code>
+       */
+      public static final int UPDATE_ITEM_VALUE = 2;
+      /**
+       * <code>TIMELINE = 3;</code>
+       */
+      public static final int TIMELINE_VALUE = 3;
+
+
+      public final int getNumber() { return value; }
+
+      public static Action valueOf(int value) {
+        switch (value) {
+          case 1: return PUT_ITEM;
+          case 2: return UPDATE_ITEM;
+          case 3: return TIMELINE;
+          default: return null;
+        }
+      }
+
+      public static com.google.protobuf.Internal.EnumLiteMap<Action>
+          internalGetValueMap() {
+        return internalValueMap;
+      }
+      private static com.google.protobuf.Internal.EnumLiteMap<Action>
+          internalValueMap =
+            new com.google.protobuf.Internal.EnumLiteMap<Action>() {
+              public Action findValueByNumber(int number) {
+                return Action.valueOf(number);
+              }
+            };
+
+      public final com.google.protobuf.Descriptors.EnumValueDescriptor
+          getValueDescriptor() {
+        return getDescriptor().getValues().get(index);
+      }
+      public final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptorForType() {
+        return getDescriptor();
+      }
+      public static final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptor() {
+        return is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.getDescriptor().getEnumTypes().get(0);
+      }
+
+      private static final Action[] VALUES = values();
+
+      public static Action valueOf(
+          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+        if (desc.getType() != getDescriptor()) {
+          throw new java.lang.IllegalArgumentException(
+            "EnumValueDescriptor is not for this type.");
+        }
+        return VALUES[desc.getIndex()];
+      }
+
+      private final int index;
+      private final int value;
+
+      private Action(int index, int value) {
+        this.index = index;
+        this.value = value;
+      }
+
+      // @@protoc_insertion_point(enum_scope:SpeechResultsData.Action)
     }
 
     private int bitField0_;
@@ -1478,6 +1590,22 @@ public final class SpeechResultsKinesis {
       return updated_;
     }
 
+    // optional .SpeechResultsData.Action action = 17;
+    public static final int ACTION_FIELD_NUMBER = 17;
+    private is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action action_;
+    /**
+     * <code>optional .SpeechResultsData.Action action = 17;</code>
+     */
+    public boolean hasAction() {
+      return ((bitField0_ & 0x00008000) == 0x00008000);
+    }
+    /**
+     * <code>optional .SpeechResultsData.Action action = 17;</code>
+     */
+    public is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action getAction() {
+      return action_;
+    }
+
     private void initFields() {
       accountId_ = 0L;
       senseId_ = "";
@@ -1495,6 +1623,7 @@ public final class SpeechResultsKinesis {
       result_ = "";
       responseText_ = "";
       updated_ = 0L;
+      action_ = is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1555,6 +1684,9 @@ public final class SpeechResultsKinesis {
       }
       if (((bitField0_ & 0x00004000) == 0x00004000)) {
         output.writeInt64(16, updated_);
+      }
+      if (((bitField0_ & 0x00008000) == 0x00008000)) {
+        output.writeEnum(17, action_.getNumber());
       }
       getUnknownFields().writeTo(output);
     }
@@ -1630,6 +1762,10 @@ public final class SpeechResultsKinesis {
       if (((bitField0_ & 0x00004000) == 0x00004000)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(16, updated_);
+      }
+      if (((bitField0_ & 0x00008000) == 0x00008000)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeEnumSize(17, action_.getNumber());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1784,6 +1920,8 @@ public final class SpeechResultsKinesis {
         bitField0_ = (bitField0_ & ~0x00004000);
         updated_ = 0L;
         bitField0_ = (bitField0_ & ~0x00008000);
+        action_ = is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM;
+        bitField0_ = (bitField0_ & ~0x00010000);
         return this;
       }
 
@@ -1881,6 +2019,10 @@ public final class SpeechResultsKinesis {
           to_bitField0_ |= 0x00004000;
         }
         result.updated_ = updated_;
+        if (((from_bitField0_ & 0x00010000) == 0x00010000)) {
+          to_bitField0_ |= 0x00008000;
+        }
+        result.action_ = action_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1969,6 +2111,9 @@ public final class SpeechResultsKinesis {
         }
         if (other.hasUpdated()) {
           setUpdated(other.getUpdated());
+        }
+        if (other.hasAction()) {
+          setAction(other.getAction());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -3011,6 +3156,42 @@ public final class SpeechResultsKinesis {
         return this;
       }
 
+      // optional .SpeechResultsData.Action action = 17;
+      private is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action action_ = is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM;
+      /**
+       * <code>optional .SpeechResultsData.Action action = 17;</code>
+       */
+      public boolean hasAction() {
+        return ((bitField0_ & 0x00010000) == 0x00010000);
+      }
+      /**
+       * <code>optional .SpeechResultsData.Action action = 17;</code>
+       */
+      public is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action getAction() {
+        return action_;
+      }
+      /**
+       * <code>optional .SpeechResultsData.Action action = 17;</code>
+       */
+      public Builder setAction(is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00010000;
+        action_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional .SpeechResultsData.Action action = 17;</code>
+       */
+      public Builder clearAction() {
+        bitField0_ = (bitField0_ & ~0x00010000);
+        action_ = is.hello.speech.core.api.SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:SpeechResultsData)
     }
 
@@ -3042,7 +3223,7 @@ public final class SpeechResultsKinesis {
   static {
     java.lang.String[] descriptorData = {
       "\n\024speech_results.proto\",\n\tAudioData\022\021\n\td" +
-      "ata_size\030\001 \001(\r\022\014\n\004data\030\002 \001(\014\"\311\002\n\021SpeechR" +
+      "ata_size\030\001 \001(\r\022\014\n\004data\030\002 \001(\014\"\253\003\n\021SpeechR" +
       "esultsData\022\022\n\naccount_id\030\001 \001(\003\022\020\n\010sense_" +
       "id\030\002 \001(\t\022\017\n\007created\030\003 \001(\003\022\022\n\naudio_uuid\030" +
       "\004 \001(\t\022\031\n\005audio\030\005 \001(\0132\n.AudioData\022\014\n\004text" +
@@ -3051,8 +3232,10 @@ public final class SpeechResultsKinesis {
       "\n \001(\t\022\017\n\007command\030\013 \001(\t\022\017\n\007wake_id\030\014 \001(\005\022" +
       "\027\n\017wake_confidence\030\r \003(\002\022\016\n\006result\030\016 \001(\t" +
       "\022\025\n\rresponse_text\030\017 \001(\t\022\017\n\007updated\030\020 \001(\003",
-      "B0\n\030is.hello.speech.core.apiB\024SpeechResu" +
-      "ltsKinesis"
+      "\022)\n\006action\030\021 \001(\0162\031.SpeechResultsData.Act" +
+      "ion\"5\n\006Action\022\014\n\010PUT_ITEM\020\001\022\017\n\013UPDATE_IT" +
+      "EM\020\002\022\014\n\010TIMELINE\020\003B0\n\030is.hello.speech.co" +
+      "re.apiB\024SpeechResultsKinesis"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -3070,7 +3253,7 @@ public final class SpeechResultsKinesis {
           internal_static_SpeechResultsData_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SpeechResultsData_descriptor,
-              new java.lang.String[] { "AccountId", "SenseId", "Created", "AudioUuid", "Audio", "Text", "Service", "Confidence", "S3Keyname", "HandlerType", "Command", "WakeId", "WakeConfidence", "Result", "ResponseText", "Updated", });
+              new java.lang.String[] { "AccountId", "SenseId", "Created", "AudioUuid", "Audio", "Text", "Service", "Confidence", "S3Keyname", "HandlerType", "Command", "WakeId", "WakeConfidence", "Result", "ResponseText", "Updated", "Action", });
           return null;
         }
       };

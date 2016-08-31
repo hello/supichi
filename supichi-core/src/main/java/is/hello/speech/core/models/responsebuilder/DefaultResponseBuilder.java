@@ -14,7 +14,7 @@ import java.util.Map;
 public class DefaultResponseBuilder implements ResponseBuilderInterface {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultResponseBuilder.class);
 
-    public static final String BUCKET_NAME = ""; // use nase bucket
+    public static final String BUCKET_NAME = ""; // use base bucket
 
     public final static Map<Response.SpeechResponse.Result, String> DEFAULT_KEYNAMES = new HashMap<Response.SpeechResponse.Result, String>() {{
         put(Response.SpeechResponse.Result.OK, "default_ok-WATSON-ALLISON-16k.wav");
