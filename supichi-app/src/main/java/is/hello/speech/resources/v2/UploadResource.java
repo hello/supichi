@@ -1,4 +1,4 @@
-package is.hello.speech.resources.v1;
+package is.hello.speech.resources.v2;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
@@ -17,10 +17,14 @@ import is.hello.speech.core.models.UploadResponseParam;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.resources.v1.SignedBodyHandler;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.ac.open.audio.AudioException;
+import uk.ac.open.audio.adpcm.ADPCMDecoder;
+import uk.ac.open.audio.adpcm.ADPCMEncoder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -33,19 +37,18 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
 
-@Path("/v1/upload")
+@Path("/v2/upload")
 @Produces(MediaType.APPLICATION_JSON)
 public class UploadResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
-
-    private static final String CONTENT_TYPE_ADPCM = "adpcm";
-    public static final String CONTENT_TYPE_RAW = "raw";
 
     private final SpeechClient speechClient;
     private final SignedBodyHandler signedBodyHandler;
@@ -87,7 +90,7 @@ public class UploadResource {
                             @DefaultValue("8000") @QueryParam("r") final Integer sampling,
                             @DefaultValue("false") @QueryParam("pb") final boolean includeProtobuf,
                             @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
-    ) throws InterruptedException, IOException {
+    ) throws InterruptedException, IOException, AudioException {
 
         LOGGER.debug("action=received-bytes size={}", signedBody.length);
 
@@ -113,6 +116,23 @@ public class UploadResource {
             return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
         }
 
+        // convert ADPCM to 16-bit 16k PCM
+        final int bodySize = body.length;
+        final int chunks = bodySize / ADPCMEncoder.BLOCKBYTES;
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        for (int i = 0; i < chunks; i++) {
+            final int startIndex = i * ADPCMEncoder.BLOCKBYTES;
+            final int endIndex = startIndex + ADPCMEncoder.BLOCKBYTES;
+            final byte[] buffer = Arrays.copyOfRange(body, startIndex, endIndex);
+
+            final byte[] output = ADPCMDecoder.decodeBlock(buffer, 0);
+            outputStream.write(output);
+        }
+
+        final byte[] decoded = outputStream.toByteArray();
+        LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
+
         // TODO: for now, pick the smallest account-id as the primary id
         Long accountId = accounts.get(0).accountId;
         for (final DeviceAccountPair accountPair : accounts) {
@@ -135,7 +155,7 @@ public class UploadResource {
 
         // process audio
         try {
-            final SpeechServiceResult resp = speechClient.stream(body, sampling);
+            final SpeechServiceResult resp = speechClient.stream(decoded, sampling);
 
             // try to execute command in transcript
             if (resp.getTranscript().isPresent()) {
