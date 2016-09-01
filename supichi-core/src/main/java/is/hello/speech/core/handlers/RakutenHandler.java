@@ -29,7 +29,7 @@ public class RakutenHandler extends BaseHandler {
     private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
-        tempMap.put("special offers", SpeechCommand.RAKUTEN);
+        tempMap.put("special offer", SpeechCommand.RAKUTEN);
         tempMap.put("special offers", SpeechCommand.RAKUTEN);
         tempMap.put("work tomorrow", SpeechCommand.RAKUTEN);
         tempMap.put("harry potter", SpeechCommand.RAKUTEN);
