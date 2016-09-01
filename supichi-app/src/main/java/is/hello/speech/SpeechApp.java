@@ -187,7 +187,9 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.ROOM_CONDITIONS, handlerFactory.roomConditionsHandler())
                 .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
                 .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
-                .register(HandlerType.TIMELINE, handlerFactory.timelineHandler());
+                .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
+                .register(HandlerType.RAKUTEN, handlerFactory.rakutenHandler())
+                .register(HandlerType.RAKUTEN_JP, handlerFactory.rakutenJPHandler());
 
 
         // setup SQS for QueueMessage API
@@ -323,11 +325,13 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final S3ResponseBuilder s3ResponseBuilder = new S3ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
+        final WatsonResponseBuilder watsonJpResponseBuilder = new WatsonResponseBuilder(watson, "ja-JP_EmiVoice");
         final SignedBodyHandler signedBodyHandler = new SignedBodyHandler(keystore);
 
         final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
         responseBuilders.put(SupichiResponseType.S3, s3ResponseBuilder);
         responseBuilders.put(SupichiResponseType.WATSON, watsonResponseBuilder);
+        responseBuilders.put(SupichiResponseType.WATSON_JP, watsonJpResponseBuilder);
 
         final Map<HandlerType, SupichiResponseType> handlersToBuilders = handlerExecutor.responseBuilders();
 
