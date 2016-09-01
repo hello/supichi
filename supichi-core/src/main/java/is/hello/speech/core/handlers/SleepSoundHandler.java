@@ -2,20 +2,23 @@ package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
-import com.hello.suripu.coredw8.clients.MessejiClient;
-import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechCommand;
+import com.hello.suripu.coredropwizard.clients.MessejiClient;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechCommand;
 
 
 /**

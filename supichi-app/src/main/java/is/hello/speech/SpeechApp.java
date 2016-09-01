@@ -39,19 +39,21 @@ import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
 import com.hello.suripu.core.speech.SpeechTimelineIngestDAO;
 import com.hello.suripu.core.speech.SpeechTimelineIngestDAODynamoDB;
 import com.hello.suripu.core.speech.Vault;
-import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
-import com.hello.suripu.coredw8.clients.MessejiClient;
-import com.hello.suripu.coredw8.clients.MessejiHttpClient;
-import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
+import com.hello.suripu.coredropwizard.clients.MessejiClient;
+import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
+import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 
 import org.skife.jdbi.v2.DBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
@@ -88,15 +90,6 @@ import is.hello.speech.resources.v1.SignedBodyHandler;
 import is.hello.speech.resources.v1.UploadResource;
 import is.hello.speech.utils.ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
-import org.skife.jdbi.v2.DBI;
-
-import java.net.InetAddress;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
 

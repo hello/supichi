@@ -32,6 +32,8 @@ public class HueHandler extends BaseHandler {
     private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
+        tempMap.put("turn on", SpeechCommand.LIGHT_SET);
+        tempMap.put("turn off", SpeechCommand.LIGHT_SET);
         tempMap.put("light on", SpeechCommand.LIGHT_SET);
         tempMap.put("light off", SpeechCommand.LIGHT_SET);
         tempMap.put("brighten the", SpeechCommand.LIGHT_SET);
@@ -40,6 +42,10 @@ public class HueHandler extends BaseHandler {
         tempMap.put("dim the", SpeechCommand.LIGHT_SET);
         tempMap.put("reduce the", SpeechCommand.LIGHT_SET);
         tempMap.put("light dimmer", SpeechCommand.LIGHT_SET);
+        tempMap.put("light warmer", SpeechCommand.LIGHT_SET);
+        tempMap.put("light redder", SpeechCommand.LIGHT_SET);
+        tempMap.put("light bluer", SpeechCommand.LIGHT_SET);
+        tempMap.put("light cooler", SpeechCommand.LIGHT_SET);
         return tempMap;
     }
 
@@ -53,11 +59,11 @@ public class HueHandler extends BaseHandler {
 
             final HueLight light = new HueLight();
 
-            if (text.contains("light on")) {
+            if (text.contains("light on") | text.contains("turn on")) {
                 light.setLightState(true);
                 response.put("light", "on");
             }
-            if (text.contains("light off")) {
+            if (text.contains("light off") | text.contains("turn off")) {
                 light.setLightState(false);
                 response.put("light", "off");
             }
@@ -66,7 +72,12 @@ public class HueHandler extends BaseHandler {
             }
             if (text.contains("decrease") | text.contains("dim")) {
                 light.adjustBrightness(-30);
-
+            }
+            if (text.contains("warmer") | text.contains("redder")) {
+                light.adjustTemperature(100);
+            }
+            if (text.contains("cooler") | text.contains("bluer")) {
+                light.adjustTemperature(-100);
             }
 
             response.put("result", HandlerResult.Outcome.OK.getValue());

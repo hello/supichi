@@ -1,8 +1,8 @@
 package is.hello.speech.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
-import com.hello.suripu.coredw8.configuration.NewDynamoDBConfiguration;
+import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.configuration.NewDynamoDBConfiguration;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 import is.hello.speech.core.configuration.KMSConfiguration;
