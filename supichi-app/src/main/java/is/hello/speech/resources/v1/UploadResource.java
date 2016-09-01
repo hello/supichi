@@ -44,9 +44,6 @@ public class UploadResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
 
-    private static final String CONTENT_TYPE_ADPCM = "adpcm";
-    public static final String CONTENT_TYPE_RAW = "raw";
-
     private final SpeechClient speechClient;
     private final SignedBodyHandler signedBodyHandler;
     private final HandlerExecutor handlerExecutor;

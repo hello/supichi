@@ -14,7 +14,6 @@ import is.hello.speech.core.response.SupichiResponseType;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
 import org.junit.Before;
 import org.junit.Test;
-import uk.ac.open.audio.AudioException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
