@@ -37,9 +37,9 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
@@ -49,6 +49,7 @@ import java.util.UUID;
 public class UploadResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
+    private static final int ADPCM_STATE_SIZE = 3;
 
     private final SpeechClient speechClient;
     private final SignedBodyHandler signedBodyHandler;
@@ -117,20 +118,43 @@ public class UploadResource {
         }
 
         // convert ADPCM to 16-bit 16k PCM
-        final int bodySize = body.length;
-        final int chunks = bodySize / ADPCMEncoder.BLOCKBYTES;
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final int chunkSize = ADPCMEncoder.BLOCKBYTES - ADPCM_STATE_SIZE;
+        final int chunks = body.length / chunkSize;
 
-        for (int i = 0; i < chunks; i++) {
-            final int startIndex = i * ADPCMEncoder.BLOCKBYTES;
-            final int endIndex = startIndex + ADPCMEncoder.BLOCKBYTES;
-            final byte[] buffer = Arrays.copyOfRange(body, startIndex, endIndex);
+        // for reading body bytes
+        final ByteArrayInputStream inputStream = new ByteArrayInputStream(body);
+        byte[] dataBuffer = new byte[chunkSize];
 
-            final byte[] output = ADPCMDecoder.decodeBlock(buffer, 0);
-            outputStream.write(output);
+        // first 3 bytes to decoder contains previous chunk values and last stepIndex
+        byte[] startBuffer = new byte[]{0, 0, 0};
+
+        final ByteArrayOutputStream toDecodeStream = new ByteArrayOutputStream(); // intermediate stream
+        final ByteArrayOutputStream decodedStream = new ByteArrayOutputStream();
+
+        for (int i = 0; i < chunks + 1; i++) {
+
+            final int readSize = inputStream.read(dataBuffer, 0, chunkSize);
+            if (readSize != chunkSize) {
+                LOGGER.debug("action=input-stream-read chunk={} expect={} read={}", i, chunkSize, readSize);
+                break;
+            }
+
+            toDecodeStream.write(startBuffer); // add previous state
+            toDecodeStream.write(dataBuffer);
+
+            final ADPCMDecoder.DecodeResult decodeResult = ADPCMDecoder.decodeBlock(toDecodeStream.toByteArray(), 0);
+            toDecodeStream.reset();
+
+            // fill in previous values
+            final int outputSize = decodeResult.data.length;
+            startBuffer[0] = decodeResult.data[outputSize - 2];
+            startBuffer[1] = decodeResult.data[outputSize - 1];
+            startBuffer[2] = (byte) decodeResult.stepIndex;
+
+            decodedStream.write(decodeResult.data);
         }
 
-        final byte[] decoded = outputStream.toByteArray();
+        final byte[] decoded = decodedStream.toByteArray();
         LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
 
         // TODO: for now, pick the smallest account-id as the primary id

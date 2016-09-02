@@ -32,19 +32,30 @@ import java.io.InputStream;
  */
 public class ADPCMDecoder implements StreamableDecoder
 {
+    public static class DecodeResult {
+        public final byte[] data;
+        public final int stepIndex;
+
+        public DecodeResult(final byte[] data, final int stepIndex) {
+            this.data = data;
+            this.stepIndex = stepIndex;
+        }
+    }
+
     /**
      * Decodes a block (ADPCMEncoder.BLOCKBYTES) of ADPCM data.
      * @param adpcm Block of data
      * @param offset Offset in block to begin decoding at
      * @return Block of 16-bit 16 kHz decoded audio (size ADPCMEncoder.BLOCKSAMPLES*2)
      */
-    public static byte[] decodeBlock(byte[] adpcm,int offset)
+    public static DecodeResult decodeBlock(byte[] adpcm,int offset)
     {
-        byte[] data=new byte[ADPCMEncoder.BLOCKSAMPLES*2];
+        byte[] data=new byte[ADPCMEncoder.BLOCKSAMPLES*2]; // add one for the size
         int outPos=0,inPos=offset;
 
         data[outPos++]=adpcm[inPos++];
         data[outPos++]=adpcm[inPos++];
+
         int lastOutput=(int)data[0]&0xff | (int)data[1]<<8;
 
         int stepIndex=(int)adpcm[inPos++];
@@ -113,7 +124,7 @@ public class ADPCMDecoder implements StreamableDecoder
             data[outPos++]=(byte)((lastOutput>>8)&0xff);
         }
 
-        return data;
+        return new DecodeResult(data, stepIndex);
     }
 
     private InputStream stream;
@@ -172,9 +183,9 @@ public class ADPCMDecoder implements StreamableDecoder
             }
             while(pos!=input.length);
 
-            byte[] decoded=decodeBlock(input,0);
+            DecodeResult decoded=decodeBlock(input,0);
             return AudioUtil.convert(
-                    decoded, decoded.length, false, true, 16000, 44100);
+                    decoded.data, decoded.data.length, false, true, 16000, 44100);
         }
         catch(IOException e)
         {
