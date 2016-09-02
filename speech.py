@@ -130,7 +130,7 @@ if __name__ == '__main__':
     fp = open(filename, 'rb')
     file_data = fp.read();
     fp.close()
-    file_data = "12345"
+    # file_data = "12345"  # for testing try again
     hashed = hmac.new(aes_key, file_data, hashlib.sha1)
     print "length of hash", len(hashed.digest())
     su = file_data + hashed.digest()

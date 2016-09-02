@@ -137,6 +137,11 @@ public class UploadResource {
                 .withDateTimeUTC(speechCreated);
         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
 
+        builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
+                .withWakeWord(WakeWord.OKAY_SENSE)
+                .withService(SpeechToTextService.GOOGLE);
+
+
         // process audio
         try {
             final SpeechServiceResult resp = speechClient.stream(body, sampling);
@@ -146,12 +151,9 @@ public class UploadResource {
 
                 // save transcript results to Kinesis
                 final String transcribedText = resp.getTranscript().get();
-                builder.withText(transcribedText)
-                        .withService(SpeechToTextService.GOOGLE)
+                builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                         .withConfidence(resp.getConfidence())
-                        .withWakeWord(WakeWord.OKAY_SENSE)
-                        .withUpdatedUTC(DateTime.now(DateTimeZone.UTC));
-                 speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
+                        .withText(transcribedText);
 
                 // try to execute text command
                 executeResult = handlerExecutor.handle(senseId, accountId, transcribedText);
@@ -161,25 +163,22 @@ public class UploadResource {
             final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
 
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                // save OK speech results
+                // save OK speech result
                 builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                         .withCommand(executeResult.command)
                         .withHandlerType(executeResult.handlerType.value)
                         .withResponseText(executeResult.getResponseText())
                         .withResult(Result.OK);
-                speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.UPDATE_ITEM, EMPTY_BYTE);
+                speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
                 return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
             }
 
-            // save TRY_AGAIN speech results
+            // save TRY_AGAIN speech result
             builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                    .withResult(Result.TRY_AGAIN)
-                    .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN));
-            final SpeechResultsKinesis.SpeechResultsData.Action saveAction = (resp.getTranscript().isPresent()) ?
-                    SpeechResultsKinesis.SpeechResultsData.Action.UPDATE_ITEM :
-                    SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM;
-            speechKinesisProducer.addResult(builder.build(), saveAction, EMPTY_BYTE);
+                    .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN))
+                    .withResult(Result.TRY_AGAIN);
+            speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
             return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
 
@@ -187,13 +186,11 @@ public class UploadResource {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        // no text or command found
-        builder.withService(SpeechToTextService.GOOGLE)
-                .withWakeWord(WakeWord.OKAY_SENSE)
-                .withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                .withResult(Result.REJECTED)
-                .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.REJECTED));
-         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
+        // no text or command found, save REJECT result
+        builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
+                .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.REJECTED))
+                .withResult(Result.REJECTED);
+        speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
         return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
     }
