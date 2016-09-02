@@ -31,8 +31,14 @@ public class RakutenHandler extends BaseHandler {
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("special offer", SpeechCommand.RAKUTEN);
         tempMap.put("special offers", SpeechCommand.RAKUTEN);
+        // lyft
         tempMap.put("work tomorrow", SpeechCommand.RAKUTEN);
+        tempMap.put("order me", SpeechCommand.RAKUTEN);
+        tempMap.put("a lift", SpeechCommand.RAKUTEN);
+        // download
         tempMap.put("harry potter", SpeechCommand.RAKUTEN);
+        tempMap.put("my kobo", SpeechCommand.RAKUTEN);
+        tempMap.put("you download", SpeechCommand.RAKUTEN);
         return tempMap;
     }
 
@@ -44,7 +50,7 @@ public class RakutenHandler extends BaseHandler {
 
         if (optionalCommand.isPresent()) {
 
-            if (text.equalsIgnoreCase("work tomorrow")) {
+            if (text.equalsIgnoreCase("work tomorrow") || text.equalsIgnoreCase("a lift") || text.equalsIgnoreCase("order me")) {
                 response.put("result", HandlerResult.Outcome.OK.getValue());
                 response.put("answer", "work_tomorrow");
                 response.put("text", "Your smart alarm is set for 6am, and I will order you a Lyft for 7am.");
@@ -54,7 +60,7 @@ public class RakutenHandler extends BaseHandler {
                 response.put("answer", "special_offers_ebates");
                 response.put("text", "Yes, you can get 3% cash back at nigh kee right now. It was only 1.5% last week.");
 
-            } else if (text.equalsIgnoreCase("harry potter")) {
+            } else if (text.equalsIgnoreCase("harry potter") || text.equalsIgnoreCase("my kobo") || text.equalsIgnoreCase("you download")) {
                 response.put("result", HandlerResult.Outcome.OK.getValue());
                 response.put("answer", "harry_potter");
                 response.put("text", "Harry Potter and the Cursed Child is ready to read on your Aura One.");
