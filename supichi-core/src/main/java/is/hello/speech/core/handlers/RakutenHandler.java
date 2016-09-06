@@ -47,9 +47,10 @@ public class RakutenHandler extends BaseHandler {
     public HandlerResult executeCommand(String text, String senseId, Long accountId) {
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
+        String command = HandlerResult.EMPTY_COMMAND;
 
         if (optionalCommand.isPresent()) {
-
+            command = optionalCommand.get().getValue();
             if (text.equalsIgnoreCase("work tomorrow") || text.equalsIgnoreCase("a lift") || text.equalsIgnoreCase("order me")) {
                 response.put("result", HandlerResult.Outcome.OK.getValue());
                 response.put("answer", "work_tomorrow");
@@ -67,7 +68,7 @@ public class RakutenHandler extends BaseHandler {
 
             }
         }
-        return new HandlerResult(HandlerType.RAKUTEN, response);
+        return new HandlerResult(HandlerType.RAKUTEN, command, response);
     }
 
     @Override

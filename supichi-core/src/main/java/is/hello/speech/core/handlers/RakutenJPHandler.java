@@ -40,16 +40,17 @@ public class RakutenJPHandler extends BaseHandler {
     public HandlerResult executeCommand(String text, String senseId, Long accountId) {
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
+        String command = HandlerResult.EMPTY_COMMAND;
 
         if (optionalCommand.isPresent()) {
-
+            command = optionalCommand.get().getValue();
             if (text.equalsIgnoreCase("other languages") || text.equalsIgnoreCase("speak other") || text.equalsIgnoreCase("other language")) {
                 response.put("result", HandlerResult.Outcome.OK.getValue());
                 response.put("answer", "other_languages");
                 response.put("text", "私は、ほぼすべての言語をサポートすることができるしています.");
             }
         }
-        return new HandlerResult(HandlerType.RAKUTEN_JP, response);
+        return new HandlerResult(HandlerType.RAKUTEN_JP, command, response);
     }
 
     @Override
