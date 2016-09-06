@@ -52,7 +52,6 @@ server:
     - type: http
       port: 8182
   requestLog:
-    timeZone: UTC
     appenders:
       - type: file
         currentLogFilename: /var/log/speech-app/speech-app-access.log

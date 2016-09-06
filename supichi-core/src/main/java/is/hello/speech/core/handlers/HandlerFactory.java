@@ -8,7 +8,7 @@ import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
-import com.hello.suripu.coredw8.clients.MessejiClient;
+import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import is.hello.speech.core.db.SpeechCommandDAO;
 
 /**
