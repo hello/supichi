@@ -35,10 +35,11 @@ import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.KmsVault;
-import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
-import com.hello.suripu.core.speech.SpeechTimelineIngestDAO;
+import com.hello.suripu.core.speech.SpeechResultIngestDAODynamoDB;
+import com.hello.suripu.core.speech.interfaces.SpeechResultIngestDAO;
+import com.hello.suripu.core.speech.interfaces.SpeechTimelineIngestDAO;
 import com.hello.suripu.core.speech.SpeechTimelineIngestDAODynamoDB;
-import com.hello.suripu.core.speech.Vault;
+import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredw8.clients.MessejiClient;
 import com.hello.suripu.coredw8.clients.MessejiHttpClient;
@@ -150,7 +151,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = new TimeZoneHistoryDAODynamoDB(timezoneClient, tableNames.get(DynamoDBTableName.TIMEZONE_HISTORY));
 
         final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
-        final SpeechResultDAODynamoDB speechResultDAODynamoDB = SpeechResultDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
+        final SpeechResultIngestDAO speechResultIngestDAO = SpeechResultIngestDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
 
         final AmazonDynamoDB keystoreClient= dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_KEY_STORE);
         final KeyStoreDynamoDB keystore = new KeyStoreDynamoDB(keystoreClient, tableNames.get(DynamoDBTableName.SENSE_KEY_STORE), "hello".getBytes(),10);
@@ -307,7 +308,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 senseUploadBucket,
                 s3SSEKey,
                 speechTimelineIngestDAO,
-                speechResultDAODynamoDB);
+                speechResultIngestDAO);
 
         environment.lifecycle().manage(speechKinesisConsumer);
 

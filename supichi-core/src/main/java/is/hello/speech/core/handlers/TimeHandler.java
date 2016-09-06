@@ -46,8 +46,10 @@ public class TimeHandler extends BaseHandler {
     public HandlerResult executeCommand(String text, String senseId, Long accountId) {
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
+        String command = HandlerResult.EMPTY_COMMAND;
 
         if (optionalCommand.isPresent()) {
+            command = optionalCommand.get().getValue();
             final int offsetMillis = getTimeZoneOffsetMillis(accountId);
             final DateTime now = DateTime.now(DateTimeZone.UTC);
             final DateTime localNow = now.plusMillis(offsetMillis);
@@ -56,9 +58,10 @@ public class TimeHandler extends BaseHandler {
             LOGGER.debug("action=get-current-time now={} local_now={} string={} offset={} account_id={}", now.toString(), localNow.toString(), currentTime, offsetMillis, accountId);
             response.put("result", HandlerResult.Outcome.OK.getValue());
             response.put("time", currentTime);
+            response.put("text", String.format("The time is %s", currentTime));
         }
 
-        return new HandlerResult(HandlerType.TIME_REPORT, response);
+        return new HandlerResult(HandlerType.TIME_REPORT, command, response);
     }
 
     private int getTimeZoneOffsetMillis(final Long accountId) {

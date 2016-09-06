@@ -7,6 +7,7 @@ import is.hello.speech.core.api.Response;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.UploadResponseParam;
 import is.hello.speech.core.models.UploadResponseType;
+import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.text2speech.AudioUtils;
 import org.slf4j.Logger;
@@ -38,7 +39,11 @@ public class WatsonResponseBuilder implements SupichiResponseBuilder {
                            final UploadResponseParam responseParam) {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        final String text = handlerResult.responseParameters.get("text");
+
+        final String text = (handlerResult.responseParameters.containsKey("text")) ?
+                handlerResult.responseParameters.get("text") :
+                DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.UNKNOWN);
+
         try (final InputStream watsonStream = watson.synthesize(text, watsonVoice, AudioUtils.WATSON_AUDIO_FORMAT).execute()) {
             final AudioUtils.AudioBytes watsonAudio = AudioUtils.convertStreamToBytesWithWavHeader(watsonStream);
 

@@ -34,13 +34,14 @@ public class TimelineHandler extends BaseHandler {
 
         final Map<String, String> response = Maps.newHashMap();
 
+        String command = HandlerResult.EMPTY_COMMAND;
         if (optionalCommand.isPresent()) {
-
+            command = optionalCommand.get().getValue();
             response.put("result", HandlerResult.Outcome.OK.getValue());
             response.put("text", "Your sleep score was 75");
         }
 
-        return new HandlerResult(HandlerType.ALARM, response);
+        return new HandlerResult(HandlerType.ALARM, command, response);
     }
 
     @Override

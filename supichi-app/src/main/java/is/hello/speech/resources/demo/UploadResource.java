@@ -7,10 +7,11 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
-import com.hello.suripu.core.speech.SpeechResult;
+import com.hello.suripu.core.speech.models.SpeechResult;
 import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
+import is.hello.speech.core.api.SpeechResultsKinesis;
 import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -158,7 +159,7 @@ public class UploadResource {
                 .build();
 
         // save to Kinesis
-        speechKinesisProducer.addResult(speechResult, body);
+        speechKinesisProducer.addResult(speechResult, SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
 
         try {
             final SpeechServiceResult resp = speechClient.stream(body, sampling);
