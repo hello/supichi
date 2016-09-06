@@ -144,7 +144,6 @@ kinesis_producer:
   record_max_buffered_time: 15000
   queue_size: 65536
   streams:
-   audio: dev_speech_audio
    speech_result: dev_speech_results
 
 kinesis_consumer:
@@ -154,7 +153,6 @@ kinesis_consumer:
   max_records: 100
   trim_horizon: false
   streams:
-   audio: dev_speech_audio
    speech_result: dev_speech_results
 
 sense_upload_audio:  # bucket to save audio uploaded from Sense

@@ -148,23 +148,23 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
         if (speechResultsData.hasConfidence()) {
             builder.withConfidence(speechResultsData.getConfidence());
         }
-        if (speechResultsData.hasText()) {
+        if (speechResultsData.hasText() && !speechResultsData.getText().isEmpty()) {
             builder.withText(speechResultsData.getText());
         }
 
-        if (speechResultsData.hasHandlerType()) {
+        if (speechResultsData.hasHandlerType() && !speechResultsData.getHandlerType().isEmpty()) {
             builder.withHandlerType(speechResultsData.getHandlerType());
         }
 
-        if(speechResultsData.hasS3Keyname()) {
+        if(speechResultsData.hasS3Keyname() && !speechResultsData.getS3Keyname().isEmpty()) {
             builder.withS3Keyname(speechResultsData.getS3Keyname());
         }
 
-        if(speechResultsData.hasCommand()) {
+        if(speechResultsData.hasCommand() && !speechResultsData.getCommand().isEmpty()) {
             builder.withCommand(speechResultsData.getCommand());
         }
 
-        if(speechResultsData.hasResponseText()) {
+        if(speechResultsData.hasResponseText() && !speechResultsData.getResponseText().isEmpty()) {
             builder.withResponseText(speechResultsData.getResponseText());
         }
 
