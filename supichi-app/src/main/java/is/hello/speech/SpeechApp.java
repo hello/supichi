@@ -271,7 +271,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         // set up Kinesis Consumer
         final KinesisConsumerConfiguration kinesisConsumerConfiguration = speechAppConfiguration.kinesisConsumerConfiguration();
         final String workerId = InetAddress.getLocalHost().getCanonicalHostName();
-        final InitialPositionInStream initialPositionInStream = (kinesisConsumerConfiguration.trimHorizon()) ? InitialPositionInStream.TRIM_HORIZON : InitialPositionInStream.LATEST;
+        final InitialPositionInStream initialPositionInStream = kinesisConsumerConfiguration.trimHorizon() ? InitialPositionInStream.TRIM_HORIZON : InitialPositionInStream.LATEST;
 
         final KinesisClientLibConfiguration kinesisClientLibConfiguration = new KinesisClientLibConfiguration(
                 kinesisConsumerConfiguration.appName(),

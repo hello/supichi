@@ -208,7 +208,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>amazon-kinesis-client</artifactId>
-            <version>1.6.0</version>
+            <version>1.7.0</version>
         </dependency>
         <!--END AWS DEPENDENCIES-->
         <dependency>

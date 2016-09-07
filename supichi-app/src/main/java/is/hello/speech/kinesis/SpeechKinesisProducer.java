@@ -138,8 +138,11 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
     }
 
     private SpeechResultsKinesis.SpeechResultsData getSpeechResultsData(final KinesisData data) {
-        LOGGER.debug("action=adding-to-kpl uuid={} audio_size={}",
-                data.speechResult.audioIdentifier, data.audioData.length);
+        LOGGER.debug("action=adding-to-kpl sense_id={} uuid={} created={} audio_size={}",
+                data.speechResult.senseId,
+                data.speechResult.audioIdentifier,
+                data.speechResult.dateTimeUTC,
+                data.audioData.length);
 
         final SpeechResultsKinesis.SpeechResultsData.Builder builder = SpeechResultsKinesis.SpeechResultsData.newBuilder();
         if (data.audioData.length > 0) {
