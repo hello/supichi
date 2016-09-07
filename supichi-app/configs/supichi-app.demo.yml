@@ -59,6 +59,10 @@ server:
         archive: true
         archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
         archivedFileCount: 7
+      - type: papertrail
+        host: logs2.papertrailapp.com
+        port: 11366
+        ident: supichi-dev
 
 logging:
   level: INFO
@@ -81,7 +85,7 @@ google_api_port: 443
 audio_parameters:
   interim_results_preference: false
   encoding: LINEAR16 # [ENCODING_UNSPECIFIED, LINEAR16, FLAC, MULAW, AMR, AMR_WB, UNRECOGNIZED]
-  buffer_size: 2048 # play around with this
+  buffer_size: 6400 # play around with this
 
 messeji_http_client:
   # endpoint: "http://ec2-52-90-54-153.compute-1.amazonaws.com:8000"  # prod!!

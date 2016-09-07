@@ -138,6 +138,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
     }
 
     private SpeechResultsKinesis.SpeechResultsData getSpeechResultsData(final KinesisData data) {
+        // TODO: remove uuid after debug
         LOGGER.debug("action=adding-to-kpl sense_id={} uuid={} created={} audio_size={}",
                 data.speechResult.senseId,
                 data.speechResult.audioIdentifier,

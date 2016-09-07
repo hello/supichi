@@ -82,6 +82,7 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
                             // save audio and speech timeline
                             saveTimeline(speechResultsData, sequenceNumber);
                             final boolean saved = saveAudio(speechResultsData, sequenceNumber);
+                            //TODO: remove after debug
                             LOGGER.debug("action=save-audio success={} sense_id={}, uuid={}, created={}",
                                     saved, speechResultsData.getSenseId(), speechResultsData.getAudioUuid(),
                                     speechResultsData.getCreated());
@@ -150,23 +151,23 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
         if (speechResultsData.hasConfidence()) {
             builder.withConfidence(speechResultsData.getConfidence());
         }
-        if (speechResultsData.hasText() && !speechResultsData.getText().isEmpty()) {
+        if (speechResultsData.hasText()) {
             builder.withText(speechResultsData.getText());
         }
 
-        if (speechResultsData.hasHandlerType() && !speechResultsData.getHandlerType().isEmpty()) {
+        if (speechResultsData.hasHandlerType()) {
             builder.withHandlerType(speechResultsData.getHandlerType());
         }
 
-        if(speechResultsData.hasS3Keyname() && !speechResultsData.getS3Keyname().isEmpty()) {
+        if(speechResultsData.hasS3Keyname()) {
             builder.withS3Keyname(speechResultsData.getS3Keyname());
         }
 
-        if(speechResultsData.hasCommand() && !speechResultsData.getCommand().isEmpty()) {
+        if(speechResultsData.hasCommand()) {
             builder.withCommand(speechResultsData.getCommand());
         }
 
-        if(speechResultsData.hasResponseText() && !speechResultsData.getResponseText().isEmpty()) {
+        if(speechResultsData.hasResponseText()) {
             builder.withResponseText(speechResultsData.getResponseText());
         }
 
