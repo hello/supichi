@@ -38,7 +38,6 @@ public class TriviaHandler extends BaseHandler {
         tempMap.put("next president", SpeechCommand.TRIVIA);
         tempMap.put("best basketball", SpeechCommand.TRIVIA);
         tempMap.put("how was", SpeechCommand.TRIVIA);
-        tempMap.put("sleep last", SpeechCommand.TRIVIA);
         tempMap.put("favorite retailer", SpeechCommand.TRIVIA);
         return tempMap;
     }
@@ -48,14 +47,12 @@ public class TriviaHandler extends BaseHandler {
     public HandlerResult executeCommand(String text, String senseId, Long accountId) {
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
+        String command = HandlerResult.EMPTY_COMMAND;
 
         if (optionalCommand.isPresent()) {
+            command = optionalCommand.get().getValue();
 
-            if (text.equalsIgnoreCase("how was") || text.equalsIgnoreCase("sleep last")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
-                response.put("answer", "sleep_last_night");
-                response.put("text", "Your sleep score was 76. Try reducing the humidity in your room.");
-            } else if (text.equalsIgnoreCase("the president")) {
+          if (text.equalsIgnoreCase("the president")) {
                 response.put("result", HandlerResult.Outcome.OK.getValue());
                 response.put("answer", "president_obama");
                 response.put("text", "The current president of the United States is Barack Obama.");
@@ -78,6 +75,6 @@ public class TriviaHandler extends BaseHandler {
                 response.put("text", "Hello's favorite retailer is best buy.");
             }
         }
-        return new HandlerResult(HandlerType.TRIVIA, response);
+        return new HandlerResult(HandlerType.TRIVIA, command, response);
     }
 }

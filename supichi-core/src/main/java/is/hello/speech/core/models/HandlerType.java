@@ -10,8 +10,11 @@ public enum HandlerType {
     HUE("hue"),
     ROOM_CONDITIONS("room_conditions"),
     TIME_REPORT("time_report"),
+    TIMELINE("timeline"),
     TRIVIA("trivia"),
-    WEATHER("weather");
+    WEATHER("weather"),
+    RAKUTEN("rakuten"),
+    RAKUTEN_JP("rakuten_jp");
 
     public String value;
 

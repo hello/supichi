@@ -125,6 +125,7 @@ watson:
   password: 8riFzRbKOd4c
   voice: en-US_AllisonVoice
 
+
 watson_save_audio:
   s3_bucket_name: hello-audio
   s3_audio_prefix_raw: voice/watson-text2speech/raw
@@ -164,6 +165,6 @@ keys_management_service:
   endpoint: https://kms.us-east-1.amazonaws.com
   keys:
     uuid: arn:aws:kms:us-east-1:053216739513:key/1c60acdc-0628-4f8f-8fbc-f1cacb59a845
-    audio: arn:aws:kms:us-east-1:053216739513:key/349ce129-1242-411f-b395-f082a60a274b
+    audio: arn:aws:kms:us-east-1:053216739513:key/65d9a27f-e6cc-4456-a2ac-31739ea6da22 # audio_upload_dev
 
 s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms

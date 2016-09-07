@@ -11,6 +11,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,16 +62,20 @@ public class WeatherHandler extends BaseHandler {
         // WARNING: THIS IS A TERRIBLE LIBRARY AND IS NOT THREADSAFE
         final boolean success = forecastIO.getForecast(String.valueOf(latitude), String.valueOf(longitude));
         if(success) {
-
             final FIODaily daily = new FIODaily(forecastIO);
             final String responseText = String.format("It is %s", daily.getDay(0).summary());
             params.put("text", responseText);
             LOGGER.info("action=get-forecast account_id={} result={}", accountId, responseText);
-            return new HandlerResult(HandlerType.WEATHER, params);
+            return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params);
         }
 
         LOGGER.info("action=get-forecast result={}", accountId, defaultText);
-        return new HandlerResult(HandlerType.WEATHER, params);
+        return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params);
+    }
+
+    @Override
+    public SupichiResponseType responseType() {
+        return SupichiResponseType.WATSON;
     }
 
 //    ForecastIO fio = new ForecastIO(your_api_key); //instantiate the class with the API key.

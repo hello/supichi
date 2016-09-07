@@ -8,8 +8,21 @@ import com.amazonaws.util.Md5Utils;
 import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
-import com.hello.suripu.core.speech.SpeechResult;
+import com.hello.suripu.core.speech.models.SpeechResult;
 import com.hello.suripu.core.util.HelloHttpHeader;
+
+import is.hello.speech.clients.SpeechClient;
+import is.hello.speech.core.api.Response;
+import is.hello.speech.core.api.SpeechResultsKinesis;
+import is.hello.speech.core.handlers.executors.HandlerExecutor;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechServiceResult;
+import is.hello.speech.core.models.TextQuery;
+import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.core.models.UploadResponseParam;
+import is.hello.speech.utils.S3ResponseBuilder;
+import is.hello.speech.utils.WatsonResponseBuilder;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -33,17 +46,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
-import is.hello.speech.clients.SpeechClient;
-import is.hello.speech.core.api.Response;
-import is.hello.speech.core.handlers.executors.HandlerExecutor;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechServiceResult;
-import is.hello.speech.core.models.TextQuery;
-import is.hello.speech.core.models.UploadResponseParam;
-import is.hello.speech.kinesis.SpeechKinesisProducer;
-import is.hello.speech.utils.ResponseBuilder;
-import is.hello.speech.utils.WatsonResponseBuilder;
 
 
 @Path("/upload")
@@ -60,7 +62,7 @@ public class UploadResource {
     private final DeviceDAO deviceDAO;
     private final SpeechKinesisProducer speechKinesisProducer;
 
-    private final ResponseBuilder responseBuilder;
+    private final S3ResponseBuilder s3ResponseBuilder;
     private final WatsonResponseBuilder watsonResponseBuilder;
 
     @Context
@@ -71,14 +73,14 @@ public class UploadResource {
                           final HandlerExecutor handlerExecutor,
                           final DeviceDAO deviceDAO,
                           final SpeechKinesisProducer speechKinesisProducer,
-                          final ResponseBuilder responseBuilder,
+                          final S3ResponseBuilder s3ResponseBuilder,
                           final WatsonResponseBuilder watsonResponseBuilder) {
         this.s3 = s3;
         this.bucketName = bucketName;
         this.speechClient = speechClient;
         this.handlerExecutor = handlerExecutor;
         this.deviceDAO = deviceDAO;
-        this.responseBuilder = responseBuilder;
+        this.s3ResponseBuilder = s3ResponseBuilder;
         this.watsonResponseBuilder = watsonResponseBuilder;
         this.speechKinesisProducer = speechKinesisProducer;
     }
@@ -138,7 +140,7 @@ public class UploadResource {
 
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", senseId);
-            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
+            return s3ResponseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
         }
 
         // TODO: for now, pick the smallest account-id as the primary id
@@ -162,7 +164,7 @@ public class UploadResource {
                 .build();
 
         // save to Kinesis
-        speechKinesisProducer.addResult(speechResult, body);
+        speechKinesisProducer.addResult(speechResult, SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
 
         try {
             final SpeechServiceResult resp = speechClient.stream(body, sampling);
@@ -178,20 +180,20 @@ public class UploadResource {
             }
 
             if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
-                return watsonResponseBuilder.response(executeResult, responseParam);
+                return watsonResponseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
             }
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
+                return s3ResponseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
             } else {
-                return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
+                return s3ResponseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
             }
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
+        return s3ResponseBuilder.response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
     }
 
     @Path("/text")
@@ -208,7 +210,7 @@ public class UploadResource {
         LOGGER.debug("info=sense-id id={}", query.senseId);
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", query.senseId);
-            return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
+            return s3ResponseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
         }
 
         // TODO: for now, pick the smallest account-id as the primary id
@@ -225,19 +227,19 @@ public class UploadResource {
             final HandlerResult executeResult = handlerExecutor.handle(query.senseId, accountId, query.transcript);
 
             if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
-                return watsonResponseBuilder.response(executeResult, responseParam);
+                return watsonResponseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult, responseParam);
             }
 
             // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                return responseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult, responseParam);
+                return s3ResponseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult, responseParam);
             }
-            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, false, executeResult, responseParam);
+            return s3ResponseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, false, executeResult, responseParam);
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
 
-        return responseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
+        return s3ResponseBuilder.response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
     }
 
 }

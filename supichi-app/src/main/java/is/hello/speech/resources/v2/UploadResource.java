@@ -1,13 +1,10 @@
-package is.hello.speech.resources.v1;
+package is.hello.speech.resources.v2;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
-import com.hello.suripu.core.speech.models.Result;
 import com.hello.suripu.core.speech.models.SpeechResult;
-import com.hello.suripu.core.speech.models.SpeechToTextService;
-import com.hello.suripu.core.speech.models.WakeWord;
 import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
@@ -18,14 +15,17 @@ import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
 import is.hello.speech.core.models.TextQuery;
 import is.hello.speech.core.models.UploadResponseParam;
-import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.resources.v1.SignedBodyHandler;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.ac.open.audio.AudioException;
+import uk.ac.open.audio.adpcm.ADPCMDecoder;
+import uk.ac.open.audio.adpcm.ADPCMEncoder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -38,18 +38,19 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
 
-@Path("/v1/upload")
+@Path("/v2/upload")
 @Produces(MediaType.APPLICATION_JSON)
 public class UploadResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
-
-    private final static byte[] EMPTY_BYTE = new byte[0];
+    private static final int ADPCM_STATE_SIZE = 3;
 
     private final SpeechClient speechClient;
     private final SignedBodyHandler signedBodyHandler;
@@ -91,7 +92,7 @@ public class UploadResource {
                             @DefaultValue("8000") @QueryParam("r") final Integer sampling,
                             @DefaultValue("false") @QueryParam("pb") final boolean includeProtobuf,
                             @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
-    ) throws InterruptedException, IOException {
+    ) throws InterruptedException, IOException, AudioException {
 
         LOGGER.debug("action=received-bytes size={}", signedBody.length);
 
@@ -117,6 +118,46 @@ public class UploadResource {
             return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
         }
 
+        // convert ADPCM to 16-bit 16k PCM
+        final int chunkSize = ADPCMEncoder.BLOCKBYTES - ADPCM_STATE_SIZE;
+        final int chunks = body.length / chunkSize;
+
+        // for reading body bytes
+        final ByteArrayInputStream inputStream = new ByteArrayInputStream(body);
+        byte[] dataBuffer = new byte[chunkSize];
+
+        // first 3 bytes to decoder contains previous chunk values and last stepIndex
+        byte[] startBuffer = new byte[]{0, 0, 0};
+
+        final ByteArrayOutputStream toDecodeStream = new ByteArrayOutputStream(); // intermediate stream
+        final ByteArrayOutputStream decodedStream = new ByteArrayOutputStream();
+
+        for (int i = 0; i < chunks + 1; i++) {
+
+            final int readSize = inputStream.read(dataBuffer, 0, chunkSize);
+            if (readSize != chunkSize) {
+                LOGGER.debug("action=input-stream-read chunk={} expect={} read={}", i, chunkSize, readSize);
+                break;
+            }
+
+            toDecodeStream.write(startBuffer); // add previous state
+            toDecodeStream.write(dataBuffer);
+
+            final ADPCMDecoder.DecodeResult decodeResult = ADPCMDecoder.decodeBlock(toDecodeStream.toByteArray(), 0);
+            toDecodeStream.reset();
+
+            // fill in previous values
+            final int outputSize = decodeResult.data.length;
+            startBuffer[0] = decodeResult.data[outputSize - 2];
+            startBuffer[1] = decodeResult.data[outputSize - 1];
+            startBuffer[2] = (byte) decodeResult.stepIndex;
+
+            decodedStream.write(decodeResult.data);
+        }
+
+        final byte[] decoded = decodedStream.toByteArray();
+        LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
+
         // TODO: for now, pick the smallest account-id as the primary id
         Long accountId = accounts.get(0).accountId;
         for (final DeviceAccountPair accountPair : accounts) {
@@ -127,70 +168,38 @@ public class UploadResource {
 
         LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", senseId, accountId, responseParam.type().name());
 
-        // save audio to Kinesis, and save speech-timeline
+        // save audio to Kinesis
         final String audioUUID = UUID.randomUUID().toString();
-        final DateTime speechCreated = DateTime.now(DateTimeZone.UTC);
-        SpeechResult.Builder builder = new SpeechResult.Builder();
-        builder.withAccountId(accountId)
+        final SpeechResult speechResult = new SpeechResult.Builder()
+                .withAccountId(accountId)
                 .withSenseId(senseId)
                 .withAudioIndentifier(audioUUID)
-                .withDateTimeUTC(speechCreated);
-        speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
-
-        builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                .withWakeWord(WakeWord.OKAY_SENSE)
-                .withService(SpeechToTextService.GOOGLE);
-
+                .withDateTimeUTC(DateTime.now(DateTimeZone.UTC))
+                .build();
+        speechKinesisProducer.addResult(speechResult, SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
 
         // process audio
         try {
-            final SpeechServiceResult resp = speechClient.stream(body, sampling);
+            final SpeechServiceResult resp = speechClient.stream(decoded, sampling);
 
             // try to execute command in transcript
             if (resp.getTranscript().isPresent()) {
 
-                // save transcript results to Kinesis
-                final String transcribedText = resp.getTranscript().get();
-                builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                        .withConfidence(resp.getConfidence())
-                        .withText(transcribedText);
-
-                // try to execute text command
-                executeResult = handlerExecutor.handle(senseId, accountId, transcribedText);
+                executeResult = handlerExecutor.handle(senseId, accountId, resp.getTranscript().get());
             }
 
-            final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.S3);
+            final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.WATSON);
             final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
 
+            // TODO: response-builder
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                // save OK speech result
-                builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                        .withCommand(executeResult.command)
-                        .withHandlerType(executeResult.handlerType.value)
-                        .withResponseText(executeResult.getResponseText())
-                        .withResult(Result.OK);
-                speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
-
                 return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
             }
 
-            // save TRY_AGAIN speech result
-            builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                    .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN))
-                    .withResult(Result.TRY_AGAIN);
-            speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
-
             return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
-
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
-
-        // no text or command found, save REJECT result
-        builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.REJECTED))
-                .withResult(Result.REJECTED);
-        speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
         return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
     }

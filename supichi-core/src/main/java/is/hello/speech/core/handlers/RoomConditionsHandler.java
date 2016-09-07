@@ -72,12 +72,14 @@ public class RoomConditionsHandler extends BaseHandler {
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
 
+        String command = HandlerResult.EMPTY_COMMAND;
         if (optionalCommand.isPresent()) {
             // TODO: get units preference
+            command = optionalCommand.get().getValue();
             response.putAll(getCurrentRoomConditions(accountId, optionalCommand.get(), DEFAULT_SENSOR_UNIT));
         }
 
-        return new HandlerResult(HandlerType.ROOM_CONDITIONS, response);
+        return new HandlerResult(HandlerType.ROOM_CONDITIONS, command, response);
     }
 
 
@@ -167,6 +169,7 @@ public class RoomConditionsHandler extends BaseHandler {
             response.put("sensor", sensorName);
             response.put("value", sensorValue);
             response.put("unit", sensorUnit);
+            response.put("text", String.format("The %s in your room is %s %s", sensorName, sensorValue, sensorUnit));
         }
 
         return response;

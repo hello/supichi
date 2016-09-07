@@ -137,6 +137,10 @@ def process_misc(env):
     # body["parameters"] = "sleep_last_night"
     # r = post_request(env, body)
 
+    # body["text"] = "Hello's favorite retailer is best buy."
+    # body["parameters"] = "retailer_best_buy"
+    # r = post_request(env, body)
+
     body["text"] = "Hello's favorite retailer is best buy."
     body["parameters"] = "retailer_best_buy"
     r = post_request(env, body)

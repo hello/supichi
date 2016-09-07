@@ -83,6 +83,9 @@ public class HandlerFactory {
         return new TriviaHandler(speechCommandDAO);
     }
 
+    public RakutenHandler rakutenHandler() { return new RakutenHandler(speechCommandDAO);}
+    public RakutenJPHandler rakutenJPHandler() { return new RakutenJPHandler(speechCommandDAO);}
+
     public RoomConditionsHandler roomConditionsHandler() {
         return new RoomConditionsHandler(speechCommandDAO, deviceDataDAODynamoDB,deviceDAO,senseColorDAO,calibrationDAO);
     }
@@ -93,5 +96,9 @@ public class HandlerFactory {
 
     public HueHandler hueHandler() {
         return new HueHandler(speechCommandDAO);
+    }
+
+    public TimelineHandler timelineHandler() {
+        return new TimelineHandler(speechCommandDAO);
     }
 }

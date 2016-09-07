@@ -2,9 +2,12 @@ package is.hello.speech.core.models;
 
 import is.hello.speech.core.handlers.AlarmHandler;
 import is.hello.speech.core.handlers.HueHandler;
+import is.hello.speech.core.handlers.RakutenHandler;
+import is.hello.speech.core.handlers.RakutenJPHandler;
 import is.hello.speech.core.handlers.RoomConditionsHandler;
 import is.hello.speech.core.handlers.SleepSoundHandler;
 import is.hello.speech.core.handlers.TimeHandler;
+import is.hello.speech.core.handlers.TimelineHandler;
 import is.hello.speech.core.handlers.TriviaHandler;
 import is.hello.speech.core.handlers.WeatherHandler;
 
@@ -24,8 +27,10 @@ public enum SpeechCommand {
     PARTICULATES("particulates", RoomConditionsHandler.class),
     TIME_REPORT("time_report",TimeHandler.class),
     TRIVIA("trivia", TriviaHandler.class),
-    WEATHER("weather", WeatherHandler.class);
-
+    WEATHER("weather", WeatherHandler.class),
+    TIMELINE("timeline",TimelineHandler.class),
+    RAKUTEN_JP("rakuten_jp", RakutenJPHandler.class),
+    RAKUTEN("rakuten", RakutenHandler.class);
 
     private String value;
     private Class commandClass;

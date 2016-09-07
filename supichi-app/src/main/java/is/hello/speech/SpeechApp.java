@@ -1,6 +1,7 @@
 package is.hello.speech;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -35,10 +36,11 @@ import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.KmsVault;
-import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
-import com.hello.suripu.core.speech.SpeechTimelineIngestDAO;
+import com.hello.suripu.core.speech.SpeechResultIngestDAODynamoDB;
 import com.hello.suripu.core.speech.SpeechTimelineIngestDAODynamoDB;
-import com.hello.suripu.core.speech.Vault;
+import com.hello.suripu.core.speech.interfaces.SpeechResultIngestDAO;
+import com.hello.suripu.core.speech.interfaces.SpeechTimelineIngestDAO;
+import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
@@ -79,6 +81,8 @@ import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.core.handlers.executors.UnigramHandlerExecutor;
 import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.response.SupichiResponseBuilder;
+import is.hello.speech.core.response.SupichiResponseType;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
 import is.hello.speech.kinesis.KinesisData;
 import is.hello.speech.kinesis.SpeechKinesisConsumer;
@@ -88,7 +92,7 @@ import is.hello.speech.resources.demo.ParseResource;
 import is.hello.speech.resources.demo.QueueMessageResource;
 import is.hello.speech.resources.v1.SignedBodyHandler;
 import is.hello.speech.resources.v1.UploadResource;
-import is.hello.speech.utils.ResponseBuilder;
+import is.hello.speech.utils.S3ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
@@ -150,7 +154,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = new TimeZoneHistoryDAODynamoDB(timezoneClient, tableNames.get(DynamoDBTableName.TIMEZONE_HISTORY));
 
         final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
-        final SpeechResultDAODynamoDB speechResultDAODynamoDB = SpeechResultDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
+        final SpeechResultIngestDAO speechResultIngestDAO = SpeechResultIngestDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
 
         final AmazonDynamoDB keystoreClient= dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_KEY_STORE);
         final KeyStoreDynamoDB keystore = new KeyStoreDynamoDB(keystoreClient, tableNames.get(DynamoDBTableName.SENSE_KEY_STORE), "hello".getBytes(),10);
@@ -187,7 +191,11 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.ROOM_CONDITIONS, handlerFactory.roomConditionsHandler())
                 .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
                 .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
-                .register(HandlerType.HUE, handlerFactory.hueHandler());
+                .register(HandlerType.HUE, handlerFactory.hueHandler())
+                .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
+                .register(HandlerType.RAKUTEN, handlerFactory.rakutenHandler())
+                .register(HandlerType.RAKUTEN_JP, handlerFactory.rakutenJPHandler());
+
 
         // setup SQS for QueueMessage API
         final SQSConfiguration sqsConfig = speechAppConfiguration.getSqsConfiguration();
@@ -304,7 +312,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 senseUploadBucket,
                 s3SSEKey,
                 speechTimelineIngestDAO,
-                speechResultDAODynamoDB);
+                speechResultIngestDAO);
 
         environment.lifecycle().manage(speechKinesisConsumer);
 
@@ -320,12 +328,22 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.watsonAudioConfiguration().getAudioPrefix());
 
-        final ResponseBuilder responseBuilder = new ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
+        final S3ResponseBuilder s3ResponseBuilder = new S3ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
+        final WatsonResponseBuilder watsonJpResponseBuilder = new WatsonResponseBuilder(watson, "ja-JP_EmiVoice");
         final SignedBodyHandler signedBodyHandler = new SignedBodyHandler(keystore);
-        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
-        environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilder, watsonResponseBuilder));
 
+        final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
+        responseBuilders.put(SupichiResponseType.S3, s3ResponseBuilder);
+        responseBuilders.put(SupichiResponseType.WATSON, watsonResponseBuilder);
+        responseBuilders.put(SupichiResponseType.WATSON_JP, watsonJpResponseBuilder);
+
+        final Map<HandlerType, SupichiResponseType> handlersToBuilders = handlerExecutor.responseBuilders();
+
+        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, speechKinesisProducer, s3ResponseBuilder, watsonResponseBuilder));
+        environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
+
+        environment.jersey().register(new is.hello.speech.resources.v2.UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
         environment.jersey().register(new ParseResource());
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.watsonAudioConfiguration().getBucketName()));
     }

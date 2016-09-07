@@ -19,6 +19,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.response.SupichiResponseType;
 
 
 /**
@@ -80,19 +81,23 @@ public class SleepSoundHandler extends BaseHandler {
 
     @Override
     public HandlerResult executeCommand(final String text, final String senseId, final Long accountId) {
-        final Optional<SpeechCommand> command = getCommand(text);
+        final Optional<SpeechCommand> optionalCommand = getCommand(text);
         final Map<String, String> response = Maps.newHashMap();
         boolean result = false;
-        if (command.isPresent()) {
-            if (command.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
+        String command = HandlerResult.EMPTY_COMMAND;
+
+        if (optionalCommand.isPresent()) {
+            command = optionalCommand.get().getValue();
+            if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
                 result = playSleepSound(senseId, accountId);
-            } else if (command.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
+            } else if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
                 result = stopSleepSound(senseId, accountId);
             }
         }
 
         response.put("result", String.valueOf(result));
-        return new HandlerResult(HandlerType.SLEEP_SOUNDS, response);
+        response.put("text", "Goodnight");
+        return new HandlerResult(HandlerType.SLEEP_SOUNDS, command, response);
 
     }
 
@@ -161,5 +166,10 @@ public class SleepSoundHandler extends BaseHandler {
         final double decibelOffsetFromMaximum = 33.22 * Math.log10(volumePercent / 100.0);
         final double decibels = maxDecibels + decibelOffsetFromMaximum;
         return (int) Math.round((decibels / maxDecibels) * 100);
+    }
+
+    @Override
+    public SupichiResponseType responseType() {
+        return SupichiResponseType.WATSON;
     }
 }

@@ -12,12 +12,15 @@ import com.amazonaws.services.kinesis.model.Record;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hello.suripu.core.speech.SpeechResultDAODynamoDB;
-import com.hello.suripu.core.speech.SpeechTimeline;
-import com.hello.suripu.core.speech.SpeechTimelineIngestDAO;
+import com.hello.suripu.core.speech.interfaces.SpeechResultIngestDAO;
+import com.hello.suripu.core.speech.interfaces.SpeechTimelineIngestDAO;
+import com.hello.suripu.core.speech.models.Result;
+import com.hello.suripu.core.speech.models.SpeechResult;
+import com.hello.suripu.core.speech.models.SpeechTimeline;
+import com.hello.suripu.core.speech.models.SpeechToTextService;
+import com.hello.suripu.core.speech.models.WakeWord;
 import is.hello.speech.core.api.SpeechResultsKinesis;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -38,18 +41,18 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
     private final String s3Bucket;
     private final SSEAwsKeyManagementParams s3SSEKey;
     private final SpeechTimelineIngestDAO speechTimelineIngestDAO;
-    private final SpeechResultDAODynamoDB speechResultDAODynamoDB;
+    private final SpeechResultIngestDAO speechResultIngestDAO;
 
     public SpeechKinesisRecordProcessor(final String s3Bucket,
                                         final AmazonS3 s3,
                                         final SSEAwsKeyManagementParams s3SSEKey,
                                         final SpeechTimelineIngestDAO speechTimelineIngestDAO,
-                                        final SpeechResultDAODynamoDB speechResultDAODynamoDB) {
+                                        final SpeechResultIngestDAO speechResultIngestDAO) {
         this.s3Bucket = s3Bucket;
         this.s3 = s3;
         this.s3SSEKey = s3SSEKey;
         this.speechTimelineIngestDAO = speechTimelineIngestDAO;
-        this.speechResultDAODynamoDB = speechResultDAODynamoDB;
+        this.speechResultIngestDAO = speechResultIngestDAO;
     }
 
     @Override
@@ -61,16 +64,27 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
         int numAudio = 0;
         for (final Record record : records) {
             final SpeechResultsKinesis.SpeechResultsData speechResultsData;
+            final String sequenceNumber = record.getSequenceNumber();
             try {
                 speechResultsData = SpeechResultsKinesis.SpeechResultsData.parseFrom(record.getData().array());
-                if (speechResultsData.hasAudio() && speechResultsData.getAudio().getDataSize() > 0) {
 
-                    saveTimeline(speechResultsData, record.getSequenceNumber());
-
-                    final boolean saved = saveAudio(speechResultsData, record.getSequenceNumber());
-                    if (saved) {
-                        numAudio++;
-                    }
+                switch (speechResultsData.getAction()) {
+                    case PUT_ITEM:
+                        // put new speech results
+                        saveTranscriptionResult(speechResultsData, sequenceNumber);
+                        break;
+                    case UPDATE_ITEM:
+                        // update speech results with commands, handlers etc.
+                        updateSpeechResult(speechResultsData, sequenceNumber);
+                        break;
+                    case TIMELINE:
+                        if (speechResultsData.hasAudio() && speechResultsData.getAudio().getDataSize() > 0) {
+                            // save audio and speech timeline
+                            saveTimeline(speechResultsData, sequenceNumber);
+                            final boolean saved = saveAudio(speechResultsData, sequenceNumber);
+                            LOGGER.debug("action=save-audio success={} sense_id={}", saved, speechResultsData.getSenseId());
+                            numAudio += (saved) ? 1 : 0;
+                        }
                 }
             } catch (InvalidProtocolBufferException e) {
                 LOGGER.error("error= fail-to-decode-speech-protobuf error_msg={} sequence_number={} partition_key={}",
@@ -106,6 +120,56 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
         }
     }
 
+    private void updateSpeechResult(final SpeechResultsKinesis.SpeechResultsData speechResultsData, final String sequenceNumber) {
+        final SpeechResult data = kinesisDataToSpeechResult(speechResultsData);
+        final Boolean updated = speechResultIngestDAO.updateItem(data);
+        LOGGER.debug("action=speech-result-update success={} uuid={} sequence_number={}", updated, speechResultsData.getAudioUuid(), sequenceNumber);
+    }
+
+
+    private void saveTranscriptionResult(final SpeechResultsKinesis.SpeechResultsData speechResultsData, final String sequenceNumber) {
+        final SpeechResult data = kinesisDataToSpeechResult(speechResultsData);
+        final Boolean saved = speechResultIngestDAO.putItem(data);
+        LOGGER.debug("action=speech-result-put success={} uuid={} sequence_number={}", saved, speechResultsData.getAudioUuid(), sequenceNumber);
+    }
+
+    private SpeechResult kinesisDataToSpeechResult(final SpeechResultsKinesis.SpeechResultsData speechResultsData) {
+        final SpeechResult.Builder builder = new SpeechResult.Builder()
+                .withAudioIndentifier(speechResultsData.getAudioUuid())
+                .withService(SpeechToTextService.fromString(speechResultsData.getService()))
+                .withWakeWord(WakeWord.fromInteger(speechResultsData.getWakeId()))
+                .withDateTimeUTC(new DateTime(speechResultsData.getCreated(), DateTimeZone.UTC))
+                .withUpdatedUTC(new DateTime(speechResultsData.getUpdated(), DateTimeZone.UTC));
+
+        if (speechResultsData.hasResult()) {
+            builder.withResult(Result.fromString(speechResultsData.getResult()));
+        }
+
+        if (speechResultsData.hasConfidence()) {
+            builder.withConfidence(speechResultsData.getConfidence());
+        }
+        if (speechResultsData.hasText()) {
+            builder.withText(speechResultsData.getText());
+        }
+
+        if (speechResultsData.hasHandlerType()) {
+            builder.withHandlerType(speechResultsData.getHandlerType());
+        }
+
+        if(speechResultsData.hasS3Keyname()) {
+            builder.withS3Keyname(speechResultsData.getS3Keyname());
+        }
+
+        if(speechResultsData.hasCommand()) {
+            builder.withCommand(speechResultsData.getCommand());
+        }
+
+        if(speechResultsData.hasResponseText()) {
+            builder.withResponseText(speechResultsData.getResponseText());
+        }
+
+        return builder.build();
+    }
 
     private void saveTimeline(final SpeechResultsKinesis.SpeechResultsData speechResultsData, final String sequenceNumber) {
 
@@ -119,13 +183,9 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
                 speechResultsData.getAudioUuid());
 
         try {
-            final boolean savedTimeline = speechTimelineIngestDAO.putItem(speechTimeline);
-            LOGGER.debug("action=save-speech-timeline sense_id={} account_id={} result={}",
-                    accountId, senseId, savedTimeline);
-            if (!savedTimeline) {
-                LOGGER.error("error=fail-to-save-speech-timeline account_id={} sense_id={} sequence_number={}",
-                        accountId, senseId, sequenceNumber);
-            }
+            final boolean saved = speechTimelineIngestDAO.putItem(speechTimeline);
+            LOGGER.debug("action=save-speech-timeline success={} sense_id={} account_id={} sequence_number={}",
+                    saved, accountId, senseId, sequenceNumber);
         } catch (AmazonServiceException ase) {
             LOGGER.error("error=aws-service-exception status={} error_msg={} action=exiting sequence_number={}",
                     ase.getStatusCode(), ase.getMessage(), sequenceNumber);
@@ -152,12 +212,10 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
         metadata.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         metadata.setContentLength(audioBytes.length);
 
-        final String keyname = String.format("%s.raw", speechResultsData.getAudioUuid());
+        final String keyName = String.format("%s.raw", speechResultsData.getAudioUuid());
 
         try {
-            final PutObjectResult putResult = s3.putObject(
-                    new PutObjectRequest(s3Bucket, keyname, new ByteArrayInputStream(audioBytes), metadata)
-                            .withSSEAwsKeyManagementParams(s3SSEKey));
+            s3.putObject(new PutObjectRequest(s3Bucket, keyName, new ByteArrayInputStream(audioBytes), metadata).withSSEAwsKeyManagementParams(s3SSEKey));
         } catch (AmazonServiceException ase) {
             LOGGER.error("error=aws-s3-service-exception status={} error_msg={} sequence_number={}",
                     ase.getStatusCode(), ase.getMessage(), sequenceNumber);
