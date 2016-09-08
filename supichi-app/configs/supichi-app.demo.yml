@@ -59,10 +59,6 @@ server:
         archive: true
         archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
         archivedFileCount: 7
-      - type: papertrail
-        host: logs2.papertrailapp.com
-        port: 11366
-        ident: supichi-dev
 
 logging:
   level: INFO
@@ -77,7 +73,10 @@ logging:
       currentLogFilename: /var/log/speech-app/speech-app.log
       archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
       archivedFileCount: 7
-
+    - type: papertrail
+      host: logs2.papertrailapp.com
+      port: 11366
+      ident: supichi-dev
 
 google_api_host: speech.googleapis.com
 google_api_port: 443

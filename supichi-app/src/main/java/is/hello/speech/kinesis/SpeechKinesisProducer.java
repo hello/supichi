@@ -68,7 +68,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
 
                 while (kinesisProducer.getOutstandingRecordsCount() > KINESIS_MAX_RECORDS_IN_QUEUE) {
                     LOGGER.warn("warning=too-many-outstanding-records-in-kp records_size={} action=sleep-1", kinesisProducer.getOutstandingRecordsCount());
-                    Thread.sleep(1);
+                    Thread.sleep(1000L);
                 }
                 recordsPut.getAndIncrement();
                 final ListenableFuture<UserRecordResult> putFutures = kinesisProducer.addUserRecord(streamName, partitionKey, payload);
@@ -97,6 +97,11 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
                         }
                     }
                 });
+            } else {
+                // nothing in queue, sleep a little
+                if (isRunning) {
+                    Thread.sleep(500L);
+                }
             }
         } while (isRunning);
     }
@@ -119,6 +124,7 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
 
     @Override
     public void stop() {
+        isRunning = false;
         try {
             LOGGER.debug("action=stop-kinesis-producer-sleep time=1-second why=wait-for-other-sleep-to-complete");
             Thread.sleep(2000L);
@@ -126,7 +132,8 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
             LOGGER.warn("warning=stop-sleep-interrupted!");
         }
 
-        kinesisProducer.flushSync();
+        // kinesisProducer.flushSync();
+        LOGGER.debug("action=before-destroy");
         kinesisProducer.destroy();
         super.stop();
     }

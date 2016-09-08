@@ -252,7 +252,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .setCredentialsProvider(awsCredentialsProvider)
                 .setMaxConnections(kinesisProducerConfiguration.maxConnections())
                 .setRequestTimeout(kinesisProducerConfiguration.requstTimeout())
-                .setRecordMaxBufferedTime(kinesisProducerConfiguration.recordMaxBufferedTime());
+                .setRecordMaxBufferedTime(kinesisProducerConfiguration.recordMaxBufferedTime())
+                .setCredentialsRefreshDelay(1000L);
 
         final ExecutorService kinesisExecutor = environment.lifecycle().executorService("kinesis_producer")
                 .minThreads(1)
