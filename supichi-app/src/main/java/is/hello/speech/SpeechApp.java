@@ -25,6 +25,7 @@ import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.CalibrationDynamoDB;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
+import com.hello.suripu.core.db.ExternalApplicationsDAO;
 import com.hello.suripu.core.db.FileInfoDAO;
 import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
@@ -34,6 +35,7 @@ import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
+import com.hello.suripu.core.oauth.stores.PersistentExternalApplicationStore;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.KmsVault;
 import com.hello.suripu.core.speech.SpeechResultIngestDAODynamoDB;
@@ -45,6 +47,8 @@ import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.db.ExternalTokenDAO;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalTokenStore;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 
 import org.skife.jdbi.v2.DBI;
@@ -79,7 +83,7 @@ import is.hello.speech.core.configuration.WatsonConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.handlers.executors.HandlerExecutor;
-import is.hello.speech.core.handlers.executors.UnigramHandlerExecutor;
+import is.hello.speech.core.handlers.executors.RegexHandlerExecutor;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
@@ -154,7 +158,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = new TimeZoneHistoryDAODynamoDB(timezoneClient, tableNames.get(DynamoDBTableName.TIMEZONE_HISTORY));
 
         final AmazonDynamoDB speechResultsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_RESULTS);
-        final SpeechResultIngestDAO speechResultIngestDAO = SpeechResultIngestDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
+       final SpeechResultIngestDAO speechResultIngestDAO = SpeechResultIngestDAODynamoDB.create(speechResultsClient, tableNames.get(DynamoDBTableName.SPEECH_RESULTS));
 
         final AmazonDynamoDB keystoreClient= dynamoDBClientFactory.getForTable(DynamoDBTableName.SENSE_KEY_STORE);
         final KeyStoreDynamoDB keystore = new KeyStoreDynamoDB(keystoreClient, tableNames.get(DynamoDBTableName.SENSE_KEY_STORE), "hello".getBytes(),10);
@@ -167,9 +171,20 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
 
         // TODO: add additional handler resources here
+      // set up KMS for timeline encryption
+        final KMSConfiguration kmsConfig = speechAppConfiguration.kmsConfiguration();
+        final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
+        awskmsClient.setEndpoint(kmsConfig.endpoint());
+
+        final Vault tokenKMSVault = new KmsVault(awskmsClient, kmsConfig.kmsKeys().token());
 
         final FileInfoDAO fileInfoDAO = null; // TODO: remove for google compute engine
 
+        final ExternalApplicationsDAO externalApplicationsDAO = commonDB.onDemand(ExternalApplicationsDAO.class);
+        final PersistentExternalApplicationStore externalApplicationStore = new PersistentExternalApplicationStore(externalApplicationsDAO);
+
+        final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
+        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, externalApplicationStore);
 
         final HandlerFactory handlerFactory = HandlerFactory.create(
                 speechCommandDAO,
@@ -181,10 +196,12 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 calibrationDAO,
                 timeZoneHistoryDAODynamoDB,
                 speechAppConfiguration.forecastio(),
-                accountLocationDAO
+                accountLocationDAO,
+                externalTokenStore,
+                tokenKMSVault
         );
 
-        final HandlerExecutor handlerExecutor = new UnigramHandlerExecutor()
+        final HandlerExecutor handlerExecutor = new RegexHandlerExecutor()
                 .register(HandlerType.ALARM, handlerFactory.alarmHandler())
                 .register(HandlerType.WEATHER, handlerFactory.weatherHandler())
                 .register(HandlerType.SLEEP_SOUNDS, handlerFactory.sleepSoundHandler())
@@ -194,7 +211,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.HUE, handlerFactory.hueHandler())
                 .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
                 .register(HandlerType.RAKUTEN, handlerFactory.rakutenHandler())
-                .register(HandlerType.RAKUTEN_JP, handlerFactory.rakutenJPHandler());
+                .register(HandlerType.RAKUTEN_JP, handlerFactory.rakutenJPHandler())
+                .register(HandlerType.NEST, handlerFactory.nestHandler());
 
 
         // setup SQS for QueueMessage API
@@ -295,10 +313,6 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 speechAppConfiguration.senseUploadAudioConfiguration().getBucketName(),
                 speechAppConfiguration.senseUploadAudioConfiguration().getAudioPrefix());
 
-        // set up KMS for timeline encryption
-        final KMSConfiguration kmsConfig = speechAppConfiguration.kmsConfiguration();
-        final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
-        awskmsClient.setEndpoint(kmsConfig.endpoint());
         final Vault kmsVault = new KmsVault(awskmsClient, kmsConfig.kmsKeys().uuid());
 
         final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);

@@ -7,43 +7,41 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import is.hello.speech.core.handlers.BaseHandler;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.response.SupichiResponseType;
 
-public class UnigramHandlerExecutor implements HandlerExecutor {
+public class RegexHandlerExecutor implements HandlerExecutor {
 
     private Map<HandlerType, BaseHandler> availableHandlers = Maps.newConcurrentMap();
     private Map<String, HandlerType> commandToHandlerMap = Maps.newConcurrentMap();
     private Map<HandlerType, SupichiResponseType> responseBuilders = Maps.newConcurrentMap();
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(UnigramHandlerExecutor.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(RegexHandlerExecutor.class);
 
-    public UnigramHandlerExecutor() {
+    public RegexHandlerExecutor() {
     }
 
 
     @Override
     public HandlerResult handle(final String senseId, final Long accountId, final String transcript) {
-        final String[] unigrams = transcript.toLowerCase().split(" ");
 
-        for (int i = 0; i < (unigrams.length - 1); i++) {
-            final String commandText = String.format("%s %s", unigrams[i], unigrams[i+1]);
-            LOGGER.debug("action=get-transcribed-command text={}", commandText);
 
-            // TODO: command-parser
-            final Optional<BaseHandler> optionalHandler = getHandler(commandText);
 
-            if (optionalHandler.isPresent()) {
-                final BaseHandler handler = optionalHandler.get();
-                LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
+        // TODO: command-parser
+        final Optional<BaseHandler> optionalHandler = getHandler(transcript);
 
-                final HandlerResult executeResult = handler.executeCommand(commandText, senseId, accountId);
-                LOGGER.debug("action=execute-command result={}", executeResult.responseParameters.toString());
-                return executeResult;
-            }
+        if (optionalHandler.isPresent()) {
+            final BaseHandler handler = optionalHandler.get();
+            LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
+
+            final HandlerResult executeResult = handler.executeCommand(transcript, senseId, accountId);
+            LOGGER.debug("action=execute-command result={}", executeResult.responseParameters.toString());
+            return executeResult;
         }
 
         LOGGER.debug("action=fail-to-find-command account_id={} sense_id={} transcript={}", accountId, senseId, transcript);
@@ -67,10 +65,14 @@ public class UnigramHandlerExecutor implements HandlerExecutor {
 
     @Override
     public Optional<BaseHandler> getHandler(String command) {
-        if (commandToHandlerMap.containsKey(command)) {
-            final HandlerType handlerType = commandToHandlerMap.get(command);
-            if (availableHandlers.containsKey(handlerType)) {
-                return Optional.of(availableHandlers.get(handlerType));
+        for(final String pattern : commandToHandlerMap.keySet()) {
+            final Pattern r = Pattern.compile(pattern);
+            Matcher m = r.matcher(command);
+            if(m.find()) {
+                final HandlerType handlerType = commandToHandlerMap.get(pattern);
+                if (availableHandlers.containsKey(handlerType)) {
+                    return Optional.of(availableHandlers.get(handlerType));
+                }
             }
         }
         return Optional.absent();

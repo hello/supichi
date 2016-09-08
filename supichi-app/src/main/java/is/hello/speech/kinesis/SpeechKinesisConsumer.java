@@ -6,11 +6,13 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.hello.suripu.core.speech.interfaces.SpeechResultIngestDAO;
 import com.hello.suripu.core.speech.interfaces.SpeechTimelineIngestDAO;
-import io.dropwizard.lifecycle.Managed;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
+
+import io.dropwizard.lifecycle.Managed;
 
 /**
  * Created by ksg on 8/11/16

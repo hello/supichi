@@ -3,6 +3,10 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
+import com.hello.suripu.core.speech.interfaces.Vault;
+import com.hello.suripu.coredropwizard.oauth.ExternalToken;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalTokenStore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,19 +27,23 @@ public class HueHandler extends BaseHandler {
 
 
     private final SpeechCommandDAO speechCommandDAO;
+    private final PersistentExternalTokenStore externalTokenStore;
+    private final Vault tokenKMSVault;
 
-    public HueHandler(final SpeechCommandDAO speechCommandDAO) {
-        super("time_report", speechCommandDAO, getAvailableActions());
+    private static final String TOGGLE_ACTIVE_PATTERN = "^.*turn.*(?:light|lamp)?\\s(on|off).*(?:light|lamp)?";
+
+    public HueHandler(final SpeechCommandDAO speechCommandDAO,
+                      final PersistentExternalTokenStore externalTokenStore,
+                      final Vault tokenKMSVault) {
+        super("hue_light", speechCommandDAO, getAvailableActions());
         this.speechCommandDAO = speechCommandDAO;
+        this.externalTokenStore = externalTokenStore;
+        this.tokenKMSVault = tokenKMSVault;
     }
 
     private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
-        tempMap.put("turn on", SpeechCommand.LIGHT_SET);
-        tempMap.put("turn off", SpeechCommand.LIGHT_SET);
-        tempMap.put("light on", SpeechCommand.LIGHT_SET);
-        tempMap.put("light off", SpeechCommand.LIGHT_SET);
         tempMap.put("brighten the", SpeechCommand.LIGHT_SET);
         tempMap.put("increase the", SpeechCommand.LIGHT_SET);
         tempMap.put("light brighter", SpeechCommand.LIGHT_SET);
@@ -46,6 +54,7 @@ public class HueHandler extends BaseHandler {
         tempMap.put("light redder", SpeechCommand.LIGHT_SET);
         tempMap.put("light bluer", SpeechCommand.LIGHT_SET);
         tempMap.put("light cooler", SpeechCommand.LIGHT_SET);
+        tempMap.put(TOGGLE_ACTIVE_PATTERN, SpeechCommand.LIGHT_TOGGLE);
         return tempMap;
     }
 
@@ -55,9 +64,33 @@ public class HueHandler extends BaseHandler {
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
 
-        if (optionalCommand.isPresent()) {
+        String command = HandlerResult.EMPTY_COMMAND;
 
-            final HueLight light = new HueLight();
+        if (optionalCommand.isPresent()) {
+            command = optionalCommand.get().getValue();
+
+            final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId);
+            if(!externalTokenOptional.isPresent()) {
+                LOGGER.error("error=token-not-found device_id={}", senseId);
+                response.put("result", HandlerResult.Outcome.FAIL.getValue());
+                return new HandlerResult(HandlerType.NEST, command, response);
+            }
+
+            final ExternalToken externalToken = externalTokenOptional.get();
+
+            final Map<String, String> encryptionContext = Maps.newHashMap();
+            encryptionContext.put("application_id", externalToken.appId.toString());
+            final Optional<String> decryptedTokenOptional = tokenKMSVault.decrypt(externalToken.accessToken, encryptionContext);
+
+            if(!decryptedTokenOptional.isPresent()) {
+                LOGGER.error("error=token-decryption-failure device_id={}", senseId);
+                response.put("result", HandlerResult.Outcome.FAIL.getValue());
+                return new HandlerResult(HandlerType.NEST, command, response);
+            }
+
+            final String decryptedToken = decryptedTokenOptional.get();
+
+            final HueLight light = new HueLight("https://api.meethue.com/v2/", decryptedToken);
 
             if (text.contains("light on") | text.contains("turn on")) {
                 light.setLightState(true);
@@ -84,7 +117,7 @@ public class HueHandler extends BaseHandler {
 
         }
 
-        return new HandlerResult(HandlerType.HUE, response);
+        return new HandlerResult(HandlerType.HUE, command, response);
     }
 
 }

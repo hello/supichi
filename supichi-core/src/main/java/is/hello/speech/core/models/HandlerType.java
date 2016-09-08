@@ -8,6 +8,7 @@ public enum HandlerType {
     SLEEP_SOUNDS("sleep_sounds"),
     ALARM("alarm"),
     HUE("hue"),
+    NEST("nest"),
     ROOM_CONDITIONS("room_conditions"),
     TIME_REPORT("time_report"),
     TIMELINE("timeline"),

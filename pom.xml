@@ -16,7 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <suripu.version>0.8.5566</suripu.version>
+        <suripu.version>0.8.0-SNAPSHOT</suripu.version>
     </properties>
 
     <modules>
@@ -32,7 +32,6 @@
             <url>file:${project.basedir}/../repo</url>
         </repository>
     </repositories>
-
     <!--<distributionManagement>-->
         <!--<site>-->
             <!--<id>s3.site</id>-->
