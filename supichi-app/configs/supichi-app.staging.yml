@@ -42,7 +42,7 @@ s3_bucket:
 
 server:
   adminMinThreads: 1
-  adminMaxThreads: 5
+  adminMaxThreads: 10
   adminContextPath: /
   applicationContextPath: /
   applicationConnectors:

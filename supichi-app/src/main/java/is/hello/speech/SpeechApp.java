@@ -323,6 +323,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
         environment.lifecycle().manage(speechClientManaged);
 
+
         final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.watsonAudioConfiguration().getAudioPrefix());
 
         final S3ResponseBuilder s3ResponseBuilder = new S3ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());

@@ -5,7 +5,7 @@ s3_bucket:
 
 server:
   adminMinThreads: 1
-  adminMaxThreads: 5
+  adminMaxThreads: 10
   adminContextPath: /
   applicationContextPath: /
   applicationConnectors:
@@ -128,8 +128,8 @@ kinesis_producer:
   endpoint: https://kinesis.us-east-1.amazonaws.com
   region: us-east-1
   max_connections: 1
-  request_timeout: 10000 # 1 sec
-  record_max_buffered_time: 15000
+  request_timeout: 5000 # 1 sec
+  record_max_buffered_time: 2000
   queue_size: 65536
   streams:
    audio: dev_speech_audio

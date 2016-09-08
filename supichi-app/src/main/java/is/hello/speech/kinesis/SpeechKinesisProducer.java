@@ -132,7 +132,9 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
             LOGGER.warn("warning=stop-sleep-interrupted!");
         }
 
-        // kinesisProducer.flushSync();
+        LOGGER.debug("action=before-flush-sync");
+        kinesisProducer.flushSync();
+
         LOGGER.debug("action=before-destroy");
         kinesisProducer.destroy();
         super.stop();
