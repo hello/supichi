@@ -82,7 +82,10 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
                             // save audio and speech timeline
                             saveTimeline(speechResultsData, sequenceNumber);
                             final boolean saved = saveAudio(speechResultsData, sequenceNumber);
-                            LOGGER.debug("action=save-audio success={} sense_id={}", saved, speechResultsData.getSenseId());
+                            //TODO: remove after debug
+                            LOGGER.debug("action=save-audio success={} sense_id={}, uuid={}, created={}",
+                                    saved, speechResultsData.getSenseId(), speechResultsData.getAudioUuid(),
+                                    speechResultsData.getCreated());
                             numAudio += (saved) ? 1 : 0;
                         }
                 }

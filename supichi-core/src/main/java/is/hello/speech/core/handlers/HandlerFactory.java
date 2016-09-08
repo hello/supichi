@@ -101,7 +101,7 @@ public class HandlerFactory {
     }
 
     public SleepSoundHandler sleepSoundHandler() {
-        return new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor,5);
+        return new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor, 5);
     }
 
     public HueHandler hueHandler() {

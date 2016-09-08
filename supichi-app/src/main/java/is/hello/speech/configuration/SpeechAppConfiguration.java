@@ -8,8 +8,8 @@ import io.dropwizard.db.DataSourceFactory;
 import is.hello.speech.core.configuration.KMSConfiguration;
 import is.hello.speech.core.configuration.KinesisConsumerConfiguration;
 import is.hello.speech.core.configuration.KinesisProducerConfiguration;
-import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.S3AudioConfiguration;
+import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
 
 import javax.validation.Valid;

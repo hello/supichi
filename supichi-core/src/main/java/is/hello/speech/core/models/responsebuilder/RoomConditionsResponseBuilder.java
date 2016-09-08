@@ -24,7 +24,7 @@ public class RoomConditionsResponseBuilder implements ResponseBuilderInterface{
     private static final String ERROR_NO_DATA = "no data";
     private static final String ERROR_DATA_TOO_OLD = "data too old";
 
-    private static final String CUSTOM_ERROR_FORMATTER = "Sorry, I wasn't able to access your %s data right now. Please try again later";
+    public static final String CUSTOM_ERROR_FORMATTER = "Sorry, I wasn't able to access your %s data right now. Please try again later";
     private static final String CUSTOM_ERROR_FILENAME_TEMPLATE = "-no_data-WATSON-%s-16k.wav";
 
     private static final String RESPONSE_TEXT_FORMATTER = "The %s in your room is %s %s.";
