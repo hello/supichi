@@ -18,7 +18,7 @@
         <supichi.version>0.3.0-SNAPSHOT</supichi.version>
         <java.version>1.8</java.version>
         <!--<suripu.version>0.8.5536</suripu.version>-->
-        <suripu.version>0.8.5583</suripu.version>
+        <suripu.version>0.8.5586</suripu.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <tcnative.classifier>osx-x86_64</tcnative.classifier>
         <!--<tcnative.classifier>linux-x86_64</tcnative.classifier>-->
@@ -208,7 +208,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>amazon-kinesis-client</artifactId>
-            <version>1.7.0</version>
+            <version>1.6.0</version>
         </dependency>
         <!--END AWS DEPENDENCIES-->
         <dependency>

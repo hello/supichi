@@ -16,7 +16,6 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.models.responsebuilder.RoomConditionsResponseBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -91,7 +90,6 @@ public class RoomConditionsHandler extends BaseHandler {
         if (!optionalDeviceAccountPair.isPresent()) {
             response.put("result", HandlerResult.Outcome.FAIL.getValue());
             response.put("error", "no paired sense");
-            response.put("text", "no paired sense");
             return response;
         }
 
@@ -112,7 +110,6 @@ public class RoomConditionsHandler extends BaseHandler {
         if (!optionalData.isPresent()) {
             response.put("result", HandlerResult.Outcome.FAIL.getValue());
             response.put("error", "no data");
-            response.put("text", String.format(RoomConditionsResponseBuilder.CUSTOM_ERROR_FORMATTER, sensorName));
             return response;
         }
 
@@ -124,7 +121,6 @@ public class RoomConditionsHandler extends BaseHandler {
         if (roomState.temperature.condition.equals(CurrentRoomState.State.Condition.UNKNOWN)) {
             response.put("result", HandlerResult.Outcome.FAIL.getValue());
             response.put("error", "data too old");
-            response.put("text", "The data is too old");
             return response;
         }
 
@@ -168,7 +164,6 @@ public class RoomConditionsHandler extends BaseHandler {
         if (sensorName.isEmpty()) {
             response.put("result", HandlerResult.Outcome.FAIL.getValue());
             response.put("error", "invalid sensor");
-            response.put("text", "invalid sensor");
         } else {
             response.put("result", HandlerResult.Outcome.OK.getValue());
             response.put("sensor", sensorName);
