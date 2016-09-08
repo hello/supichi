@@ -164,11 +164,16 @@ public class UploadResource {
 
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
                 // save OK speech result
+                Result commandResult = Result.OK;
+                if (executeResult.responseParameters.containsKey("result")) {
+                    commandResult = executeResult.responseParameters.get("result").equals(HandlerResult.Outcome.OK.getValue()) ? Result.OK : Result.REJECTED;
+                }
+
                 builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                         .withCommand(executeResult.command)
                         .withHandlerType(executeResult.handlerType.value)
                         .withResponseText(executeResult.getResponseText())
-                        .withResult(Result.OK);
+                        .withResult(commandResult);
                 speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
                 return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);

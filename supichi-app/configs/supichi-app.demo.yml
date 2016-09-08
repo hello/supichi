@@ -42,7 +42,7 @@ s3_bucket:
 
 server:
   adminMinThreads: 1
-  adminMaxThreads: 5
+  adminMaxThreads: 10
   adminContextPath: /
   applicationContextPath: /
   applicationConnectors:
@@ -52,7 +52,6 @@ server:
     - type: http
       port: 8182
   requestLog:
-    timeZone: UTC
     appenders:
       - type: file
         currentLogFilename: /var/log/speech-app/speech-app-access.log
@@ -74,7 +73,10 @@ logging:
       currentLogFilename: /var/log/speech-app/speech-app.log
       archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
       archivedFileCount: 7
-
+    - type: papertrail
+      host: logs2.papertrailapp.com
+      port: 11366
+      ident: supichi-dev
 
 google_api_host: speech.googleapis.com
 google_api_port: 443
@@ -82,7 +84,7 @@ google_api_port: 443
 audio_parameters:
   interim_results_preference: false
   encoding: LINEAR16 # [ENCODING_UNSPECIFIED, LINEAR16, FLAC, MULAW, AMR, AMR_WB, UNRECOGNIZED]
-  buffer_size: 2048 # play around with this
+  buffer_size: 6400 # play around with this
 
 messeji_http_client:
   # endpoint: "http://ec2-52-90-54-153.compute-1.amazonaws.com:8000"  # prod!!
@@ -140,11 +142,10 @@ kinesis_producer:
   endpoint: https://kinesis.us-east-1.amazonaws.com
   region: us-east-1
   max_connections: 1
-  request_timeout: 10000 # 1 sec
-  record_max_buffered_time: 15000
+  request_timeout: 5000 # 5 sec
+  record_max_buffered_time: 2000
   queue_size: 65536
   streams:
-   audio: dev_speech_audio
    speech_result: dev_speech_results
 
 kinesis_consumer:
@@ -154,7 +155,6 @@ kinesis_consumer:
   max_records: 100
   trim_horizon: false
   streams:
-   audio: dev_speech_audio
    speech_result: dev_speech_results
 
 sense_upload_audio:  # bucket to save audio uploaded from Sense

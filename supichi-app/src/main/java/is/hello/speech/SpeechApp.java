@@ -36,14 +36,14 @@ import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.KmsVault;
 import com.hello.suripu.core.speech.SpeechResultIngestDAODynamoDB;
+import com.hello.suripu.core.speech.SpeechTimelineIngestDAODynamoDB;
 import com.hello.suripu.core.speech.interfaces.SpeechResultIngestDAO;
 import com.hello.suripu.core.speech.interfaces.SpeechTimelineIngestDAO;
-import com.hello.suripu.core.speech.SpeechTimelineIngestDAODynamoDB;
 import com.hello.suripu.core.speech.interfaces.Vault;
-import com.hello.suripu.coredw8.clients.AmazonDynamoDBClientFactory;
-import com.hello.suripu.coredw8.clients.MessejiClient;
-import com.hello.suripu.coredw8.clients.MessejiHttpClient;
-import com.hello.suripu.coredw8.configuration.MessejiHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
+import com.hello.suripu.coredropwizard.clients.MessejiClient;
+import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
+import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
@@ -252,7 +252,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .setCredentialsProvider(awsCredentialsProvider)
                 .setMaxConnections(kinesisProducerConfiguration.maxConnections())
                 .setRequestTimeout(kinesisProducerConfiguration.requstTimeout())
-                .setRecordMaxBufferedTime(kinesisProducerConfiguration.recordMaxBufferedTime());
+                .setRecordMaxBufferedTime(kinesisProducerConfiguration.recordMaxBufferedTime())
+                .setCredentialsRefreshDelay(1000L);
 
         final ExecutorService kinesisExecutor = environment.lifecycle().executorService("kinesis_producer")
                 .minThreads(1)
@@ -271,7 +272,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         // set up Kinesis Consumer
         final KinesisConsumerConfiguration kinesisConsumerConfiguration = speechAppConfiguration.kinesisConsumerConfiguration();
         final String workerId = InetAddress.getLocalHost().getCanonicalHostName();
-        final InitialPositionInStream initialPositionInStream = (kinesisConsumerConfiguration.trimHorizon()) ? InitialPositionInStream.TRIM_HORIZON : InitialPositionInStream.LATEST;
+        final InitialPositionInStream initialPositionInStream = kinesisConsumerConfiguration.trimHorizon() ? InitialPositionInStream.TRIM_HORIZON : InitialPositionInStream.LATEST;
 
         final KinesisClientLibConfiguration kinesisClientLibConfiguration = new KinesisClientLibConfiguration(
                 kinesisConsumerConfiguration.appName(),
@@ -321,6 +322,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
         environment.lifecycle().manage(speechClientManaged);
+
 
         final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.watsonAudioConfiguration().getAudioPrefix());
 
