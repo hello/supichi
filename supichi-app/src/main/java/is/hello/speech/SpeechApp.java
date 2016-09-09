@@ -188,9 +188,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.ROOM_CONDITIONS, handlerFactory.roomConditionsHandler())
                 .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
                 .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
-                .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
-                .register(HandlerType.RAKUTEN, handlerFactory.rakutenHandler())
-                .register(HandlerType.RAKUTEN_JP, handlerFactory.rakutenJPHandler());
+                .register(HandlerType.TIMELINE, handlerFactory.timelineHandler());
 
 
         // setup SQS for QueueMessage API
