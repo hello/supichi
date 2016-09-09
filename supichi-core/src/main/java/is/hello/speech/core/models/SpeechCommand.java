@@ -1,8 +1,6 @@
 package is.hello.speech.core.models;
 
 import is.hello.speech.core.handlers.AlarmHandler;
-import is.hello.speech.core.handlers.RakutenHandler;
-import is.hello.speech.core.handlers.RakutenJPHandler;
 import is.hello.speech.core.handlers.RoomConditionsHandler;
 import is.hello.speech.core.handlers.SleepSoundHandler;
 import is.hello.speech.core.handlers.TimeHandler;
