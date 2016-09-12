@@ -130,10 +130,31 @@ if __name__ == '__main__':
     fp = open(filename, 'rb')
     file_data = fp.read();
     fp.close()
-    # file_data = "12345"  # for testing try again
+
+    # add upload protobuf
+    import speech_pb2
+    import struct
+    speech_data = speech_pb2.speech_data()
+    speech_data.word = speech_pb2.OK_SENSE
+    speech_data.confidence = 125
+    print speech_data
+    pb_str = speech_data.SerializeToString()
+    # byte_str = pb_str.encode(encoding='UTF-8')
+    print "protobuf msg:", pb_str
+    # print "protobuf bytes:", byte_str, len(byte_str)
+    print "protobuf size: ", len(pb_str)
+    pb_size = struct.pack('>I', len(pb_str))
+
+    file_data = pb_size + pb_str + file_data;
+
     hashed = hmac.new(aes_key, file_data, hashlib.sha1)
     print "length of hash", len(hashed.digest())
     su = file_data + hashed.digest()
+
+    speech_data2 = speech_pb2.speech_data()
+    speech_data2.ParseFromString(pb_str)
+    print "Parsed", speech_data2
+    #sys.exit(1)
 
     headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "8AF6441AF72321F4"}
     if env == 'local':

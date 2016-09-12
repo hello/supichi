@@ -12,7 +12,7 @@
 
     <properties>
         <java.version>1.8</java.version>
-        <suripu.version>0.8.5586</suripu.version>
+        <suripu.version>0.8.5601</suripu.version>
     </properties>
 
     <build>

@@ -10,6 +10,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
 import com.hello.suripu.core.speech.models.SpeechResult;
+import com.hello.suripu.core.speech.models.WakeWord;
 import is.hello.speech.core.api.SpeechResultsKinesis;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
@@ -214,6 +215,17 @@ public class SpeechKinesisProducer extends AbstractSpeechKinesisProducer {
             builder.setResponseText(data.speechResult.responseText.get());
         }
 
+        // set wake confidence
+        for (final WakeWord word : WakeWord.values()) {
+            if (word.equals(WakeWord.NULL)) {
+                continue;
+            }
+
+            final String wordText = word.getWakeWordText();
+            final float confidence = (data.speechResult.wakeWordsConfidence.containsKey(wordText)) ?
+                    data.speechResult.wakeWordsConfidence.get(wordText) : 0.0f;
+            builder.addWakeConfidence(confidence);
+        }
         return builder.build();
     }
 }
