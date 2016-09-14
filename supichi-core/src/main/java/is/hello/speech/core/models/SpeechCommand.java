@@ -24,9 +24,7 @@ public enum SpeechCommand {
     TIME_REPORT("time_report",TimeHandler.class),
     TRIVIA("trivia", TriviaHandler.class),
     WEATHER("weather", WeatherHandler.class),
-    TIMELINE("timeline",TimelineHandler.class),
-    RAKUTEN_JP("rakuten_jp", RakutenJPHandler.class),
-    RAKUTEN("rakuten", RakutenHandler.class);
+    TIMELINE("timeline",TimelineHandler.class);
 
     private String value;
     private Class commandClass;
