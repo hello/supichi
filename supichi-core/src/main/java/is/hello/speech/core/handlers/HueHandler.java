@@ -3,13 +3,20 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
+import com.hello.suripu.coredropwizard.models.HueApplicationData;
+import com.hello.suripu.coredropwizard.oauth.ExternalApplication;
+import com.hello.suripu.coredropwizard.oauth.ExternalApplicationData;
 import com.hello.suripu.coredropwizard.oauth.ExternalToken;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalAppDataStore;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalApplicationStore;
 import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalTokenStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Map;
 
 import is.hello.gaibu.homeauto.services.HueLight;
@@ -28,17 +35,36 @@ public class HueHandler extends BaseHandler {
 
     private final SpeechCommandDAO speechCommandDAO;
     private final PersistentExternalTokenStore externalTokenStore;
+    private final PersistentExternalApplicationStore externalApplicationStore;
     private final Vault tokenKMSVault;
+    private ExternalApplication externalApp;
+    private final PersistentExternalAppDataStore externalAppDataStore;
+    private ObjectMapper mapper = new ObjectMapper();
 
     private static final String TOGGLE_ACTIVE_PATTERN = "^.*turn.*(?:light|lamp)?\\s(on|off).*(?:light|lamp)?";
+    private static final Integer BRIGHTNESS_INCREMENT = 30;
+    private static final Integer COLOR_TEMPERATURE_INCREMENT = 100;
 
     public HueHandler(final SpeechCommandDAO speechCommandDAO,
                       final PersistentExternalTokenStore externalTokenStore,
+                      final PersistentExternalApplicationStore externalApplicationStore,
+                      final PersistentExternalAppDataStore externalAppDataStore,
                       final Vault tokenKMSVault) {
         super("hue_light", speechCommandDAO, getAvailableActions());
         this.speechCommandDAO = speechCommandDAO;
         this.externalTokenStore = externalTokenStore;
+        this.externalApplicationStore = externalApplicationStore;
+        this.externalAppDataStore = externalAppDataStore;
         this.tokenKMSVault = tokenKMSVault;
+        init();
+    }
+
+    private void init() {
+        final Optional<ExternalApplication> externalApplicationOptional = externalApplicationStore.getApplicationByName("Hue");
+        if(!externalApplicationOptional.isPresent()) {
+            LOGGER.error("error=application-not-found app_name=Hue");
+        }
+        externalApp = externalApplicationOptional.get();
     }
 
     private static Map<String, SpeechCommand> getAvailableActions() {
@@ -69,7 +95,7 @@ public class HueHandler extends BaseHandler {
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
 
-            final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId);
+            final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, externalApp.id);
             if(!externalTokenOptional.isPresent()) {
                 LOGGER.error("error=token-not-found device_id={}", senseId);
                 response.put("result", HandlerResult.Outcome.FAIL.getValue());
@@ -90,7 +116,26 @@ public class HueHandler extends BaseHandler {
 
             final String decryptedToken = decryptedTokenOptional.get();
 
-            final HueLight light = new HueLight("https://api.meethue.com/v2/", decryptedToken);
+            final Optional<ExternalApplicationData> extAppDataOptional = externalAppDataStore.getAppData(externalApp.id, senseId);
+            if(!extAppDataOptional.isPresent()) {
+                LOGGER.error("error=no-ext-app-data account_id={}", accountId);
+                response.put("result", HandlerResult.Outcome.FAIL.getValue());
+                return new HandlerResult(HandlerType.NEST, command, response);
+            }
+
+            final ExternalApplicationData extData = extAppDataOptional.get();
+
+            HueLight light;
+            try {
+                final HueApplicationData hueData = mapper.readValue(extData.data, HueApplicationData.class);
+                light = new HueLight(HueLight.DEFAULT_API_PATH, decryptedToken, hueData.bridgeId, hueData.whitelistId, hueData.groupId);
+
+            } catch (IOException io) {
+                LOGGER.warn("warn=bad-json-data");
+                response.put("result", HandlerResult.Outcome.FAIL.getValue());
+                return new HandlerResult(HandlerType.NEST, command, response);
+            }
+
 
             if (text.contains("light on") | text.contains("turn on")) {
                 light.setLightState(true);
@@ -101,16 +146,16 @@ public class HueHandler extends BaseHandler {
                 response.put("light", "off");
             }
             if (text.contains("increase") | text.contains("bright")) {
-                light.adjustBrightness(30);
+                light.adjustBrightness(BRIGHTNESS_INCREMENT);
             }
             if (text.contains("decrease") | text.contains("dim")) {
-                light.adjustBrightness(-30);
+                light.adjustBrightness(-BRIGHTNESS_INCREMENT);
             }
             if (text.contains("warmer") | text.contains("redder")) {
-                light.adjustTemperature(100);
+                light.adjustTemperature(COLOR_TEMPERATURE_INCREMENT);
             }
             if (text.contains("cooler") | text.contains("bluer")) {
-                light.adjustTemperature(-100);
+                light.adjustTemperature(-COLOR_TEMPERATURE_INCREMENT);
             }
 
             response.put("result", HandlerResult.Outcome.OK.getValue());

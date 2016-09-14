@@ -25,7 +25,6 @@ import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.CalibrationDynamoDB;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
-import com.hello.suripu.core.db.ExternalApplicationsDAO;
 import com.hello.suripu.core.db.FileInfoDAO;
 import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
@@ -35,7 +34,6 @@ import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
 import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
-import com.hello.suripu.core.oauth.stores.PersistentExternalApplicationStore;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.KmsVault;
 import com.hello.suripu.core.speech.SpeechResultIngestDAODynamoDB;
@@ -47,9 +45,12 @@ import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.db.ExternalApplicationDataDAO;
+import com.hello.suripu.coredropwizard.db.ExternalApplicationsDAO;
 import com.hello.suripu.coredropwizard.db.ExternalTokenDAO;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalAppDataStore;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalApplicationStore;
 import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalTokenStore;
-
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 
 import org.skife.jdbi.v2.DBI;
@@ -187,6 +188,9 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
         final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, externalApplicationStore);
 
+        final ExternalApplicationDataDAO externalApplicationDataDAO = commonDB.onDemand(ExternalApplicationDataDAO.class);
+        final PersistentExternalAppDataStore externalAppDataStore = new PersistentExternalAppDataStore(externalApplicationDataDAO);
+
         final HandlerFactory handlerFactory = HandlerFactory.create(
                 speechCommandDAO,
                 messejiClient,
@@ -199,6 +203,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 speechAppConfiguration.forecastio(),
                 accountLocationDAO,
                 externalTokenStore,
+                externalApplicationStore,
+                externalAppDataStore,
                 tokenKMSVault
         );
 

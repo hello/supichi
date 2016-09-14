@@ -3,13 +3,20 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
+import com.hello.suripu.coredropwizard.models.NestApplicationData;
+import com.hello.suripu.coredropwizard.oauth.ExternalApplication;
+import com.hello.suripu.coredropwizard.oauth.ExternalApplicationData;
 import com.hello.suripu.coredropwizard.oauth.ExternalToken;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalAppDataStore;
+import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalApplicationStore;
 import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalTokenStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,19 +36,35 @@ public class NestHandler extends BaseHandler {
 
     private final SpeechCommandDAO speechCommandDAO;
     private final PersistentExternalTokenStore externalTokenStore;
+    private final PersistentExternalApplicationStore externalApplicationStore;
     private final Vault tokenKMSVault;
-
+    private ExternalApplication externalApp;
+    private final PersistentExternalAppDataStore externalAppDataStore;
+    private ObjectMapper mapper = new ObjectMapper();
     private final Map<String, Integer> numberWords;
 
     public NestHandler(final SpeechCommandDAO speechCommandDAO,
                        final PersistentExternalTokenStore externalTokenStore,
+                       final PersistentExternalApplicationStore externalApplicationStore,
+                       final PersistentExternalAppDataStore externalAppDataStore,
                        final Vault tokenKMSVault) {
         super("nest_thermostat", speechCommandDAO, getAvailableActions());
         this.speechCommandDAO = speechCommandDAO;
         this.externalTokenStore = externalTokenStore;
+        this.externalApplicationStore = externalApplicationStore;
+        this.externalAppDataStore = externalAppDataStore;
         this.tokenKMSVault = tokenKMSVault;
-
         numberWords = Maps.newHashMap();
+        init();
+    }
+
+    private void init() {
+        final Optional<ExternalApplication> externalApplicationOptional = externalApplicationStore.getApplicationByName("Nest");
+        if(!externalApplicationOptional.isPresent()) {
+            LOGGER.error("error=application-not-found app_name=Nest");
+        }
+        externalApp = externalApplicationOptional.get();
+
         numberWords.put("one", 1);
         numberWords.put("two", 2);
         numberWords.put("three", 3);
@@ -88,7 +111,7 @@ public class NestHandler extends BaseHandler {
             return new HandlerResult(HandlerType.NEST, command, response);
         }
 
-        final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId);
+        final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, externalApp.id);
         if(!externalTokenOptional.isPresent()) {
             LOGGER.error("error=token-not-found device_id={}", senseId);
             response.put("result", HandlerResult.Outcome.FAIL.getValue());
@@ -109,11 +132,27 @@ public class NestHandler extends BaseHandler {
 
         final String decryptedToken = decryptedTokenOptional.get();
 
+        final Optional<ExternalApplicationData> extAppDataOptional = externalAppDataStore.getAppData(externalApp.id, senseId);
+        if(!extAppDataOptional.isPresent()) {
+            LOGGER.error("error=no-ext-app-data account_id={}", accountId);
+            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            return new HandlerResult(HandlerType.NEST, command, response);
+        }
+
+        final ExternalApplicationData extData = extAppDataOptional.get();
+
+        NestThermostat nest;
+        try {
+            final NestApplicationData nestData = mapper.readValue(extData.data, NestApplicationData.class);
+            nest = new NestThermostat(nestData.thermostatId, NestThermostat.DEFAULT_API_PATH, decryptedToken);
+
+        } catch (IOException io) {
+            LOGGER.warn("warn=bad-json-data");
+            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            return new HandlerResult(HandlerType.NEST, command, response);
+        }
+
         command = optionalCommand.get().getValue();
-        final NestThermostat nest = new NestThermostat(
-            "UfA-loBkvmy7nSXWDS9w4U9TCSG3VgZr",
-            "https://developer-api.nest.com/",
-            decryptedToken);
 
         if (optionalCommand.get().equals(SpeechCommand.THERMOSTAT_SET)) {
             final Pattern r = Pattern.compile(TEMP_SET_PATTERN);
@@ -146,7 +185,6 @@ public class NestHandler extends BaseHandler {
                 response.put("result", HandlerResult.Outcome.FAIL.getValue());
                 return new HandlerResult(HandlerType.NEST, command, response);
             }
-            nest.setOnlineState(isOn);
         }
 
         if (text.contains("light off") | text.contains("turn off")) {
