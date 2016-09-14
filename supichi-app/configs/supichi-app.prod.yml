@@ -33,11 +33,6 @@ common_db:
   minIdleTime: 1 minute
 
 
-s3_bucket:
-  bucket: hello-firmware-public
-  aws_access_key: AKIAIPS2RBLAWR6TNSPA # temp credentials
-  aws_secret_key: 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
-
 server:
   adminMinThreads: 1
   adminMaxThreads: 10
@@ -52,10 +47,10 @@ server:
   requestLog:
     appenders:
       - type: file
-        currentLogFilename: /var/log/speech-app/speech-app-access.log
+        currentLogFilename: /var/log/supichi/supichi-access.log
         threshold: ALL
         archive: true
-        archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
+        archivedLogFilenamePattern: /var/log/supichi/supichi-%d{yyyy-MM-dd}.log.gz
         archivedFileCount: 7
 
 logging:
@@ -68,8 +63,8 @@ logging:
       threshold: DEBUG
     - type: file
       threshold: DEBUG
-      currentLogFilename: /var/log/speech-app/speech-app.log
-      archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
+      currentLogFilename: /var/log/supichi/supichi.log
+      archivedLogFilenamePattern: /var/log/supichi/supichi-%d{yyyy-MM-dd}.log.gz
       archivedFileCount: 7
     - type: papertrail
       host: logs2.papertrailapp.com

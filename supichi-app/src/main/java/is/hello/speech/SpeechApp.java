@@ -76,7 +76,6 @@ import is.hello.speech.kinesis.KinesisData;
 import is.hello.speech.kinesis.SpeechKinesisConsumer;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
 import is.hello.speech.resources.demo.PCMResource;
-import is.hello.speech.resources.demo.ParseResource;
 import is.hello.speech.resources.demo.QueueMessageResource;
 import is.hello.speech.resources.v1.SignedBodyHandler;
 import is.hello.speech.resources.v1.UploadResource;
@@ -336,11 +335,9 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final Map<HandlerType, SupichiResponseType> handlersToBuilders = handlerExecutor.responseBuilders();
 
-        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(amazonS3, speechAppConfiguration.getS3Configuration().getBucket(), client, handlerExecutor, deviceDAO, speechKinesisProducer, s3ResponseBuilder, watsonResponseBuilder));
         environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
 
         environment.jersey().register(new is.hello.speech.resources.v2.UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
-        environment.jersey().register(new ParseResource());
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.watsonAudioConfiguration().getBucketName()));
     }
 }
