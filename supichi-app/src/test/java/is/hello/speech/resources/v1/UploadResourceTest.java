@@ -51,9 +51,9 @@ public class UploadResourceTest {
     }
 
     @Test(expected = WebApplicationException.class)
-    public void testUploadSignedAudioNoKey() throws IOException, InterruptedException {
+    public void testUploadSignedAudioNoKey() throws InvalidSignedBodyException, InvalidSignatureException, IOException, InterruptedException {
         when(keystore.getStrict(any(String.class))).thenReturn(Optional.absent());
-        when(signedBodyHandler.extractAudio(any(String.class), any(byte[].class))).thenReturn(new byte[]{});
+        when(signedBodyHandler.extractSignature(any(String.class), any(byte[].class))).thenReturn(new byte[]{});
         when(deviceDAO.getAccountIdsForDeviceId(any(String.class))).thenReturn(ImmutableList.of());
         final UploadResource resource = new UploadResource(client, signedBodyHandler, executor,
                 deviceDAO, kinesisProducer, responseBuilders, handlersToBuilders);
@@ -64,9 +64,9 @@ public class UploadResourceTest {
         resource.streaming(new byte[]{}, 8000, false, responseParam);
     }
 
-    public void testUploadSignedAudioInvalid() throws IOException, InterruptedException {
+    public void testUploadSignedAudioInvalid() throws IOException, InterruptedException, InvalidSignedBodyException, InvalidSignatureException {
         when(keystore.getStrict(any(String.class))).thenReturn(Optional.of(new byte[]{}));
-        when(signedBodyHandler.extractAudio(any(String.class), any(byte[].class))).thenReturn(new byte[]{});
+        when(signedBodyHandler.extractSignature(any(String.class), any(byte[].class))).thenReturn(new byte[]{});
         when(deviceDAO.getAccountIdsForDeviceId(any(String.class))).thenReturn(ImmutableList.of());
         final UploadResource resource = new UploadResource(client, signedBodyHandler, executor,
                 deviceDAO, kinesisProducer, responseBuilders, handlersToBuilders);

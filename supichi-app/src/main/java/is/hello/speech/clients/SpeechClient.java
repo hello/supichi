@@ -170,6 +170,7 @@ public class SpeechClient {
             final RecognitionConfig config = RecognitionConfig.newBuilder()
                     .setEncoding(configuration.getEncoding())
                     .setSampleRate(samplingRate)
+                    .setProfanityFilter(false)
                     .build();
 
             final StreamingRecognitionConfig streamConfig = StreamingRecognitionConfig.newBuilder()
