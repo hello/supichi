@@ -59,8 +59,6 @@ logging:
     is.hello.speech: DEBUG
     com.amazonaws: WARN
   appenders:
-    - type: console
-      threshold: DEBUG
     - type: file
       threshold: DEBUG
       currentLogFilename: /var/log/supichi/supichi.log
