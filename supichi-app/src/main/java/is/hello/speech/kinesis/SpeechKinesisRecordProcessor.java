@@ -13,6 +13,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
+import com.google.api.client.util.Maps;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hello.suripu.core.speech.interfaces.SpeechResultIngestDAO;
 import com.hello.suripu.core.speech.interfaces.SpeechTimelineIngestDAO;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by ksg on 8/11/16
@@ -137,6 +139,7 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
     }
 
     private SpeechResult kinesisDataToSpeechResult(final SpeechResultsKinesis.SpeechResultsData speechResultsData) {
+
         final SpeechResult.Builder builder = new SpeechResult.Builder()
                 .withAudioIndentifier(speechResultsData.getAudioUuid())
                 .withService(SpeechToTextService.fromString(speechResultsData.getService()))
@@ -170,6 +173,17 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
         if(speechResultsData.hasResponseText()) {
             builder.withResponseText(speechResultsData.getResponseText());
         }
+
+        // create wake word confidences kinesis message
+        final List<Float> confidences = speechResultsData.getWakeConfidenceList();
+        final Map<String, Float> wakeWordConfidence = Maps.newHashMap();
+        for (final WakeWord word : WakeWord.values()) {
+            if (word.equals(WakeWord.NULL)) {
+                continue;
+            }
+            wakeWordConfidence.put(word.getWakeWordText(), confidences.get(word.getId() - 1)); // -1 because WakeWord.NULL is 0
+        }
+        builder.withWakeWordsConfidence(wakeWordConfidence);
 
         return builder.build();
     }
