@@ -112,7 +112,7 @@ dynamodb:
     timezone_history: http://dynamodb.us-east-1.amazonaws.com
 
 sqs_configuration:
-    sqs_queue_name: dev_text2speech
+    sqs_queue_name: prod_text2speech
     sqs_queue_url: https://sqs.us-east-1.amazonaws.com/053216739513/prod_text2speech
     sqs_max_connections: 5
     sqs_max_messages_read: 10
