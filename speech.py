@@ -160,7 +160,7 @@ if __name__ == '__main__':
     if env == 'local':
         ENDPOINT = "http://localhost:8181/v1/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
     elif env == 'localv2':
-        ENDPOINT = "http://localhost:8181/v2/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
+        ENDPOINT = "http://localhost:8181/v2/upload/audio"
     elif env == 'dev':
         ENDPOINT = "https://dev-speech.hello.is/v1/upload/audio?r=%s&response=%s" % (sampling_rate, audio_type)
     elif env == 'dev2':

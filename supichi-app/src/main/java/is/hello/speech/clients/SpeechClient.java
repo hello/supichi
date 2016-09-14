@@ -167,19 +167,10 @@ public class SpeechClient {
         final StreamObserver<StreamingRecognizeRequest> requestObserver = stubStreaming.streamingRecognize(responseObserver);
         try {
             // Build and send a RecognizeRequest containing the parameters for processing the audio.
-//            final SpeechContext speechContext = SpeechContext.newBuilder()
-//                    .addPhrases("sense")
-//                    .addPhrases("snooze")
-//                    .addPhrases("stop")
-//                    .addPhrases("sleep sound")
-//                    .addPhrases("play sleep sounds")
-//                    .build();
-
             final RecognitionConfig config = RecognitionConfig.newBuilder()
                     .setEncoding(configuration.getEncoding())
                     .setSampleRate(samplingRate)
                     .setProfanityFilter(false)
-//                    .setSpeechContext(speechContext)
                     .build();
 
             final StreamingRecognitionConfig streamConfig = StreamingRecognitionConfig.newBuilder()

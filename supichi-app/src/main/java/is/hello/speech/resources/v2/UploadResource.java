@@ -100,9 +100,9 @@ public class UploadResource {
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] streaming(final byte[] signedBody,
-                            @DefaultValue("8000") @QueryParam("r") final Integer sampling,
+                            @DefaultValue("16000") @QueryParam("r") final Integer sampling,
                             @DefaultValue("false") @QueryParam("pb") final boolean includeProtobuf,
-                            @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
+                            @DefaultValue("mp3") @QueryParam("response") final UploadResponseParam responseParam
     ) throws InterruptedException, IOException, AudioException {
 
         LOGGER.debug("action=received-bytes size={}", signedBody.length);
@@ -114,7 +114,6 @@ public class UploadResource {
         }
 
         // old default: 8AF6441AF72321F4  C8DAAC353AEFA4A9
-//        final byte[] dataBody = signedBodyHandler.extractAudio(senseId, signedBody);
         final UploadData uploadData;
         try {
             uploadData = signedBodyHandler.extractUploadData(senseId, signedBody);
@@ -277,7 +276,7 @@ public class UploadResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] text(@Valid final TextQuery query,
-                       @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
+                       @DefaultValue("mp3") @QueryParam("response") final UploadResponseParam responseParam
     ) throws InterruptedException, IOException {
 
         final boolean includeProtobuf = false;

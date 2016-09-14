@@ -175,13 +175,13 @@ public class SpeechKinesisRecordProcessor implements IRecordProcessor {
         }
 
         // create wake word confidences kinesis message
-        int index = 0;
+        final List<Float> confidences = speechResultsData.getWakeConfidenceList();
         final Map<String, Float> wakeWordConfidence = Maps.newHashMap();
         for (final WakeWord word : WakeWord.values()) {
             if (word.equals(WakeWord.NULL)) {
                 continue;
             }
-            wakeWordConfidence.put(word.getWakeWordText(), speechResultsData.getWakeConfidence(index++));
+            wakeWordConfidence.put(word.getWakeWordText(), confidences.get(word.getId() - 1)); // -1 because WakeWord.NULL is 0
         }
         builder.withWakeWordsConfidence(wakeWordConfidence);
 
