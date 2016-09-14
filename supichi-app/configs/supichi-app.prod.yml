@@ -85,8 +85,7 @@ audio_parameters:
   buffer_size: 6400 # play around with this
 
 messeji_http_client:
-  # endpoint: "http://ec2-52-90-54-153.compute-1.amazonaws.com:8000"  # prod!!
-  endpoint: "http://internal-internal-messeji-dev-1279589514.us-east-1.elb.amazonaws.com:80"  #dev
+  endpoint: "http://internal-messeji-prod-internal-510481854.us-east-1.elb.amazonaws.com:80"
   http_client_config:
     keepAlive: 0s
 
@@ -114,7 +113,7 @@ dynamodb:
 
 sqs_configuration:
     sqs_queue_name: dev_text2speech
-    sqs_queue_url: https://sqs.us-east-1.amazonaws.com/053216739513/dev_text2speech
+    sqs_queue_url: https://sqs.us-east-1.amazonaws.com/053216739513/prod_text2speech
     sqs_max_connections: 5
     sqs_max_messages_read: 10
     sqs_wait_time_seconds: 10
@@ -143,25 +142,25 @@ kinesis_producer:
   record_max_buffered_time: 2000
   queue_size: 65536
   streams:
-   speech_result: dev_speech_results
+   speech_result: prod_speech_results
 
 kinesis_consumer:
   endpoint: https://kinesis.us-east-1.amazonaws.com
   region: us-east-1
-  app_name: SpeechKinesisProcessDev
+  app_name: SpeechKinesisProcessProd
   max_records: 100
   trim_horizon: false
   streams:
-   speech_result: dev_speech_results
+   speech_result: prod_speech_results
 
 sense_upload_audio:  # bucket to save audio uploaded from Sense
-  s3_bucket_name: hello-voice-upload-dev
+  s3_bucket_name: hello-voice-upload-prod
   s3_audio_prefix: sense_1_5
 
 keys_management_service:
   endpoint: https://kms.us-east-1.amazonaws.com
   keys:
-    uuid: arn:aws:kms:us-east-1:053216739513:key/1c60acdc-0628-4f8f-8fbc-f1cacb59a845
-    audio: arn:aws:kms:us-east-1:053216739513:key/65d9a27f-e6cc-4456-a2ac-31739ea6da22 # audio_upload_dev
+    uuid: arn:aws:kms:us-east-1:053216739513:key/554047d9-7171-4e31-9403-0d2101234775 # audio_uuid_prod
+    audio: arn:aws:kms:us-east-1:053216739513:key/e9e9640b-9c47-4f17-916b-bb50f809b430 # audio_upload_prod
 
 s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms
