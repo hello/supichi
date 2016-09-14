@@ -74,7 +74,7 @@ logging:
     - type: papertrail
       host: logs2.papertrailapp.com
       port: 11366
-      ident: supichi-dev
+      ident: supichi-prod
 
 google_api_host: speech.googleapis.com
 google_api_port: 443
