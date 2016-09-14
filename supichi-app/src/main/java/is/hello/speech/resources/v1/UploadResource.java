@@ -106,7 +106,14 @@ public class UploadResource {
         }
 
         // old default: 8AF6441AF72321F4  C8DAAC353AEFA4A9
-        final byte[] body = signedBodyHandler.extractAudio(senseId, signedBody);
+        final byte[] body;
+        try {
+            body = signedBodyHandler.extractSignature(senseId, signedBody);
+        } catch (InvalidSignedBodyException e) {
+            throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
+        } catch(InvalidSignatureException e) {
+            throw new WebApplicationException(javax.ws.rs.core.Response.Status.UNAUTHORIZED);
+        }
 
         if(body.length == 0) {
             throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);

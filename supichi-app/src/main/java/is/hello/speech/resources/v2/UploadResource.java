@@ -59,7 +59,8 @@ import is.hello.speech.resources.v1.SignedBodyHandler;
 public class UploadResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
-    private final static byte[] EMPTY_BYTE = new byte[0];
+    private static final byte[] EMPTY_BYTE = new byte[0];
+    private static final int ADPCM_BYTES_TO_DROP = 12000;
 
     private static final int ADPCM_STATE_SIZE = 3;
 
@@ -100,9 +101,9 @@ public class UploadResource {
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] streaming(final byte[] signedBody,
-                            @DefaultValue("8000") @QueryParam("r") final Integer sampling,
+                            @DefaultValue("16000") @QueryParam("r") final Integer sampling,
                             @DefaultValue("false") @QueryParam("pb") final boolean includeProtobuf,
-                            @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
+                            @DefaultValue("mp3") @QueryParam("response") final UploadResponseParam responseParam
     ) throws InterruptedException, IOException, AudioException {
 
         LOGGER.debug("action=received-bytes size={}", signedBody.length);
@@ -114,7 +115,18 @@ public class UploadResource {
         }
 
         // old default: 8AF6441AF72321F4  C8DAAC353AEFA4A9
-        final byte[] body = signedBodyHandler.extractAudio(senseId, signedBody);
+        final UploadData uploadData;
+        try {
+            uploadData = signedBodyHandler.extractUploadData(senseId, signedBody);
+        } catch (InvalidSignedBodyException e) {
+            throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
+        } catch(InvalidSignatureException e) {
+            throw new WebApplicationException(javax.ws.rs.core.Response.Status.UNAUTHORIZED);
+        }
+
+        LOGGER.debug("action=get-pb-values word={} confidence={}", uploadData.speechData.getWord(), uploadData.speechData.getConfidence());
+
+        final byte[] body = uploadData.audioBody;
 
         if(body.length == 0) {
             throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
@@ -143,6 +155,7 @@ public class UploadResource {
         final ByteArrayOutputStream toDecodeStream = new ByteArrayOutputStream(); // intermediate stream
         final ByteArrayOutputStream decodedStream = new ByteArrayOutputStream();
 
+        int totalADPCMBytes = 0;
         for (int i = 0; i < chunks + 1; i++) {
 
             final int readSize = inputStream.read(dataBuffer, 0, chunkSize);
@@ -150,6 +163,9 @@ public class UploadResource {
                 LOGGER.debug("action=input-stream-read chunk={} expect={} read={}", i, chunkSize, readSize);
                 break;
             }
+
+            totalADPCMBytes += readSize;
+            final boolean toDrop = (totalADPCMBytes < 12000);
 
             toDecodeStream.write(startBuffer); // add previous state
             toDecodeStream.write(dataBuffer);
@@ -163,7 +179,9 @@ public class UploadResource {
             startBuffer[1] = decodeResult.data[outputSize - 1];
             startBuffer[2] = (byte) decodeResult.stepIndex;
 
-            decodedStream.write(decodeResult.data);
+            if (!toDrop) {
+                decodedStream.write(decodeResult.data);
+            }
         }
 
         final byte[] decoded = decodedStream.toByteArray();
@@ -190,8 +208,11 @@ public class UploadResource {
                 .withDateTimeUTC(speechCreated);
         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
 
+        final WakeWord wakeWord = WakeWord.fromString(uploadData.speechData.getWord().name());
+        final Map<String, Float> wakeWordConfidence = setWakeWordConfidence(wakeWord, (float) uploadData.speechData.getConfidence());
         builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                .withWakeWord(WakeWord.OK_SENSE)
+                .withWakeWord(wakeWord)
+                .withWakeWordsConfidence(wakeWordConfidence)
                 .withService(SpeechToTextService.GOOGLE);
         // process audio
         try {
@@ -256,7 +277,7 @@ public class UploadResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] text(@Valid final TextQuery query,
-                       @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
+                       @DefaultValue("mp3") @QueryParam("response") final UploadResponseParam responseParam
     ) throws InterruptedException, IOException {
 
         final boolean includeProtobuf = false;
@@ -295,5 +316,20 @@ public class UploadResource {
         }
 
         return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
+    }
+
+    private Map<String, Float> setWakeWordConfidence(final WakeWord wakeWord, final Float confidence) {
+        final Map<String, Float> wakeWordConfidence = Maps.newHashMap();
+        for (final WakeWord word : WakeWord.values()) {
+            if (word.equals(WakeWord.NULL)) {
+                continue;
+            }
+            if (word.equals(wakeWord)) {
+                wakeWordConfidence.put(wakeWord.getWakeWordText(), confidence);
+            } else {
+                wakeWordConfidence.put(word.getWakeWordText(), 0.0f);
+            }
+        }
+        return wakeWordConfidence;
     }
 }
