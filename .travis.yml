@@ -20,10 +20,10 @@ script:
 - cp init/$APP_NAME.conf $TEMP_DIR/etc/init/
 - mvn --settings settings.xml clean test
 before_deploy:
-- mvn clean compile
+- mvn clean
 - mvn versions:set -DnewVersion=$BUILD_NUMBER
 - mvn versions:commit
-- mvn --settings settings.xml -DskipITs -Dtcnative.classifier=linux-x86_64 deploy
+- mvn --settings settings.xml -DskipITs -Dos.detected.classifier=linux-x86_64 -Dtcnative.classifier=linux-x86_64 deploy
 - gem install json -v 1.8.3
 - gem install fpm
 - cp $APP_NAME/target/$APP_NAME-$BUILD_NUMBER.jar $TEMP_DIR/opt/hello/$APP_NAME.jar
