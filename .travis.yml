@@ -35,7 +35,7 @@ after_deploy:
 - git config --global user.name "Travis CI"
 - export GIT_TAG=$APP_NAME-$TRAVIS_BRANCH-$BUILD_NUMBER
 - git tag $GIT_TAG -a -m "Generated tag from TravisCI build $TRAVIS_BUILD_NUMBER"
-- git push --quiet git@github.com:hello/suripu-app.git --tags
+- git push --quiet git@github.com:hello/supichi.git --tags
 deploy:
 - provider: s3
   access_key_id: "$CI_DEPLOY_USERNAME"
@@ -54,6 +54,6 @@ branches:
   - PRODUCTION
 notifications:
   email:
-  - tim+travis-supichi@sayhello.com
+  - infra@sayhello.com
   slack:
     secure: CddkXE6isa6JutSaExgssdlCw9U9vBYrJZ18eSaySCZcM1tw8t1q0PqkR1YjpY+yOi332COoU7ZcXpZr9NshUOdPMnPYU4S6r5JjulcsAflLCNQQbqbBVsWyrz+2NsjNhML7122rg89Ak5LVs7EBLzotIJh3kEjRxx+9HGFQ0k0KrR1tPG1VuHhjTo10AqbW1NTCyz4dAY5+zCLywn0pg+A1cr41BNStf4OmvTkyHT0HtZhyNsNemFCYANLCfrvtm+dQ7mBvxqMfO49SIOlSDqqcB8seRWDFyBF3yiAiOF2tpUXtHCOvUVo95SeYTLOM0DywjJiEWZvxXqFOll4FvgM1u52BkxDB4LLwBp6GJRwhgO1H2rL1S54pmj+FvCwOzZnX0ibhW3v/W7fLX5poI4vML2+663hzCbK5iDUSntoKf4ciJcahHvd7ypWmAe23JloI0GAN1rZ/bd56yzJ4mgQbk8TMY1Ai/010iYr+MrVzD+pfP1BcNdMK+ykza2CDOfe9JTBTS9qBiG71tPTkCNFkbPC2BVc+Usvvsz89e8JWA+Ynn5gOTzhtslc1Mdwnw2C+OoZxQvsEyYWKGHAx3pfJJ5+uhRANl0ms0JyrVajIU6pasuO7xGylHJvbXRfCQOPdqdYtb72z0ZaNRpqQnKIuZgCvGYGSd9VOJTsu5gA=
