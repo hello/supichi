@@ -1,0 +1,59 @@
+language: java
+jdk:
+- oraclejdk8
+install: mvn --version
+sudo: false
+env:
+  global:
+  - APP_NAME=supichi
+  - BUILD_NUMBER=0.4.$TRAVIS_BUILD_NUMBER
+  - secure: GZJKV6VapL0a2v7/7fePv4Dz6PSA1zqoPbiQDnZEN3/GEBwd39ckeVRRo2uUpNMJBv4vyP9jfvNUedevtXLcJ4IbylFW+83ocDyGZNmiw2S4BHe+tmyQHKjNaxs6y0kE+IQEFTJoVvm+Q3e8xh5mjfjIhgybNh1f079hChrf4BFDNhTJNTAzUGI3ipeTjF2vG9sdJYSIEURRibOpuDLo3OF6pQeoQzFt9RUl9/rXsKqYBz9ZiQjYNjuBnA9coZFgHdqkH/IkOCp+jMeezrLar/yEbSGQzjozqamqcidfQ2R+l5Ew86Xl64NWX8ke/lGOVGtfFWINPHY5n/c2QZYng2+fppYNciYk9hIKEgPrWe+LOfH0/X9Lj2V1BEAeWOd71S0XwBy0f9V32Us3ypSOq9PfeLj2X766o5wOtRudsno+DQGXAAV6GiO51E2psNVK2MIRd8QyQJk/EPRZHik1lYIM4CI4HJEu+dtlyDK2qUiP+rlUVxQ0Uu/jfnULj64AHM09MpPVpmhsZomYK5/4HUIiPBAlDPF0fb2okxr05FMx4FU0hzUJYh4FVVbWWpzbhvUj0fOZrwUA+5QbQsx7uTksNzsDDR6UsGAyDevFPtgf0F/ZSJxwpYywPjbSmwV+y7ssfQ8YPKT8WaX0Sf3Jr/DOSzYnhaKjtwyaNTVPPBY=
+  - secure: CzwEM85sNU23b8/nepdVGui9013+89DDlhrocqlFFb6Xg/LcYqlcC7U2QNuwUAwoQ4fzznMLgTuXK+lv7QqgMyujdJj7TCLAPzEtim+bdwbiAKWdO8IvaZJM/cdCDBn8pPXp4MctoiDZs72gWbFTO5HFm9TKFXYX/sdUZ56nwjw5wBP9u4ICKvsPr+L8+Gsifu0x0w9l0SwW5UHcHnnByT1hsLm8zMG1pq5Y58a8KrxPy78Oi2v8QfQXqxgvUktnhtE7tJCY0A4DlfykbC+h2Zfa8TVK5HOVTpZ4tUF8/7MwgrlVsWT3fupvtOg71vD5hXBXhVd8PE0fOypjITqlWhin4X0EdBYeGlzkrFO4VHODj7d/++9jP3orsQR67h4wUYawI99WOKDFmM3qMBrqt0HZ4b+SXjgVH7h6ydNFs158psir2ukO27i8cuHuIg2AnrbKQo7BRmnMKt0dyQN315EhgHJ15kPXTS5SFyDxH1heK11IWjcwrbq71NtW2mcSUFndYGsxEsGfh/yJGwbY62bAEIq/sMbwLPV3Rk1UnqsRsXKFOV3ZhAUH4HTF4pVea+XMg+h4qfqcCJgjSNOQEyHHZFQHA8z1V2mkxo1s+NFxjGsf/NaZKqWk/UKkxgO+AetA5LdAJ3BRgbB7Re6rxlFktr23HZAvvi9x9r3Ivac=
+script:
+- echo "MAVEN_OPTS='-Xmx2g -XX:MaxPermSize=512m'" > ~/.mavenrc
+- export TEMP_DIR="/tmp/$APP_NAME"
+- mkdir -p $TEMP_DIR/opt/hello
+- mkdir -p $TEMP_DIR/etc/hello
+- mkdir -p $TEMP_DIR/etc/init/
+- mkdir deb-pkg
+- cp $APP_NAME/configs/$APP_NAME.prod.yml $TEMP_DIR/etc/hello/$APP_NAME.yml
+- cp init/$APP_NAME.conf $TEMP_DIR/etc/init/
+- mvn --settings settings.xml clean test
+before_deploy:
+- mvn clean
+- mvn versions:set -DnewVersion=$BUILD_NUMBER
+- mvn versions:commit
+- mvn --settings settings.xml -DskipITs -Dtcnative.classifier=linux-x86_64 deploy
+- gem install json -v 1.8.3
+- gem install fpm
+- cp $APP_NAME/target/$APP_NAME-$BUILD_NUMBER.jar $TEMP_DIR/opt/hello/$APP_NAME.jar
+- fpm --force -s dir -C $TEMP_DIR -t deb --name "$APP_NAME" --version $BUILD_NUMBER
+  --config-files etc/hello .
+- cp ${APP_NAME}_${BUILD_NUMBER}_amd64.deb configs/
+after_deploy:
+- git config --global user.email "builds@travis-ci.com"
+- git config --global user.name "Travis CI"
+- export GIT_TAG=$APP_NAME-$TRAVIS_BRANCH-$BUILD_NUMBER
+- git tag $GIT_TAG -a -m "Generated tag from TravisCI build $TRAVIS_BUILD_NUMBER"
+- git push --quiet git@github.com:hello/suripu-app.git --tags
+deploy:
+- provider: s3
+  access_key_id: "$CI_DEPLOY_USERNAME"
+  secret_access_key: "$CI_DEPLOY_PASSWORD"
+  bucket: hello-deploy
+  skip_cleanup: true
+  local_dir: configs
+  upload-dir: packages/com/hello/supichi/$APP_NAME/$BUILD_NUMBER
+  region: us-east-1
+  on:
+    tags: false
+    branch: PRODUCTION
+branches:
+  only:
+  - master
+  - PRODUCTION
+notifications:
+  email:
+  - tim+travis-supichi@sayhello.com
+  slack:
+    secure: CddkXE6isa6JutSaExgssdlCw9U9vBYrJZ18eSaySCZcM1tw8t1q0PqkR1YjpY+yOi332COoU7ZcXpZr9NshUOdPMnPYU4S6r5JjulcsAflLCNQQbqbBVsWyrz+2NsjNhML7122rg89Ak5LVs7EBLzotIJh3kEjRxx+9HGFQ0k0KrR1tPG1VuHhjTo10AqbW1NTCyz4dAY5+zCLywn0pg+A1cr41BNStf4OmvTkyHT0HtZhyNsNemFCYANLCfrvtm+dQ7mBvxqMfO49SIOlSDqqcB8seRWDFyBF3yiAiOF2tpUXtHCOvUVo95SeYTLOM0DywjJiEWZvxXqFOll4FvgM1u52BkxDB4LLwBp6GJRwhgO1H2rL1S54pmj+FvCwOzZnX0ibhW3v/W7fLX5poI4vML2+663hzCbK5iDUSntoKf4ciJcahHvd7ypWmAe23JloI0GAN1rZ/bd56yzJ4mgQbk8TMY1Ai/010iYr+MrVzD+pfP1BcNdMK+ykza2CDOfe9JTBTS9qBiG71tPTkCNFkbPC2BVc+Usvvsz89e8JWA+Ynn5gOTzhtslc1Mdwnw2C+OoZxQvsEyYWKGHAx3pfJJ5+uhRANl0ms0JyrVajIU6pasuO7xGylHJvbXRfCQOPdqdYtb72z0ZaNRpqQnKIuZgCvGYGSd9VOJTsu5gA=
