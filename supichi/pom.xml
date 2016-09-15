@@ -19,7 +19,7 @@
         <java.version>1.8</java.version>
         <suripu.version>0.8.5601</suripu.version>
         <dropwizard.version>1.0.0</dropwizard.version>
-        <tcnative.classifier>osx-x86_64</tcnative.classifier>
+        <!--<tcnative.classifier>${os.detected.classifier}</tcnative.classifier>-->
         <!--<tcnative.classifier>linux-x86_64</tcnative.classifier>-->
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <build-helper-maven-plugin.version>1.9.1</build-helper-maven-plugin.version>
@@ -61,6 +61,11 @@
                 <groupId>org.kuali.maven.wagons</groupId>
                 <artifactId>maven-s3-wagon</artifactId>
                 <version>1.2.1</version>
+            </extension>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${os-maven-plugin.version}</version>
             </extension>
         </extensions>
         <plugins>
@@ -237,7 +242,7 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-tcnative-boringssl-static</artifactId>
             <version>1.1.33.Fork14</version>
-            <classifier>${tcnative.classifier}</classifier>
+            <classifier>${os.detected.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>is.hello.speech</groupId>

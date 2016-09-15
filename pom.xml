@@ -21,8 +21,8 @@
 
     <modules>
         <module>google-api</module>
-        <module>supichi</module>
         <module>supichi-core</module>
+        <module>supichi</module>
     </modules>
 
     <repositories>
