@@ -41,7 +41,7 @@ deploy:
   secret_access_key: "$CI_DEPLOY_PASSWORD"
   bucket: hello-deploy
   skip_cleanup: true
-  local_dir: configs
+  local_dir: $APP_NAME/configs
   upload-dir: packages/is/hello/speech/$APP_NAME/$BUILD_NUMBER
   region: us-east-1
   on:
