@@ -1,12 +1,10 @@
-
 common_db:
   driverClass: org.postgresql.Driver
-  user: ingress_user
-  password: hello ingress user
-  url: jdbc:postgresql://chanku-test.cdawj8qazvva.us-east-1.rds.amazonaws.com:5432/chanku
+  user: common
+  password: hello-common
+  url: jdbc:postgresql://common.cdawj8qazvva.us-east-1.rds.amazonaws.com:5432/common
   properties:
     hibernate.dialect: org.hibernate.spatial.dialect.postgis.PostgisDialect
-
   # any properties specific to your JDBC driver:
   properties:
     charSet: UTF-8
@@ -35,11 +33,6 @@ common_db:
   minIdleTime: 1 minute
 
 
-s3_bucket:
-  bucket: hello-firmware-public
-  aws_access_key: AKIAIPS2RBLAWR6TNSPA # temp credentials
-  aws_secret_key: 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
-
 server:
   adminMinThreads: 1
   adminMaxThreads: 10
@@ -47,17 +40,17 @@ server:
   applicationContextPath: /
   applicationConnectors:
     - type: http
-      port: 8181
+      port: 8080
   adminConnectors:
     - type: http
       port: 8182
   requestLog:
     appenders:
       - type: file
-        currentLogFilename: /var/log/speech-app/speech-app-access.log
+        currentLogFilename: /var/log/supichi/supichi-access.log
         threshold: ALL
         archive: true
-        archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
+        archivedLogFilenamePattern: /var/log/supichi/supichi-%d{yyyy-MM-dd}.log.gz
         archivedFileCount: 7
 
 logging:
@@ -66,14 +59,15 @@ logging:
     is.hello.speech: DEBUG
     com.amazonaws: WARN
   appenders:
-    - type: console
-      threshold: DEBUG
     - type: file
       threshold: DEBUG
-      currentLogFilename: /var/log/speech-app/speech-app.log
-      archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
+      currentLogFilename: /var/log/supichi/supichi.log
+      archivedLogFilenamePattern: /var/log/supichi/supichi-%d{yyyy-MM-dd}.log.gz
       archivedFileCount: 7
-
+    - type: papertrail
+      host: logs2.papertrailapp.com
+      port: 11366
+      ident: supichi-prod
 
 google_api_host: speech.googleapis.com
 google_api_port: 443
@@ -81,24 +75,24 @@ google_api_port: 443
 audio_parameters:
   interim_results_preference: false
   encoding: LINEAR16 # [ENCODING_UNSPECIFIED, LINEAR16, FLAC, MULAW, AMR, AMR_WB, UNRECOGNIZED]
-  buffer_size: 3200 # play around with this (100ms of audio at 16K SR)
+  buffer_size: 6400 # play around with this
 
 messeji_http_client:
-  endpoint: "http://internal-internal-messeji-dev-1279589514.us-east-1.elb.amazonaws.com:80"  # dev
+  endpoint: "http://internal-messeji-prod-internal-510481854.us-east-1.elb.amazonaws.com:80"
   http_client_config:
     keepAlive: 0s
 
 dynamodb:
   region: us-east-1
   tables:
-    calibration: calibration
-    device_data: sense_data
-    file_manifest: file_manifest
+    calibration: prod_calibration
+    device_data: prod_sense_data
+    file_manifest: prod_file_manifest
     sense_key_store: key_store
-    speech_commands: speech_commands
-    speech_results: speech_results
-    speech_timeline: speech_timeline
-    timezone_history: timezone_history
+    speech_commands: prod_speech_commands
+    speech_results: prod_speech_results
+    speech_timeline: prod_speech_timeline
+    timezone_history: prod_timezone_history
 
   endpoints:
     calibration: http://dynamodb.us-east-1.amazonaws.com
@@ -110,10 +104,9 @@ dynamodb:
     speech_timeline: http://dynamodb.us-east-1.amazonaws.com
     timezone_history: http://dynamodb.us-east-1.amazonaws.com
 
-
 sqs_configuration:
-    sqs_queue_name: dev_text2speech
-    sqs_queue_url: https://sqs.us-east-1.amazonaws.com/053216739513/dev_text2speech
+    sqs_queue_name: prod_text2speech
+    sqs_queue_url: https://sqs.us-east-1.amazonaws.com/053216739513/prod_text2speech
     sqs_max_connections: 5
     sqs_max_messages_read: 10
     sqs_wait_time_seconds: 10
@@ -124,46 +117,44 @@ watson:
   password: 8riFzRbKOd4c
   voice: en-US_AllisonVoice
 
+
 watson_save_audio:
   s3_bucket_name: hello-audio
   s3_audio_prefix_raw: voice/watson-text2speech/raw
-  s3_audio_prefix: voice/watson-text2speech/16k  # bucket with responses sent back to Sense
+  s3_audio_prefix: voice/watson-text2speech/16keq  # bucket with responses sent back to Sense
 
 consumer_enabled: false
 
 forecastio: 69ae5412a3a9bfc16a07ce05f6c7c5a5
 
-
 kinesis_producer:
   endpoint: https://kinesis.us-east-1.amazonaws.com
   region: us-east-1
   max_connections: 1
-  request_timeout: 10000 # 1 sec
-  record_max_buffered_time: 15000
+  request_timeout: 5000 # 5 sec
+  record_max_buffered_time: 2000
   queue_size: 65536
   streams:
-   audio: dev_speech_audio
-   speech_result: dev_speech_results
+   speech_result: prod_speech_results
 
 kinesis_consumer:
   endpoint: https://kinesis.us-east-1.amazonaws.com
   region: us-east-1
-  app_name: SpeechKinesisProcessDev
+  app_name: SpeechKinesisProcessProd
   max_records: 100
   trim_horizon: false
   streams:
-   audio: dev_speech_audio
-   speech_result: dev_speech_results
+   speech_result: prod_speech_results
 
 sense_upload_audio:  # bucket to save audio uploaded from Sense
-  s3_bucket_name: hello-voice-upload-dev
+  s3_bucket_name: hello-voice-upload-prod
   s3_audio_prefix: sense_1_5
 
 keys_management_service:
   endpoint: https://kms.us-east-1.amazonaws.com
   keys:
-    uuid: arn:aws:kms:us-east-1:053216739513:key/1c60acdc-0628-4f8f-8fbc-f1cacb59a845
-    audio: arn:aws:kms:us-east-1:053216739513:key/65d9a27f-e6cc-4456-a2ac-31739ea6da22 # audio_upload_dev
+    uuid: arn:aws:kms:us-east-1:053216739513:key/554047d9-7171-4e31-9403-0d2101234775 # audio_uuid_prod
+    audio: arn:aws:kms:us-east-1:053216739513:key/e9e9640b-9c47-4f17-916b-bb50f809b430 # audio_upload_prod
     token: arn:aws:kms:us-east-1:053216739513:key/9ab23bc3-1b49-4f02-a951-a9d97ca906bc # external app tokens dev
 
 s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms

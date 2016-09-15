@@ -54,10 +54,10 @@ server:
   requestLog:
     appenders:
       - type: file
-        currentLogFilename: /var/log/speech-app/speech-app-access.log
+        currentLogFilename: /var/log/supichi/supichi-access.log
         threshold: ALL
         archive: true
-        archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
+        archivedLogFilenamePattern: /var/log/supichi/supichi-%d{yyyy-MM-dd}.log.gz
         archivedFileCount: 7
 
 logging:
@@ -70,8 +70,8 @@ logging:
       threshold: DEBUG
     - type: file
       threshold: DEBUG
-      currentLogFilename: /var/log/speech-app/speech-app.log
-      archivedLogFilenamePattern: /var/log/speech-app/speech-app-%d{yyyy-MM-dd}.log.gz
+      currentLogFilename: /var/log/supichi/supichi.log
+      archivedLogFilenamePattern: /var/log/supichi/supichi-%d{yyyy-MM-dd}.log.gz
       archivedFileCount: 7
     - type: papertrail
       host: logs2.papertrailapp.com
@@ -87,7 +87,6 @@ audio_parameters:
   buffer_size: 6400 # play around with this
 
 messeji_http_client:
-  # endpoint: "http://ec2-52-90-54-153.compute-1.amazonaws.com:8000"  # prod!!
   endpoint: "http://internal-internal-messeji-dev-1279589514.us-east-1.elb.amazonaws.com:80"  #dev
   http_client_config:
     keepAlive: 0s

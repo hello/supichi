@@ -34,7 +34,7 @@ public class UnigramHandlerExecutor implements HandlerExecutor {
             LOGGER.debug("action=get-transcribed-command text={}", commandText);
 
             // TODO: command-parser
-            final Optional<BaseHandler> optionalHandler = getHandler(commandText);
+            final Optional<BaseHandler> optionalHandler = getHandler(commandText.toLowerCase());
 
             if (optionalHandler.isPresent()) {
                 final BaseHandler handler = optionalHandler.get();

@@ -5,17 +5,17 @@
 
     <parent>
         <groupId>is.hello.speech</groupId>
-        <artifactId>supichi</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <artifactId>supichi-parent</artifactId>
+        <version>0.4.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>supichi-app</artifactId>
+    <artifactId>supichi</artifactId>
 
     <properties>
         <aws.sdk.version>1.10.34</aws.sdk.version>
-        <supichi.version>0.3.0-SNAPSHOT</supichi.version>
+        <supichi.version>0.4.0-SNAPSHOT</supichi.version>
         <java.version>1.8</java.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <tcnative.classifier>osx-x86_64</tcnative.classifier>
@@ -23,45 +23,10 @@
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <build-helper-maven-plugin.version>1.9.1</build-helper-maven-plugin.version>
         <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
+        <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
     </properties>
 
-    <repositories>
-        <repository>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-                <checksumPolicy>warn</checksumPolicy>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>s3.release</id>
-            <name>Hello Releases</name>
-            <url>s3://hello-maven/release</url>
-        </repository>
-        <repository>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-                <checksumPolicy>warn</checksumPolicy>
-            </snapshots>
-            <id>s3.snapshot</id>
-            <name>Hello Snapshots</name>
-            <url>s3://hello-maven/snapshot</url>
-        </repository>
-    </repositories>
-
     <build>
-        <extensions>
-            <extension>
-                <groupId>org.kuali.maven.wagons</groupId>
-                <artifactId>maven-s3-wagon</artifactId>
-                <version>1.2.1</version>
-            </extension>
-        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

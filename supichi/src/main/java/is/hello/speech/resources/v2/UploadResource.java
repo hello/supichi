@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
@@ -273,53 +272,6 @@ public class UploadResource {
         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
         return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
-    }
-
-    @Path("/text")
-    @POST
-    @Timed
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public byte[] text(@Valid final TextQuery query,
-                       @DefaultValue("mp3") @QueryParam("response") final UploadResponseParam responseParam
-    ) throws InterruptedException, IOException {
-
-        final boolean includeProtobuf = false;
-        final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(query.senseId);
-
-        LOGGER.debug("info=sense-id id={}", query.senseId);
-        if (accounts.isEmpty()) {
-            LOGGER.error("error=no-paired-sense-found sense_id={}", query.senseId);
-            return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
-        }
-
-        // TODO: for now, pick the smallest account-id as the primary id
-        Long accountId = accounts.get(0).accountId;
-        for (final DeviceAccountPair accountPair : accounts) {
-            if (accountPair.accountId < accountId) {
-                accountId = accountPair.accountId;
-            }
-        }
-
-        LOGGER.debug("action=execute-handler sense_id={} account_id={}", query.senseId, accountId);
-        try {
-
-            final HandlerResult executeResult = handlerExecutor.handle(query.senseId, accountId, query.transcript);
-
-            final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.WATSON);
-            final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
-
-            // TODO: response-builder
-            if (!executeResult.handlerType.equals(HandlerType.NONE)) {
-                return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
-            }
-
-            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
-        } catch (Exception e) {
-            LOGGER.error("action=streaming error={}", e.getMessage());
-        }
-
-        return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, false, HandlerResult.emptyResult(), responseParam);
     }
 
     private Map<String, Float> setWakeWordConfidence(final WakeWord wakeWord, final Float confidence) {
