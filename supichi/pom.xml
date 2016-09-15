@@ -5,24 +5,17 @@
 
     <parent>
         <groupId>is.hello.speech</groupId>
-        <artifactId>supichi</artifactId>
+        <artifactId>supichi-parent</artifactId>
         <version>0.4.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>supichi-app</artifactId>
+    <artifactId>supichi</artifactId>
 
     <properties>
-        <aws.sdk.version>1.10.34</aws.sdk.version>
         <supichi.version>0.4.0-SNAPSHOT</supichi.version>
-        <java.version>1.8</java.version>
-        <suripu.version>0.8.5601</suripu.version>
-        <dropwizard.version>1.0.0</dropwizard.version>
-        <!--<tcnative.classifier>${os.detected.classifier}</tcnative.classifier>-->
-        <!--<tcnative.classifier>linux-x86_64</tcnative.classifier>-->
-        <build-helper-maven-plugin.version>1.9.1</build-helper-maven-plugin.version>
-        <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
+        <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
     </properties>
 
     <build>
@@ -200,7 +193,7 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-tcnative-boringssl-static</artifactId>
             <version>1.1.33.Fork14</version>
-            <classifier>${os.detected.classifier}</classifier>
+            <classifier>${tcnative.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>is.hello.speech</groupId>

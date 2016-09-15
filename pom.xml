@@ -5,20 +5,22 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>is.hello.speech</groupId>
-    <artifactId>supichi</artifactId>
+    <artifactId>supichi-parent</artifactId>
     <packaging>pom</packaging>
     <version>0.4.0-SNAPSHOT</version>
 
     <properties>
+        <suripu.version>0.8.5601</suripu.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <aws.sdk.version>1.10.34</aws.sdk.version>
         <google.guava.version>18.0</google.guava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <suripu.version>0.8.5583</suripu.version>
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
+        <build-helper-maven-plugin.version>1.9.1</build-helper-maven-plugin.version>
     </properties>
+
 
     <modules>
         <module>google-api</module>
@@ -75,6 +77,24 @@
         </repository>
     </repositories>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <releases>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>protoc-plugin</id>
+            <url>https://dl.bintray.com/sergei-ivanov/maven/</url>
+        </pluginRepository>
+    </pluginRepositories>
+
     <build>
         <extensions>
             <extension>
@@ -88,28 +108,19 @@
                 <version>${os-maven-plugin.version}</version>
             </extension>
         </extensions>
-    </build>
-    <!--<distributionManagement>-->
-        <!--<site>-->
-            <!--<id>s3.site</id>-->
-            <!--<url>s3://hello-maven/site</url>-->
-        <!--</site>-->
-        <!--<repository>-->
-            <!--<id>s3.release</id>-->
-            <!--<url>s3://hello-maven/release</url>-->
-        <!--</repository>-->
-        <!--<snapshotRepository>-->
-            <!--<id>s3.snapshot</id>-->
-            <!--<url>s3://hello-maven/snapshot</url>-->
-        <!--</snapshotRepository>-->
-    <!--</distributionManagement>-->
 
-    <!--<repositories>-->
-        <!--<repository>-->
-            <!--<id>project.local</id>-->
-            <!--<name>project</name>-->
-            <!--<url>file:${project.basedir}/</url>-->
-        <!--</repository>-->
-    <!--</repositories>-->
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.3</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
 
 </project>
