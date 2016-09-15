@@ -17,6 +17,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
         <suripu.version>0.8.5583</suripu.version>
+        <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
     </properties>
 
     <modules>
@@ -24,14 +25,6 @@
         <module>supichi-core</module>
         <module>supichi</module>
     </modules>
-
-    <repositories>
-        <repository>
-            <id>project.local</id>
-            <name>project</name>
-            <url>file:${project.basedir}/../repo</url>
-        </repository>
-    </repositories>
 
     <distributionManagement>
         <site>
@@ -48,12 +41,51 @@
         </snapshotRepository>
     </distributionManagement>
 
+    <repositories>
+        <repository>
+            <id>project.local</id>
+            <name>project</name>
+            <url>file:${project.basedir}/../repo</url>
+        </repository>
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>s3.release</id>
+            <name>Hello Releases</name>
+            <url>s3://hello-maven/release</url>
+        </repository>
+        <repository>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </snapshots>
+            <id>s3.snapshot</id>
+            <name>Hello Snapshots</name>
+            <url>s3://hello-maven/snapshot</url>
+        </repository>
+    </repositories>
+
     <build>
         <extensions>
             <extension>
                 <groupId>org.kuali.maven.wagons</groupId>
                 <artifactId>maven-s3-wagon</artifactId>
                 <version>1.2.1</version>
+            </extension>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${os-maven-plugin.version}</version>
             </extension>
         </extensions>
     </build>

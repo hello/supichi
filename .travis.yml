@@ -20,7 +20,7 @@ script:
 - cp init/$APP_NAME.conf $TEMP_DIR/etc/init/
 - mvn --settings settings.xml clean test
 before_deploy:
-- mvn clean compile
+- mvn clean
 - mvn versions:set -DnewVersion=$BUILD_NUMBER
 - mvn versions:commit
 - mvn --settings settings.xml -DskipITs deploy
