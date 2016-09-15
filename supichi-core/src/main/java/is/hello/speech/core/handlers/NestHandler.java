@@ -5,13 +5,6 @@ import com.google.common.collect.Maps;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
-import com.hello.suripu.coredropwizard.models.NestApplicationData;
-import com.hello.suripu.coredropwizard.oauth.ExternalApplication;
-import com.hello.suripu.coredropwizard.oauth.ExternalApplicationData;
-import com.hello.suripu.coredropwizard.oauth.ExternalToken;
-import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalAppDataStore;
-import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalApplicationStore;
-import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalTokenStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +14,13 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import is.hello.gaibu.core.models.ExternalApplication;
+import is.hello.gaibu.core.models.ExternalApplicationData;
+import is.hello.gaibu.core.models.ExternalToken;
+import is.hello.gaibu.core.models.NestApplicationData;
+import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
+import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
+import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.gaibu.homeauto.services.NestThermostat;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;

@@ -16,7 +16,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <suripu.version>0.8.5607-SNAPSHOT</suripu.version>
+        <suripu.version>0.8.5618-SNAPSHOT</suripu.version>
+        <gaibu.version>0.1.4</gaibu.version>
     </properties>
 
     <modules>
@@ -32,6 +33,19 @@
             <url>file:${project.basedir}/../repo</url>
         </repository>
     </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>is.hello.gaibu</groupId>
+            <artifactId>home-automation</artifactId>
+            <version>${gaibu.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>is.hello.gaibu</groupId>
+            <artifactId>gaibu-core</artifactId>
+            <version>${gaibu.version}</version>
+        </dependency>
+    </dependencies>
     <!--<distributionManagement>-->
         <!--<site>-->
             <!--<id>s3.site</id>-->

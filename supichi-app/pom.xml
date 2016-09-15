@@ -17,8 +17,6 @@
         <aws.sdk.version>1.10.34</aws.sdk.version>
         <supichi.version>0.3.0-SNAPSHOT</supichi.version>
         <java.version>1.8</java.version>
-        <suripu.version>0.8.5607-SNAPSHOT</suripu.version>
-        <gaibu.version>0.1.3</gaibu.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <tcnative.classifier>osx-x86_64</tcnative.classifier>
         <!--<tcnative.classifier>linux-x86_64</tcnative.classifier>-->
@@ -260,11 +258,6 @@
                     <artifactId>guava</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>is.hello.gaibu</groupId>
-            <artifactId>home-automation</artifactId>
-            <version>${gaibu.version}</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>

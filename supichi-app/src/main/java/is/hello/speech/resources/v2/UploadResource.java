@@ -1,6 +1,7 @@
 package is.hello.speech.resources.v2;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
 import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.DeviceDAO;
@@ -51,7 +52,10 @@ import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.resources.v1.InvalidSignatureException;
+import is.hello.speech.resources.v1.InvalidSignedBodyException;
 import is.hello.speech.resources.v1.SignedBodyHandler;
+import is.hello.speech.resources.v1.UploadData;
 
 
 @Path("/v2/upload")

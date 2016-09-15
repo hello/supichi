@@ -10,10 +10,10 @@ import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
-import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalAppDataStore;
-import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalApplicationStore;
-import com.hello.suripu.coredropwizard.oauth.stores.PersistentExternalTokenStore;
 
+import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
+import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
+import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.speech.core.db.SpeechCommandDAO;
 
 /**
