@@ -43,7 +43,7 @@ deploy:
   bucket: hello-deploy
   skip_cleanup: true
   local_dir: configs
-  upload-dir: packages/com/hello/supichi/$APP_NAME/$BUILD_NUMBER
+  upload-dir: packages/is/hello/supichi/$APP_NAME/$BUILD_NUMBER
   region: us-east-1
   on:
     tags: false
