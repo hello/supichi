@@ -38,7 +38,6 @@ import is.hello.speech.core.handlers.executors.HandlerExecutor;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
-import is.hello.speech.core.models.TextQuery;
 import is.hello.speech.core.models.UploadResponseParam;
 import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseBuilder;
