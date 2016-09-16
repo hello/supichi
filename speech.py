@@ -126,7 +126,11 @@ if __name__ == '__main__':
     import hashlib
     import base64
 
-    aes_key = "CD0C57B4B5C69D4C28F75AC4FBA5FF22".decode("hex"); # for 8AF6441AF72321F4
+    if env != 'prod':
+        aes_key = "CD0C57B4B5C69D4C28F75AC4FBA5FF22".decode("hex"); # for 8AF6441AF72321F4
+    else:
+        aes_key = "729FD5B0ADCC7AFF2173D5406FC0AB5C".decode("hex"); # for 9ECA262C40A3E894
+
     fp = open(filename, 'rb')
     file_data = fp.read();
     fp.close()
@@ -169,6 +173,7 @@ if __name__ == '__main__':
         ENDPOINT = "http://8.34.219.91:8181/upload/audio?r=%s" % (sampling_rate)
     elif env == "prod":
         ENDPOINT = "https://speech.hello.is/v2/upload/audio"
+        headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "9ECA262C40A3E894"}
     else:
         print "invalid env. choose from [local/dev/goog]"
         sys.exit(1)
