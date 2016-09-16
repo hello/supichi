@@ -98,6 +98,7 @@ public class HueHandler extends BaseHandler {
             final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, externalApp.id);
             if(!externalTokenOptional.isPresent()) {
                 LOGGER.error("error=token-not-found device_id={}", senseId);
+                response.put("error", "token-not-found");
                 response.put("result", HandlerResult.Outcome.FAIL.getValue());
                 return new HandlerResult(HandlerType.NEST, command, response);
             }
@@ -110,6 +111,7 @@ public class HueHandler extends BaseHandler {
 
             if(!decryptedTokenOptional.isPresent()) {
                 LOGGER.error("error=token-decryption-failure device_id={}", senseId);
+                response.put("error", "token-decryption-failure");
                 response.put("result", HandlerResult.Outcome.FAIL.getValue());
                 return new HandlerResult(HandlerType.NEST, command, response);
             }
@@ -119,6 +121,7 @@ public class HueHandler extends BaseHandler {
             final Optional<ExternalApplicationData> extAppDataOptional = externalAppDataStore.getAppData(externalApp.id, senseId);
             if(!extAppDataOptional.isPresent()) {
                 LOGGER.error("error=no-ext-app-data account_id={}", accountId);
+                response.put("error", "no-ext-app-data");
                 response.put("result", HandlerResult.Outcome.FAIL.getValue());
                 return new HandlerResult(HandlerType.NEST, command, response);
             }
@@ -131,7 +134,8 @@ public class HueHandler extends BaseHandler {
                 light = new HueLight(HueLight.DEFAULT_API_PATH, decryptedToken, hueData.bridgeId, hueData.whitelistId, hueData.groupId);
 
             } catch (IOException io) {
-                LOGGER.warn("warn=bad-json-data");
+                LOGGER.error("error=bad-app-data device_id={}", senseId);
+                response.put("error", "bad-app-data");
                 response.put("result", HandlerResult.Outcome.FAIL.getValue());
                 return new HandlerResult(HandlerType.NEST, command, response);
             }
