@@ -17,7 +17,7 @@ script:
 - mkdir -p $TEMP_DIR/etc/init/
 - mkdir deb-pkg
 - cp $APP_NAME/configs/$APP_NAME.prod.yml $TEMP_DIR/etc/hello/$APP_NAME.yml
-- cp $APP_NAME/configs/hello/google-api-key.prod.json $TEMP_DIR/etc/hello/hello/google-api-key.prod.json
+- cp $APP_NAME/configs/hello/google-api-key.prod.json $TEMP_DIR/etc/hello/hello/google-api-key.json
 - cp init/$APP_NAME.conf $TEMP_DIR/etc/init/
 - mvn --settings settings.xml clean test
 before_deploy:
