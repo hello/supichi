@@ -167,6 +167,8 @@ if __name__ == '__main__':
         ENDPOINT = "https://dev-speech.hello.is/v2/upload/audio"
     elif env == 'goog':
         ENDPOINT = "http://8.34.219.91:8181/upload/audio?r=%s" % (sampling_rate)
+    elif env == "prod":
+        ENDPOINT = "https://speech.hello.is/v2/upload/audio"
     else:
         print "invalid env. choose from [local/dev/goog]"
         sys.exit(1)
