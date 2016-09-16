@@ -1,8 +1,9 @@
 package is.hello.speech.resources.v2;
 
-import com.codahale.metrics.annotation.Timed;
-import com.google.api.client.util.Maps;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
+
+import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.speech.models.Result;
@@ -10,6 +11,33 @@ import com.hello.suripu.core.speech.models.SpeechResult;
 import com.hello.suripu.core.speech.models.SpeechToTextService;
 import com.hello.suripu.core.speech.models.WakeWord;
 import com.hello.suripu.core.util.HelloHttpHeader;
+
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import uk.ac.open.audio.AudioException;
+import uk.ac.open.audio.adpcm.ADPCMDecoder;
+import uk.ac.open.audio.adpcm.ADPCMEncoder;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
 import is.hello.speech.core.api.SpeechResultsKinesis;
@@ -26,29 +54,6 @@ import is.hello.speech.resources.v1.InvalidSignatureException;
 import is.hello.speech.resources.v1.InvalidSignedBodyException;
 import is.hello.speech.resources.v1.SignedBodyHandler;
 import is.hello.speech.resources.v1.UploadData;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import uk.ac.open.audio.AudioException;
-import uk.ac.open.audio.adpcm.ADPCMDecoder;
-import uk.ac.open.audio.adpcm.ADPCMEncoder;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Map;
-import java.util.UUID;
 
 
 @Path("/v2/upload")

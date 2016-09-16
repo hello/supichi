@@ -2,13 +2,16 @@ package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.SpeechCommand;
 import is.hello.speech.core.response.SupichiResponseType;
-
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by ksg on 6/20/16
@@ -31,6 +34,17 @@ public abstract class BaseHandler {
     Optional<SpeechCommand> getCommand(final String text) {
         if (commandMap.containsKey(text)) {
             return Optional.of(commandMap.get(text));
+        }
+        for(final String key:commandMap.keySet()) {
+            if(text.contains(key)) {
+                return Optional.of(commandMap.get(key));
+            }
+            //Check if there is a pattern match when treating the commandMap key as a regex pattern
+            final Pattern r = Pattern.compile(key);
+            Matcher m = r.matcher(text);
+            if(m.find()) {
+                return Optional.of(commandMap.get(key));
+            }
         }
         return Optional.absent();
     }
