@@ -140,6 +140,7 @@ if __name__ == '__main__':
     import struct
     speech_data = speech_pb2.speech_data()
     speech_data.word = speech_pb2.OK_SENSE
+    speech_data.word = speech_pb2.STOP
     speech_data.confidence = 125
     print speech_data
     pb_str = speech_data.SerializeToString()
