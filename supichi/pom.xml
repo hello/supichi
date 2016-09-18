@@ -15,7 +15,6 @@
 
     <properties>
         <aws.sdk.version>1.10.34</aws.sdk.version>
-        <supichi.version>0.4.0-SNAPSHOT</supichi.version>
         <java.version>1.8</java.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <!--<tcnative.classifier>linux-x86_64</tcnative.classifier>-->
@@ -186,7 +185,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>18.0</version>
+            <version>19.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.oauth-client</groupId>
@@ -210,12 +209,12 @@
         <dependency>
             <groupId>is.hello.speech</groupId>
             <artifactId>google-api</artifactId>
-            <version>${supichi.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>is.hello.speech</groupId>
             <artifactId>supichi-core</artifactId>
-            <version>${supichi.version}</version>
+            <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.guava</groupId>
