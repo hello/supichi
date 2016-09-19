@@ -1,36 +1,27 @@
+import os
 import argparse
+import base64
 
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 
-import base64
-
-import os
-
-
-BUCKET = 'hello-voice-upload-dev'
-ACCESS_KEY = 'AKIAJ5F7MY4477II5GTA'
-SECRET_KEY ='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'
-REGION = 'us-east-1'
-
 def debug(args):
     account_id = args.account
-    ACCESS_KEY = args.key
-    SECRET_KEY = args.secret
 
-    dynamodb = boto3.resource('dynamodb', 
-        aws_access_key_id=ACCESS_KEY,
-        aws_secret_access_key=SECRET_KEY)
+    session = boto3.Session(
+        aws_access_key_id=args.key,
+        aws_secret_access_key=args.secret,
+        region_name="us-east-1")
 
+    dynamodb = boto3.resource('dynamodb')
     speech_timeline = dynamodb.Table('speech_timeline')
-
     speech_results = dynamodb.Table('speech_results')
 
-    kms = boto3.client('kms',
-        aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
+    kms = boto3.client('kms')
 
+    s3 = boto3.client('s3')
 
-    # get timeline
+    # get speech timeline
     response = speech_timeline.query(
         KeyConditionExpression=Key('account_id').eq(account_id),
         Limit=args.limit,
@@ -40,7 +31,7 @@ def debug(args):
     # boto3.set_stream_logger(name='botocore')
 
     speeches = response['Items']
-    results = {'uuids': [], 'ts':[], 'result': []}
+    results = {'uuids': [], 'ts':[], 'transcript': []}
     for speech in speeches:
         euuid = speech['e_uuid']
 
@@ -50,29 +41,26 @@ def debug(args):
 
         uuid = decrypted['Plaintext']
 
+        # get transription results
         res = speech_results.get_item(Key={'uuid' : uuid})
         res2 = {}
         if 'Item' in res:
             res2 = res['Item']
 
-        # print account_id, speech['ts'], uuid
         results['uuids'].append(uuid)
         results['ts'].append(speech['ts'])
-        results['result'].append(res2)
+        results['transcript'].append(res2)
 
 
-    s3 = boto3.client('s3',
-        aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
-        # host='https://s3.dualstack.us-east-1.amazonaws.com')
-
+    # results and download audio file
     index = 0
     for uuid in results['uuids']:
         ts = results['ts'][index]
         confidence = 0.0
         text = ""
-        if results['result'][index] and 'conf' in results['result'][index]:
-            confidence = results['result'][index]['conf']
-            text = results['result'][index]['text']
+        if results['transcript'][index] and 'conf' in results['transcript'][index]:
+            confidence = results['transcript'][index]['conf']
+            text = results['transcript'][index]['text']
             
         print "ts=%s id=%s confidence=%0.4f transcript=%s" % (
             ts, uuid, confidence, text)
@@ -82,7 +70,8 @@ def debug(args):
         if args.download:
             filename = "%s.raw" % (uuid)
             with open(filename, "wb") as f:
-                s3.download_fileobj(BUCKET, "sense_1_5/%s" % filename, f)
+                s3.download_fileobj(
+                    "hello-voice-upload-dev", "sense_1_5/%s" % filename, f)
                 
 
 def parse_args():
@@ -97,6 +86,7 @@ def parse_args():
 
 if __name__ == '__main__':
 
+    os.system("aws configure set region us-east-1")
     os.system("aws configure set default.s3.signature_version s3v4")
     args = parse_args()
     debug(args)
