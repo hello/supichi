@@ -12,14 +12,13 @@
 
     <properties>
         <java.version>1.8</java.version>
-        <suripu.version>0.8.5601</suripu.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>19.0</version>
+            <version>18.0</version>
         </dependency>
         <dependency>
             <groupId>com.hello.suripu</groupId>

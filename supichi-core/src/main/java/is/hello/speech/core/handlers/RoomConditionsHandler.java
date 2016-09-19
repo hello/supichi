@@ -2,26 +2,30 @@ package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.models.Calibration;
-import com.hello.suripu.core.models.CurrentRoomState;
 import com.hello.suripu.core.models.Device;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sensor;
-import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechCommand;
+import com.hello.suripu.core.roomstate.Condition;
+import com.hello.suripu.core.roomstate.CurrentRoomState;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+
+import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechCommand;
 
 
 /**
@@ -118,7 +122,7 @@ public class RoomConditionsHandler extends BaseHandler {
         final Optional<Calibration> calibrationOptional = calibrationDAO.getStrict(senseId);
 
         final CurrentRoomState roomState = CurrentRoomState.fromDeviceData(deviceData, DateTime.now(), thresholdInMinutes, unit, calibrationOptional, NO_SOUND_FILL_VALUE_DB);
-        if (roomState.temperature.condition.equals(CurrentRoomState.State.Condition.UNKNOWN)) {
+        if (roomState.temperature().condition().equals(Condition.UNKNOWN)) {
             response.put("result", HandlerResult.Outcome.FAIL.getValue());
             response.put("error", "data too old");
             return response;
@@ -130,27 +134,27 @@ public class RoomConditionsHandler extends BaseHandler {
             case ROOM_TEMPERATURE:
                 if (unit.equalsIgnoreCase("f")) {
                     sensorUnit = "ºF";
-                    sensorValue = String.valueOf(celsiusToFahrenheit(roomState.temperature.value));
+                    sensorValue = String.valueOf(celsiusToFahrenheit(roomState.temperature().value));
 
                 } else {
                     sensorUnit = "ºF";
-                    sensorValue = String.valueOf(Math.round(roomState.temperature.value));
+                    sensorValue = String.valueOf(Math.round(roomState.temperature().value));
                 }
                 break;
             case ROOM_HUMIDITY:
-                sensorValue = String.valueOf(Math.round(roomState.humidity.value));
+                sensorValue = String.valueOf(Math.round(roomState.humidity().value));
                 sensorUnit = "percent";
                 break;
             case ROOM_LIGHT:
-                sensorValue = String.valueOf(Math.round(roomState.light.value));
+                sensorValue = String.valueOf(Math.round(roomState.light().value));
                 sensorUnit = "lux";
                 break;
             case ROOM_SOUND:
-                sensorValue = String.valueOf(Math.round(roomState.sound.value));
+                sensorValue = String.valueOf(Math.round(roomState.sound().value));
                 sensorUnit = "decibels";
                 break;
             case PARTICULATES:
-                sensorValue = String.valueOf(Math.round(roomState.particulates.value));
+                sensorValue = String.valueOf(Math.round(roomState.particulates().value));
                 sensorUnit = "micro grams per cubic meter";
                 break;
             default:

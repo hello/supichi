@@ -10,13 +10,14 @@
     <version>0.4.0-SNAPSHOT</version>
 
     <properties>
-        <suripu.version>0.8.5601</suripu.version>
         <dropwizard.version>1.0.0</dropwizard.version>
         <aws.sdk.version>1.10.34</aws.sdk.version>
-        <google.guava.version>18.0</google.guava.version>
+        <google.guava.version>19.0</google.guava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
+        <suripu.version>0.8.5620</suripu.version>
+        <gaibu.version>0.1.5</gaibu.version>
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <build-helper-maven-plugin.version>1.9.1</build-helper-maven-plugin.version>
     </properties>
@@ -77,6 +78,40 @@
         </repository>
     </repositories>
 
+    <dependencies>
+        <dependency>
+            <groupId>is.hello.gaibu</groupId>
+            <artifactId>home-automation</artifactId>
+            <version>${gaibu.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>is.hello.gaibu</groupId>
+            <artifactId>gaibu-core</artifactId>
+            <version>${gaibu.version}</version>
+        </dependency>
+    </dependencies>
+    <!--<distributionManagement>-->
+        <!--<site>-->
+            <!--<id>s3.site</id>-->
+            <!--<url>s3://hello-maven/site</url>-->
+        <!--</site>-->
+        <!--<repository>-->
+            <!--<id>s3.release</id>-->
+            <!--<url>s3://hello-maven/release</url>-->
+        <!--</repository>-->
+        <!--<snapshotRepository>-->
+            <!--<id>s3.snapshot</id>-->
+            <!--<url>s3://hello-maven/snapshot</url>-->
+        <!--</snapshotRepository>-->
+    <!--</distributionManagement>-->
+
+    <!--<repositories>-->
+        <!--<repository>-->
+            <!--<id>project.local</id>-->
+            <!--<name>project</name>-->
+            <!--<url>file:${project.basedir}/</url>-->
+        <!--</repository>-->
+    <!--</repositories>-->
     <pluginRepositories>
         <pluginRepository>
             <releases>

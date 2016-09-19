@@ -8,7 +8,12 @@ import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
+import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
+
+import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
+import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
+import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.speech.core.db.SpeechCommandDAO;
 
 /**
@@ -26,6 +31,10 @@ public class HandlerFactory {
     final private TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB;
     final private String forecastio;
     final private AccountLocationDAO accountLocationDAO;
+    final private PersistentExternalTokenStore externalTokenStore;
+    private final Vault tokenKMSVault;
+    private final PersistentExternalApplicationStore externalApplicationStore;
+    private final PersistentExternalAppDataStore externalAppDataStore;
 
 
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
@@ -37,7 +46,11 @@ public class HandlerFactory {
                            final CalibrationDAO calibrationDAO,
                            final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB,
                            final String forecastio,
-                           final AccountLocationDAO accountLocationDAO) {
+                           final AccountLocationDAO accountLocationDAO,
+                           final PersistentExternalTokenStore externalTokenStore,
+                           final PersistentExternalApplicationStore externalApplicationStore,
+                           final PersistentExternalAppDataStore externalAppDataStore,
+                           final Vault tokenKMSVault) {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
@@ -48,6 +61,10 @@ public class HandlerFactory {
         this.timeZoneHistoryDAODynamoDB = timeZoneHistoryDAODynamoDB;
         this.forecastio = forecastio;
         this.accountLocationDAO = accountLocationDAO;
+        this.externalTokenStore = externalTokenStore;
+        this.externalApplicationStore = externalApplicationStore;
+        this.externalAppDataStore = externalAppDataStore;
+        this.tokenKMSVault = tokenKMSVault;
     }
 
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
@@ -59,11 +76,15 @@ public class HandlerFactory {
                                         final CalibrationDAO calibrationDAO,
                                         final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB,
                                         final String forecastio,
-                                        final AccountLocationDAO accountLocationDAO
-                                        ) {
+                                        final AccountLocationDAO accountLocationDAO,
+                                        final PersistentExternalTokenStore externalTokenStore,
+                                        final PersistentExternalApplicationStore externalApplicationStore,
+                                        final PersistentExternalAppDataStore externalAppDataStore,
+                                        final Vault tokenKMSVault) {
 
         return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor, deviceDataDAODynamoDB,
-                deviceDAO, senseColorDAO, calibrationDAO,timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO);
+                deviceDAO, senseColorDAO, calibrationDAO,timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
+            externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
     }
 
     public WeatherHandler weatherHandler() {
@@ -88,10 +109,19 @@ public class HandlerFactory {
     }
 
     public SleepSoundHandler sleepSoundHandler() {
-        return new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor,5);
+        return new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor, 5);
+    }
+
+    public HueHandler hueHandler() {
+        return new HueHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
     }
 
     public TimelineHandler timelineHandler() {
         return new TimelineHandler(speechCommandDAO);
+    }
+
+    public NestHandler nestHandler() {
+        return new NestHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
+
     }
 }

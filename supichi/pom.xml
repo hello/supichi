@@ -14,7 +14,13 @@
     <artifactId>supichi</artifactId>
 
     <properties>
-        <supichi.version>0.4.0-SNAPSHOT</supichi.version>
+        <aws.sdk.version>1.10.34</aws.sdk.version>
+        <java.version>1.8</java.version>
+        <dropwizard.version>1.0.0</dropwizard.version>
+        <!--<tcnative.classifier>linux-x86_64</tcnative.classifier>-->
+        <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
+        <build-helper-maven-plugin.version>1.9.1</build-helper-maven-plugin.version>
+        <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
         <tcnative.classifier>${os.detected.classifier}</tcnative.classifier>
     </properties>
 
@@ -109,6 +115,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.2</version>
+        </dependency>
+        <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
             <version>${dropwizard.version}</version>
@@ -119,6 +130,17 @@
             <version>${dropwizard.version}</version>
         </dependency>
         <!--ALL THE AWS DEPENDENCIES-->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>amazon-kinesis-producer</artifactId>
+            <version>0.10.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.amazonaws</groupId>
+                    <artifactId>aws-java-sdk-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-core</artifactId>
@@ -148,17 +170,6 @@
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sqs</artifactId>
             <version>${aws.sdk.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>amazon-kinesis-producer</artifactId>
-            <version>0.10.2</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.amazonaws</groupId>
-                    <artifactId>aws-java-sdk-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -198,12 +209,12 @@
         <dependency>
             <groupId>is.hello.speech</groupId>
             <artifactId>google-api</artifactId>
-            <version>${supichi.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>is.hello.speech</groupId>
             <artifactId>supichi-core</artifactId>
-            <version>${supichi.version}</version>
+            <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.guava</groupId>
@@ -255,9 +266,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.2</version>
+            <groupId>com.hello.suripu</groupId>
+            <artifactId>suripu-coredropwizard</artifactId>
+            <version>${suripu.version}</version>
         </dependency>
     </dependencies>
 </project>
