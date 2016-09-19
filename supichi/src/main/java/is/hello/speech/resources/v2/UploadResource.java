@@ -11,6 +11,23 @@ import com.hello.suripu.core.speech.models.SpeechResult;
 import com.hello.suripu.core.speech.models.SpeechToTextService;
 import com.hello.suripu.core.speech.models.WakeWord;
 import com.hello.suripu.core.util.HelloHttpHeader;
+import is.hello.speech.clients.SpeechClient;
+import is.hello.speech.core.api.Response;
+import is.hello.speech.core.api.Speech;
+import is.hello.speech.core.api.SpeechResultsKinesis;
+import is.hello.speech.core.handlers.executors.HandlerExecutor;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechServiceResult;
+import is.hello.speech.core.models.UploadResponseParam;
+import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
+import is.hello.speech.core.response.SupichiResponseBuilder;
+import is.hello.speech.core.response.SupichiResponseType;
+import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.resources.v1.InvalidSignatureException;
+import is.hello.speech.resources.v1.InvalidSignedBodyException;
+import is.hello.speech.resources.v1.SignedBodyHandler;
+import is.hello.speech.resources.v1.UploadData;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -37,23 +54,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-
-import is.hello.speech.clients.SpeechClient;
-import is.hello.speech.core.api.Response;
-import is.hello.speech.core.api.SpeechResultsKinesis;
-import is.hello.speech.core.handlers.executors.HandlerExecutor;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechServiceResult;
-import is.hello.speech.core.models.UploadResponseParam;
-import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
-import is.hello.speech.core.response.SupichiResponseBuilder;
-import is.hello.speech.core.response.SupichiResponseType;
-import is.hello.speech.kinesis.SpeechKinesisProducer;
-import is.hello.speech.resources.v1.InvalidSignatureException;
-import is.hello.speech.resources.v1.InvalidSignedBodyException;
-import is.hello.speech.resources.v1.SignedBodyHandler;
-import is.hello.speech.resources.v1.UploadData;
 
 
 @Path("/v2/upload")
@@ -116,7 +116,7 @@ public class UploadResource {
             throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
         }
 
-        // old default: 8AF6441AF72321F4  C8DAAC353AEFA4A9
+        // parse audio and protobuf
         final UploadData uploadData;
         try {
             uploadData = signedBodyHandler.extractUploadData(senseId, signedBody);
@@ -143,7 +143,46 @@ public class UploadResource {
             return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
         }
 
-        // convert ADPCM to 16-bit 16k PCM
+        // TODO: for now, pick the smallest account-id as the primary id
+        Long accountId = accounts.get(0).accountId;
+        for (final DeviceAccountPair accountPair : accounts) {
+            if (accountPair.accountId < accountId) {
+                accountId = accountPair.accountId;
+            }
+        }
+
+        LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", senseId, accountId, responseParam.type().name());
+
+        // save audio to Kinesis
+        final String audioUUID = UUID.randomUUID().toString();
+        final DateTime speechCreated = DateTime.now(DateTimeZone.UTC);
+
+        SpeechResult.Builder builder = new SpeechResult.Builder();
+        builder.withAccountId(accountId)
+                .withSenseId(senseId)
+                .withAudioIndentifier(audioUUID)
+                .withDateTimeUTC(speechCreated);
+        speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
+
+        // return empty bytes for certain wakeword
+        final Speech.keyword keyword = uploadData.speechData.getWord();
+        final WakeWord wakeWord = WakeWord.fromString(keyword.name());
+        final Map<String, Float> wakeWordConfidence = setWakeWordConfidence(wakeWord, (float) uploadData.speechData.getConfidence());
+        builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
+                .withWakeWord(wakeWord)
+                .withWakeWordsConfidence(wakeWordConfidence)
+                .withService(SpeechToTextService.GOOGLE);
+
+
+        if (keyword.equals(Speech.keyword.STOP) || keyword.equals(Speech.keyword.SNOOZE)) {
+            LOGGER.debug("action=encounter-STOP-SNOOZE keyword={}", keyword);
+            builder.withResult(Result.OK);
+            speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
+
+            return EMPTY_BYTE;
+        }
+
+        // convert audio: ADPCM to 16-bit 16k PCM
         final int chunkSize = ADPCMEncoder.BLOCKBYTES - ADPCM_STATE_SIZE;
         final int chunks = body.length / chunkSize;
 
@@ -186,37 +225,10 @@ public class UploadResource {
             }
         }
 
+        // process audio
         final byte[] decoded = decodedStream.toByteArray();
         LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
 
-        // TODO: for now, pick the smallest account-id as the primary id
-        Long accountId = accounts.get(0).accountId;
-        for (final DeviceAccountPair accountPair : accounts) {
-            if (accountPair.accountId < accountId) {
-                accountId = accountPair.accountId;
-            }
-        }
-
-        LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", senseId, accountId, responseParam.type().name());
-
-        // save audio to Kinesis
-        final String audioUUID = UUID.randomUUID().toString();
-        final DateTime speechCreated = DateTime.now(DateTimeZone.UTC);
-
-        SpeechResult.Builder builder = new SpeechResult.Builder();
-        builder.withAccountId(accountId)
-                .withSenseId(senseId)
-                .withAudioIndentifier(audioUUID)
-                .withDateTimeUTC(speechCreated);
-        speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
-
-        final WakeWord wakeWord = WakeWord.fromString(uploadData.speechData.getWord().name());
-        final Map<String, Float> wakeWordConfidence = setWakeWordConfidence(wakeWord, (float) uploadData.speechData.getConfidence());
-        builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                .withWakeWord(wakeWord)
-                .withWakeWordsConfidence(wakeWordConfidence)
-                .withService(SpeechToTextService.GOOGLE);
-        // process audio
         try {
             final SpeechServiceResult resp = speechClient.stream(decoded, sampling);
 
