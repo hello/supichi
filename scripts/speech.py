@@ -163,7 +163,7 @@ if __name__ == '__main__':
 
     headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "8AF6441AF72321F4"}
     if env == 'local':
-        ENDPOINT = "http://localhost:8181/v1/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
+        ENDPOINT = "http://localhost:8181/demo/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
     elif env == 'localv2':
         ENDPOINT = "http://localhost:8181/v2/upload/audio"
     elif env == 'dev':
