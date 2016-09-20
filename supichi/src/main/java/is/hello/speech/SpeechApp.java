@@ -1,8 +1,5 @@
 package is.hello.speech;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -19,6 +16,8 @@ import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -46,17 +45,6 @@ import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
-
-import org.skife.jdbi.v2.DBI;
-
-import java.net.InetAddress;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -100,6 +88,15 @@ import is.hello.speech.resources.v1.SignedBodyHandler;
 import is.hello.speech.resources.v1.UploadResource;
 import is.hello.speech.utils.S3ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
+import org.skife.jdbi.v2.DBI;
+
+import java.net.InetAddress;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
 
@@ -363,7 +360,19 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         environment.jersey().register(new DemoResource(handlerExecutor, deviceDAO, s3ResponseBuilder, watsonResponseBuilder));
         environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
-        environment.jersey().register(new is.hello.speech.resources.v2.UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
+        environment.jersey().register(new is.hello.speech.resources.v2.UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO,
+                speechKinesisProducer, responseBuilders, handlersToBuilders));
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.watsonAudioConfiguration().getBucketName()));
+
+        // start Chris testing unequalized audio
+        final String s3ResponseBucketNoEq = String.format("%s/voice/watson-text2speech/16k", speechBucket);
+        final S3ResponseBuilder s3ResponseBuilderNoEq = new S3ResponseBuilder(amazonS3, s3ResponseBucketNoEq, "WATSON", watsonConfiguration.getVoiceName());
+        final Map<SupichiResponseType, SupichiResponseBuilder> responseBuildersNoEq = Maps.newHashMap();
+        responseBuildersNoEq.put(SupichiResponseType.S3, s3ResponseBuilderNoEq);
+        responseBuildersNoEq.put(SupichiResponseType.WATSON, watsonResponseBuilder);
+        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO,
+                speechKinesisProducer, responseBuildersNoEq, handlersToBuilders));
+        // end Chris testing
+
     }
 }
