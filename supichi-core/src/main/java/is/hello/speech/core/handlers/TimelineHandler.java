@@ -24,6 +24,7 @@ public class TimelineHandler extends BaseHandler {
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("sleep last", SpeechCommand.TIMELINE);
         tempMap.put("last night", SpeechCommand.TIMELINE);
+        tempMap.put("sleep score", SpeechCommand.TIMELINE);
         return tempMap;
     }
 

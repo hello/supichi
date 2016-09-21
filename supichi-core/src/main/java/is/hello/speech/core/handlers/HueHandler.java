@@ -1,17 +1,9 @@
 package is.hello.speech.core.handlers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Map;
-
 import is.hello.gaibu.core.models.ExternalApplication;
 import is.hello.gaibu.core.models.ExternalApplicationData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -24,6 +16,12 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.AnnotatedTranscript;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Map;
 
 
 /**
@@ -167,6 +165,12 @@ public class HueHandler extends BaseHandler {
         }
 
         return new HandlerResult(HandlerType.HUE, command, response);
+    }
+
+    @Override
+    public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
+        // TODO HueAnnotation
+        return NO_ANNOTATION_SCORE;
     }
 
 }

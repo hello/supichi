@@ -2,16 +2,14 @@ package is.hello.speech.core.handlers.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Map;
-
 import is.hello.speech.core.handlers.BaseHandler;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.response.SupichiResponseType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 public class UnigramHandlerExecutor implements HandlerExecutor {
 
@@ -34,7 +32,7 @@ public class UnigramHandlerExecutor implements HandlerExecutor {
             LOGGER.debug("action=get-transcribed-command text={}", commandText);
 
             // TODO: command-parser
-            final Optional<BaseHandler> optionalHandler = getHandler(commandText.toLowerCase());
+            final Optional<BaseHandler> optionalHandler = getHandler(transcript.toLowerCase());
 
             if (optionalHandler.isPresent()) {
                 final BaseHandler handler = optionalHandler.get();
@@ -65,8 +63,7 @@ public class UnigramHandlerExecutor implements HandlerExecutor {
         return this;
     }
 
-    @Override
-    public Optional<BaseHandler> getHandler(String command) {
+    private Optional<BaseHandler> getHandler(final String command) {
         if (commandToHandlerMap.containsKey(command)) {
             final HandlerType handlerType = commandToHandlerMap.get(command);
             if (availableHandlers.containsKey(handlerType)) {

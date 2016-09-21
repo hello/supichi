@@ -2,12 +2,16 @@ package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
-
+import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.AnnotatedTranscript;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,17 +19,42 @@ import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.response.SupichiResponseType;
-
 
 /**
  * Created by ksg on 6/17/16
  */
 public class SleepSoundHandler extends BaseHandler {
+    public enum SoundName {
+        NONE("none"),
+        AURA("aura"),
+        NOCTURNE("nocturne"),
+        MORPHEUS("morpheus"),
+        HORIZON("horizon"),
+        COSMOS("cosmos"),
+        AUTUMN_WIND("autumn wind"),
+        FIRESIDE("fireside"),
+        RAINFALL("rainfall"),
+        FOREST_CREEK("forest creek"),
+        BROWN_NOISE("brown noise"),
+        WHITE_NOISE("white noise");
+
+        public final String value;
+
+        SoundName(String value) {
+            this.value = value;
+        }
+
+        public static SoundName fromString(final String text) {
+            if (text != null) {
+                for (final SoundName soundName : SoundName.values()) {
+                    if (text.equalsIgnoreCase(soundName.toString()))
+                        return soundName;
+                }
+            }
+            return SoundName.NONE;
+        }
+
+    }
 
     // TODO: need to get these info from somewhere
     private static final Duration DEFAULT_SLEEP_SOUND_DURATION = Duration.create(2L, "30 Minutes", 1800);
@@ -102,6 +131,11 @@ public class SleepSoundHandler extends BaseHandler {
 
     }
 
+    @Override
+    public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
+        // sound-name + duration
+        return annotatedTranscript.sleepSounds.size() + annotatedTranscript.durations.size();
+    }
 
 
     private Boolean playSleepSound(final String senseId, final Long accountId) {

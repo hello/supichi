@@ -2,18 +2,16 @@ package is.hello.speech.core.handlers.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
+import is.hello.speech.core.handlers.BaseHandler;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import is.hello.speech.core.handlers.BaseHandler;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.response.SupichiResponseType;
 
 public class RegexHandlerExecutor implements HandlerExecutor {
 
@@ -29,9 +27,6 @@ public class RegexHandlerExecutor implements HandlerExecutor {
 
     @Override
     public HandlerResult handle(final String senseId, final Long accountId, final String transcript) {
-
-
-
         // TODO: command-parser
         final Optional<BaseHandler> optionalHandler = getHandler(transcript);
 
@@ -50,7 +45,7 @@ public class RegexHandlerExecutor implements HandlerExecutor {
 
     @Override
     public HandlerExecutor register(final HandlerType handlerType, final BaseHandler baseHandler) {
-        // Create in memory global map of commands
+        // Create in memory global map of commandse
         for (final String command : baseHandler.getRelevantCommands()) {
             final HandlerType type = commandToHandlerMap.putIfAbsent(command, handlerType);
             if(type != null) {
@@ -63,19 +58,20 @@ public class RegexHandlerExecutor implements HandlerExecutor {
         return this;
     }
 
-    @Override
-    public Optional<BaseHandler> getHandler(String command) {
+    private Optional<BaseHandler> getHandler(String command) {
+        Optional<BaseHandler> foundHandler = Optional.absent();
         for(final String pattern : commandToHandlerMap.keySet()) {
             final Pattern r = Pattern.compile(pattern);
+            LOGGER.debug("Pattern {}, {}", pattern, commandToHandlerMap.get(pattern));
             Matcher m = r.matcher(command);
             if(m.find()) {
                 final HandlerType handlerType = commandToHandlerMap.get(pattern);
-                if (availableHandlers.containsKey(handlerType)) {
-                    return Optional.of(availableHandlers.get(handlerType));
+                if (!foundHandler.isPresent() && availableHandlers.containsKey(handlerType)) {
+                    foundHandler = Optional.of(availableHandlers.get(handlerType));
                 }
             }
         }
-        return Optional.absent();
+        return foundHandler;
     }
 
     @Override

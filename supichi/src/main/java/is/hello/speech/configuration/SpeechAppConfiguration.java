@@ -17,6 +17,10 @@ import javax.validation.constraints.NotNull;
 
 public class SpeechAppConfiguration extends Configuration {
 
+    @JsonProperty("debug")
+    private Boolean debug;
+    public Boolean debug() { return debug; }
+
     @JsonProperty("s3_bucket")
     private S3Configuration s3Configuration;
     public S3Configuration getS3Configuration() { return s3Configuration; }
