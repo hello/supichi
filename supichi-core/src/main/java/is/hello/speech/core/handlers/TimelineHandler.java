@@ -6,7 +6,6 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.models.entity.Entity;
 import is.hello.speech.core.response.SupichiResponseType;
 
 import java.util.Map;
@@ -44,11 +43,6 @@ public class TimelineHandler extends BaseHandler {
         }
 
         return new HandlerResult(HandlerType.ALARM, command, response);
-    }
-
-    @Override
-    public Integer matchEntity(Entity entity) {
-        return NO_ENTITY_MATCHED;
     }
 
     @Override

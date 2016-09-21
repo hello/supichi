@@ -6,7 +6,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.models.entity.Entity;
+import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.response.SupichiResponseType;
 
 import java.util.Map;
@@ -53,8 +53,8 @@ public class AlarmHandler extends BaseHandler {
     }
 
     @Override
-    public Integer matchEntity(Entity entity) {
-        return entity.times.size();
+    public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
+        return annotatedTranscript.times.size();
     }
 
     @Override

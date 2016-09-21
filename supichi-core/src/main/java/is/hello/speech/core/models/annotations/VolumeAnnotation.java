@@ -1,13 +1,13 @@
-package is.hello.speech.core.models.entity;
+package is.hello.speech.core.models.annotations;
 
 /**
  * Created by ksg on 9/20/16
  */
-public class VolumeEntity implements EntityInterface {
+public class VolumeAnnotation implements AnnotationInterface {
     private final String matchingText;
     private final Integer volumePercent;
 
-    public VolumeEntity(final String matchingText, final Integer volumePercent) {
+    public VolumeAnnotation(final String matchingText, final Integer volumePercent) {
         this.matchingText = matchingText;
         this.volumePercent = volumePercent;
     }

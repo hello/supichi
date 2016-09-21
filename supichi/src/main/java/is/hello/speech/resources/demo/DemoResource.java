@@ -23,6 +23,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
@@ -42,17 +43,21 @@ public class DemoResource {
     private final S3ResponseBuilder s3ResponseBuilder;
     private final WatsonResponseBuilder watsonResponseBuilder;
 
+    private final Boolean debug;
+
     @Context
     HttpServletRequest request;
 
     public DemoResource(final HandlerExecutor handlerExecutor,
-                          final DeviceDAO deviceDAO,
-                          final S3ResponseBuilder s3ResponseBuilder,
-                          final WatsonResponseBuilder watsonResponseBuilder) {
+                        final DeviceDAO deviceDAO,
+                        final S3ResponseBuilder s3ResponseBuilder,
+                        final WatsonResponseBuilder watsonResponseBuilder,
+                        final Boolean debug) {
         this.handlerExecutor = handlerExecutor;
         this.deviceDAO = deviceDAO;
         this.s3ResponseBuilder = s3ResponseBuilder;
         this.watsonResponseBuilder = watsonResponseBuilder;
+        this.debug = debug;
     }
 
     @Path("/text")
@@ -63,6 +68,10 @@ public class DemoResource {
     public byte[] text(@Valid final TextQuery query,
                        @DefaultValue("mp3") @QueryParam("response") final UploadResponseParam responseParam
     ) throws InterruptedException, IOException {
+
+        if (!debug) {
+            throw new WebApplicationException(javax.ws.rs.core.Response.Status.NOT_FOUND);
+        }
 
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(query.senseId);
 

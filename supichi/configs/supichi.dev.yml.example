@@ -1,3 +1,5 @@
+debug: true
+
 s3_bucket:
   bucket: hello-firmware-public
   aws_access_key: AKIAIPS2RBLAWR6TNSPA # temp credentials

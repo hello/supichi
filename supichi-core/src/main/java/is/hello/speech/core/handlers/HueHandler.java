@@ -16,7 +16,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.models.entity.Entity;
+import is.hello.speech.core.models.AnnotatedTranscript;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,9 +168,9 @@ public class HueHandler extends BaseHandler {
     }
 
     @Override
-    public Integer matchEntity(Entity entity) {
-        // TODO
-        return NO_ENTITY_MATCHED;
+    public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
+        // TODO HueAnnotation
+        return NO_ANNOTATION_SCORE;
     }
 
 }

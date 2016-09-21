@@ -1,3 +1,4 @@
+debug: true
 
 common_db:
   driverClass: org.postgresql.Driver

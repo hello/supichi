@@ -6,10 +6,10 @@ import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import is.hello.speech.core.handlers.BaseHandler;
-import is.hello.speech.core.models.EntityExtractor;
+import is.hello.speech.core.models.Annotator;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.entity.Entity;
+import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.response.SupichiResponseType;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class RegexEntityHandlerExecutor implements HandlerExecutor {
+public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
 
     private Map<HandlerType, BaseHandler> availableHandlers = Maps.newConcurrentMap();
     private Map<Pattern, HandlerType> commandToHandlerMap = Maps.newConcurrentMap();
@@ -29,9 +29,9 @@ public class RegexEntityHandlerExecutor implements HandlerExecutor {
 
     private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB;
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(RegexEntityHandlerExecutor.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(RegexAnnotationsHandlerExecutor.class);
 
-    public RegexEntityHandlerExecutor(final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB) {
+    public RegexAnnotationsHandlerExecutor(final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB) {
         this.timeZoneHistoryDAODynamoDB = timeZoneHistoryDAODynamoDB;
     }
 
@@ -50,9 +50,9 @@ public class RegexEntityHandlerExecutor implements HandlerExecutor {
         }
 
         // extract entities
-        final Entity entity = EntityExtractor.get(transcript, timeZone);
+        final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, timeZone);
 
-        final Optional<BaseHandler> optionalHandler = getHandler(entity);
+        final Optional<BaseHandler> optionalHandler = getHandler(annotatedTranscript);
 
         if (optionalHandler.isPresent()) {
             final BaseHandler handler = optionalHandler.get();
@@ -83,10 +83,10 @@ public class RegexEntityHandlerExecutor implements HandlerExecutor {
         return this;
     }
 
-    private Optional<BaseHandler> getHandler(final Entity entity) {
+    private Optional<BaseHandler> getHandler(final AnnotatedTranscript annotatedTranscript) {
 
         // Find a suitable handler via text
-        final String command = entity.transcript;
+        final String command = annotatedTranscript.transcript;
 
         final List<BaseHandler> possibleHandlers = Lists.newArrayList();
         for(final Pattern pattern : commandToHandlerMap.keySet()) {
@@ -107,17 +107,19 @@ public class RegexEntityHandlerExecutor implements HandlerExecutor {
             return Optional.absent();
         }
 
-        // additional handler scoring based on entity matching
+        // additional handler scoring based on annotatedTranscript matching
         int maxScore = 0;
         BaseHandler winner = possibleHandlers.get(0);
         for (final BaseHandler handler : possibleHandlers) {
-            final int score = handler.matchEntity(entity);
+            final int score = handler.matchAnnotations(annotatedTranscript);
             if (score > maxScore) {
+                LOGGER.debug("action=score-annotations prev_handler={} prev_score={} new_handler={} new_score={}",
+                        winner.getClass(), maxScore, handler.getClass(), score);
                 winner = handler;
                 maxScore = score;
             }
         }
-        LOGGER.debug("action=get-handler winner={} score={}", winner.getClass(), maxScore);
+        LOGGER.debug("action=get-handler final_handler={} final_score={}", winner.getClass(), maxScore);
         return Optional.of(winner);
     }
 

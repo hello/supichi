@@ -1,4 +1,4 @@
-package is.hello.speech.core.models.entity;
+package is.hello.speech.core.models.annotations;
 
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import is.hello.speech.core.handlers.SleepSoundHandler;
@@ -6,12 +6,12 @@ import is.hello.speech.core.handlers.SleepSoundHandler;
 /**
  * Created by ksg on 9/20/16
  */
-public class SleepSoundEntity implements EntityInterface {
+public class SleepSoundAnnotation implements AnnotationInterface {
 
     private final String matchingText;
     private final SleepSoundHandler.SoundName soundName;
 
-    public SleepSoundEntity(final String matchingText, final SleepSoundHandler.SoundName soundName) {
+    public SleepSoundAnnotation(final String matchingText, final SleepSoundHandler.SoundName soundName) {
         this.matchingText = matchingText;
         this.soundName = soundName;
     }

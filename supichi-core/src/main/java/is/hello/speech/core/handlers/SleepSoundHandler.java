@@ -7,10 +7,10 @@ import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.models.entity.Entity;
 import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,9 +132,9 @@ public class SleepSoundHandler extends BaseHandler {
     }
 
     @Override
-    public Integer matchEntity(Entity entity) {
+    public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
         // sound-name + duration
-        return entity.sleepSounds.size() + entity.durations.size();
+        return annotatedTranscript.sleepSounds.size() + annotatedTranscript.durations.size();
     }
 
 

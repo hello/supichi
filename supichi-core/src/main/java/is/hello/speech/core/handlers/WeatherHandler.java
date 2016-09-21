@@ -8,10 +8,10 @@ import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.models.AccountLocation;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.models.entity.Entity;
 import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,9 +75,9 @@ public class WeatherHandler extends BaseHandler {
     }
 
     @Override
-    public Integer matchEntity(Entity entity) {
-        // TODO: LocationEntity
-        return NO_ENTITY_MATCHED;
+    public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
+        // TODO: Location
+        return NO_ANNOTATION_SCORE;
     }
 
     @Override

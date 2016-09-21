@@ -8,7 +8,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.models.entity.Entity;
+import is.hello.speech.core.models.AnnotatedTranscript;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -66,9 +66,9 @@ public class TimeHandler extends BaseHandler {
     }
 
     @Override
-    public Integer matchEntity(Entity entity) {
-        // TODO: add LocationEntity
-        return NO_ENTITY_MATCHED;
+    public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
+        // TODO: add Location
+        return NO_ANNOTATION_SCORE;
     }
 
     private int getTimeZoneOffsetMillis(final Long accountId) {

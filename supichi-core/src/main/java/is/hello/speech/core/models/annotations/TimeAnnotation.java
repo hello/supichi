@@ -1,4 +1,4 @@
-package is.hello.speech.core.models.entity;
+package is.hello.speech.core.models.annotations;
 
 import org.joda.time.DateTime;
 
@@ -6,12 +6,12 @@ import org.joda.time.DateTime;
 /**
  * Created by ksg on 9/20/16
  */
-public class TimeEntity implements EntityInterface {
+public class TimeAnnotation implements AnnotationInterface {
 
     private final String matchingText;
     private final DateTime dateTime;
 
-    public TimeEntity(final String matchingText, final DateTime dateTime) {
+    public TimeAnnotation(final String matchingText, final DateTime dateTime) {
         this.matchingText = matchingText;
         this.dateTime = dateTime;
     }
