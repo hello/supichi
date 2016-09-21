@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 public class RegexEntityHandlerExecutor implements HandlerExecutor {
 
     private Map<HandlerType, BaseHandler> availableHandlers = Maps.newConcurrentMap();
-    private Map<String, HandlerType> commandToHandlerMap = Maps.newConcurrentMap();
+    private Map<Pattern, HandlerType> commandToHandlerMap = Maps.newConcurrentMap();
     private Map<HandlerType, SupichiResponseType> responseBuilders = Maps.newConcurrentMap();
 
     private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB;
@@ -71,7 +71,8 @@ public class RegexEntityHandlerExecutor implements HandlerExecutor {
     public HandlerExecutor register(final HandlerType handlerType, final BaseHandler baseHandler) {
         // Create in memory global map of commands
         for (final String command : baseHandler.getRelevantCommands()) {
-            final HandlerType type = commandToHandlerMap.putIfAbsent(command, handlerType);
+            final Pattern regexPattern = Pattern.compile(command);
+            final HandlerType type = commandToHandlerMap.putIfAbsent(regexPattern, handlerType);
             if(type != null) {
                 LOGGER.warn("warn=duplicate-command command={} handler={}", command, handlerType);
             }
@@ -88,10 +89,9 @@ public class RegexEntityHandlerExecutor implements HandlerExecutor {
         final String command = entity.transcript;
 
         final List<BaseHandler> possibleHandlers = Lists.newArrayList();
-        for(final String pattern : commandToHandlerMap.keySet()) {
-            final Pattern r = Pattern.compile(pattern);
+        for(final Pattern pattern : commandToHandlerMap.keySet()) {
             LOGGER.debug("Pattern {}, {}", pattern, commandToHandlerMap.get(pattern));
-            Matcher m = r.matcher(command);
+            Matcher m = pattern.matcher(command);
             if(m.find()) {
                 final HandlerType handlerType = commandToHandlerMap.get(pattern);
                 if (availableHandlers.containsKey(handlerType)) {
