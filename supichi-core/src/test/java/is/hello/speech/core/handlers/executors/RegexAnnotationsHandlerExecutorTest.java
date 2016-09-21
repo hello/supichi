@@ -3,6 +3,7 @@ package is.hello.speech.core.handlers.executors;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
+import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.speech.interfaces.Vault;
 
 import org.joda.time.DateTime;
@@ -29,13 +30,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
-public class RegexHandlerExecutorTest {
+public class RegexAnnotationsHandlerExecutorTest {
 
     final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
     final PersistentExternalTokenStore externalTokenStore = mock(PersistentExternalTokenStore.class);
     final PersistentExternalTokenStore badTokenStore = mock(PersistentExternalTokenStore.class);
     final PersistentExternalApplicationStore externalApplicationStore = mock(PersistentExternalApplicationStore.class);
     final PersistentExternalAppDataStore externalAppDataStore = mock(PersistentExternalAppDataStore.class);
+    final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = mock(TimeZoneHistoryDAODynamoDB.class);
     final Vault tokenKMSVault = mock(Vault.class);
 
     final String CLIENT_ID = "client_id";
@@ -80,6 +82,7 @@ public class RegexHandlerExecutorTest {
         Mockito.when(tokenKMSVault.decrypt(fakeToken.accessToken, encryptionContext)).thenReturn(Optional.of(fakeToken.accessToken));
         Mockito.when(externalAppDataStore.getAppData(1L, SENSE_ID)).thenReturn(Optional.of(fakeHueApplicationData));
         Mockito.when(externalAppDataStore.getAppData(2L, SENSE_ID)).thenReturn(Optional.of(fakeNestApplicationData));
+        Mockito.when(timeZoneHistoryDAODynamoDB.getCurrentTimeZone(Mockito.anyLong())).thenReturn(Optional.absent());
 
     }
 
@@ -97,7 +100,7 @@ public class RegexHandlerExecutorTest {
 
         final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
         final TriviaHandler handler = new TriviaHandler(speechCommandDAO);
-        final HandlerExecutor executor = new RegexHandlerExecutor()
+        final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
                 .register(HandlerType.TRIVIA, handler);
 
         final HandlerResult correctResult = executor.handle("123456789", 99L, "the president");
@@ -114,7 +117,7 @@ public class RegexHandlerExecutorTest {
         final HueHandler hueHandler = new HueHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
         final NestHandler nestHandler = new NestHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
 
-        final HandlerExecutor executor = new RegexHandlerExecutor()
+        final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
             .register(HandlerType.NEST, nestHandler)
             .register(HandlerType.HUE, hueHandler);
 
@@ -195,7 +198,7 @@ public class RegexHandlerExecutorTest {
         final HueHandler hueHandler = new HueHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
         final NestHandler nestHandler = new NestHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
 
-        final HandlerExecutor executor = new RegexHandlerExecutor()
+        final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
             .register(HandlerType.NEST, nestHandler)
             .register(HandlerType.HUE, hueHandler);
 
@@ -217,7 +220,7 @@ public class RegexHandlerExecutorTest {
         final NestHandler nestHandler = new NestHandler(speechCommandDAO, badTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
 
 
-        final HandlerExecutor executor = new RegexHandlerExecutor()
+        final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
             .register(HandlerType.NEST, nestHandler)
             .register(HandlerType.HUE, hueHandler);
 
