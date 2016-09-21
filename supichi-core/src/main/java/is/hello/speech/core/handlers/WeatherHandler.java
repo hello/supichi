@@ -1,25 +1,23 @@
 package is.hello.speech.core.handlers;
 
+import com.github.dvdme.ForecastIOLib.FIODaily;
+import com.github.dvdme.ForecastIOLib.ForecastIO;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-
-import com.github.dvdme.ForecastIOLib.FIODaily;
-import com.github.dvdme.ForecastIOLib.ForecastIO;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.models.AccountLocation;
-
+import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.entity.Entity;
+import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.response.SupichiResponseType;
 
 public class WeatherHandler extends BaseHandler {
 
@@ -74,6 +72,12 @@ public class WeatherHandler extends BaseHandler {
 
         LOGGER.info("action=get-forecast result={}", accountId, defaultText);
         return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params);
+    }
+
+    @Override
+    public Integer matchEntity(Entity entity) {
+        // TODO: LocationEntity
+        return NO_ENTITY_MATCHED;
     }
 
     @Override

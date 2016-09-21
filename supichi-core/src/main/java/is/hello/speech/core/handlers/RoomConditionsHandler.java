@@ -2,7 +2,6 @@ package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
@@ -14,18 +13,17 @@ import com.hello.suripu.core.models.DeviceData;
 import com.hello.suripu.core.models.Sensor;
 import com.hello.suripu.core.roomstate.Condition;
 import com.hello.suripu.core.roomstate.CurrentRoomState;
-
+import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.entity.Entity;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-
-import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechCommand;
 
 
 /**
@@ -84,6 +82,12 @@ public class RoomConditionsHandler extends BaseHandler {
         }
 
         return new HandlerResult(HandlerType.ROOM_CONDITIONS, command, response);
+    }
+
+    @Override
+    public Integer matchEntity(Entity entity) {
+        // TODO: add SensorEntity
+        return NO_ENTITY_MATCHED;
     }
 
 

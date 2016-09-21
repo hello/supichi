@@ -2,21 +2,19 @@ package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.models.TimeZoneHistory;
-
+import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.entity.Entity;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-
-import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechCommand;
 
 
 /**
@@ -65,6 +63,12 @@ public class TimeHandler extends BaseHandler {
         }
 
         return new HandlerResult(HandlerType.TIME_REPORT, command, response);
+    }
+
+    @Override
+    public Integer matchEntity(Entity entity) {
+        // TODO: add LocationEntity
+        return NO_ENTITY_MATCHED;
     }
 
     private int getTimeZoneOffsetMillis(final Long accountId) {

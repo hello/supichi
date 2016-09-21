@@ -73,7 +73,7 @@ import is.hello.speech.core.configuration.WatsonConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.handlers.executors.HandlerExecutor;
-import is.hello.speech.core.handlers.executors.RegexHandlerExecutor;
+import is.hello.speech.core.handlers.executors.RegexEntityHandlerExecutor;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
@@ -205,7 +205,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 tokenKMSVault
         );
 
-        final HandlerExecutor handlerExecutor = new RegexHandlerExecutor()
+        final HandlerExecutor handlerExecutor = new RegexEntityHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
                 .register(HandlerType.ALARM, handlerFactory.alarmHandler())
                 .register(HandlerType.WEATHER, handlerFactory.weatherHandler())
                 .register(HandlerType.SLEEP_SOUNDS, handlerFactory.sleepSoundHandler())

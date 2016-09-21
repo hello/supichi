@@ -1,19 +1,9 @@
 package is.hello.speech.core.handlers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import is.hello.gaibu.core.models.ExternalApplication;
 import is.hello.gaibu.core.models.ExternalApplicationData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -26,6 +16,14 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.entity.Entity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class NestHandler extends BaseHandler {
@@ -205,6 +203,12 @@ public class NestHandler extends BaseHandler {
 
 
         return new HandlerResult(HandlerType.NEST, command, response);
+    }
+
+    @Override
+    public Integer matchEntity(Entity entity) {
+        // TODO: add temperature-value
+        return NO_ENTITY_MATCHED;
     }
 
 }

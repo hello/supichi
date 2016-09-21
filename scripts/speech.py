@@ -7,6 +7,7 @@ from StringIO import StringIO
 
 import traceback
 import response_pb2
+import json
 
 class SlowUpload(object):
   def __init__(self, fp, verbose=False):
@@ -116,8 +117,6 @@ if __name__ == '__main__':
         sys.exit()
 
     pb = "false"
-    if len(sys.argv) == 6:
-        pb = sys.argv[5]
 
     # su = SlowUpload(filename)
     # testing 8AF6441AF72321F4 2095
@@ -162,7 +161,12 @@ if __name__ == '__main__':
     #sys.exit(1)
 
     headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "8AF6441AF72321F4"}
-    if env == 'local':
+    if env == 'text':
+        text = sys.argv[5]
+        su = json.dumps({'sense_id': '721E040D184F2CAE', 'transcript': text})
+        ENDPOINT = "http://localhost:8181/upload/text?response=%s" % (audio_type)
+        headers = {"content-type": "application/json", "X-Hello-Sense-Id": "721E040D184F2CAE"}
+    elif env == 'local':
         ENDPOINT = "http://localhost:8181/demo/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
     elif env == 'localv2':
         ENDPOINT = "http://localhost:8181/v2/upload/audio"

@@ -1,15 +1,19 @@
 package is.hello.speech.resources.demo;
 
-import com.google.common.collect.ImmutableList;
-
 import com.codahale.metrics.annotation.Timed;
+import com.google.common.collect.ImmutableList;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
-
+import is.hello.speech.core.api.Response;
+import is.hello.speech.core.handlers.executors.HandlerExecutor;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.TextQuery;
+import is.hello.speech.core.models.UploadResponseParam;
+import is.hello.speech.utils.S3ResponseBuilder;
+import is.hello.speech.utils.WatsonResponseBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -21,15 +25,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-
-import is.hello.speech.core.api.Response;
-import is.hello.speech.core.handlers.executors.HandlerExecutor;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.TextQuery;
-import is.hello.speech.core.models.UploadResponseParam;
-import is.hello.speech.utils.S3ResponseBuilder;
-import is.hello.speech.utils.WatsonResponseBuilder;
+import java.io.IOException;
 
 
 
@@ -65,7 +61,7 @@ public class DemoResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] text(@Valid final TextQuery query,
-                       @DefaultValue("adpcm") @QueryParam("response") final UploadResponseParam responseParam
+                       @DefaultValue("mp3") @QueryParam("response") final UploadResponseParam responseParam
     ) throws InterruptedException, IOException {
 
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(query.senseId);
