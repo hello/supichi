@@ -1,6 +1,7 @@
 package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import is.hello.gaibu.core.models.ExternalApplication;
 import is.hello.gaibu.core.models.ExternalApplicationData;
@@ -39,9 +42,9 @@ public class HueHandler extends BaseHandler {
     private final Vault tokenKMSVault;
     private ExternalApplication externalApp;
     private final PersistentExternalAppDataStore externalAppDataStore;
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    private static final String TOGGLE_ACTIVE_PATTERN = "^.*turn.*(?:light|lamp)?\\s(on|off).*(?:light|lamp)?";
+    private static final String TOGGLE_ACTIVE_PATTERN = "(?i)^.*turn.*(?:light|lamp)?\\s(on|off).*(?:light|lamp)?";
     private static final Integer BRIGHTNESS_INCREMENT = 30;
     private static final Integer COLOR_TEMPERATURE_INCREMENT = 100;
 
@@ -70,16 +73,16 @@ public class HueHandler extends BaseHandler {
     private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
-        tempMap.put("brighten the", SpeechCommand.LIGHT_SET);
-        tempMap.put("increase the", SpeechCommand.LIGHT_SET);
-        tempMap.put("light brighter", SpeechCommand.LIGHT_SET);
-        tempMap.put("dim the", SpeechCommand.LIGHT_SET);
-        tempMap.put("reduce the", SpeechCommand.LIGHT_SET);
-        tempMap.put("light dimmer", SpeechCommand.LIGHT_SET);
-        tempMap.put("light warmer", SpeechCommand.LIGHT_SET);
-        tempMap.put("light redder", SpeechCommand.LIGHT_SET);
-        tempMap.put("light bluer", SpeechCommand.LIGHT_SET);
-        tempMap.put("light cooler", SpeechCommand.LIGHT_SET);
+        tempMap.put("brighten the", SpeechCommand.LIGHT_SET_BRIGHTNESS);
+        tempMap.put("increase the", SpeechCommand.LIGHT_SET_BRIGHTNESS);
+        tempMap.put("light brighter", SpeechCommand.LIGHT_SET_BRIGHTNESS);
+        tempMap.put("dim the", SpeechCommand.LIGHT_SET_BRIGHTNESS);
+        tempMap.put("reduce the", SpeechCommand.LIGHT_SET_BRIGHTNESS);
+        tempMap.put("light dimmer", SpeechCommand.LIGHT_SET_BRIGHTNESS);
+        tempMap.put("light warmer", SpeechCommand.LIGHT_SET_COLOR);
+        tempMap.put("light redder", SpeechCommand.LIGHT_SET_COLOR);
+        tempMap.put("light bluer", SpeechCommand.LIGHT_SET_COLOR);
+        tempMap.put("light cooler", SpeechCommand.LIGHT_SET_COLOR);
         tempMap.put(TOGGLE_ACTIVE_PATTERN, SpeechCommand.LIGHT_TOGGLE);
         return tempMap;
     }
@@ -90,83 +93,114 @@ public class HueHandler extends BaseHandler {
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
 
-        String command = HandlerResult.EMPTY_COMMAND;
-
-        if (optionalCommand.isPresent()) {
-            command = optionalCommand.get().getValue();
-
-            final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, externalApp.id);
-            if(!externalTokenOptional.isPresent()) {
-                LOGGER.error("error=token-not-found device_id={}", senseId);
-                response.put("error", "token-not-found");
-                response.put("result", HandlerResult.Outcome.FAIL.getValue());
-                return new HandlerResult(HandlerType.NEST, command, response);
-            }
-
-            final ExternalToken externalToken = externalTokenOptional.get();
-
-            final Map<String, String> encryptionContext = Maps.newHashMap();
-            encryptionContext.put("application_id", externalToken.appId.toString());
-            final Optional<String> decryptedTokenOptional = tokenKMSVault.decrypt(externalToken.accessToken, encryptionContext);
-
-            if(!decryptedTokenOptional.isPresent()) {
-                LOGGER.error("error=token-decryption-failure device_id={}", senseId);
-                response.put("error", "token-decryption-failure");
-                response.put("result", HandlerResult.Outcome.FAIL.getValue());
-                return new HandlerResult(HandlerType.NEST, command, response);
-            }
-
-            final String decryptedToken = decryptedTokenOptional.get();
-
-            final Optional<ExternalApplicationData> extAppDataOptional = externalAppDataStore.getAppData(externalApp.id, senseId);
-            if(!extAppDataOptional.isPresent()) {
-                LOGGER.error("error=no-ext-app-data account_id={}", accountId);
-                response.put("error", "no-ext-app-data");
-                response.put("result", HandlerResult.Outcome.FAIL.getValue());
-                return new HandlerResult(HandlerType.NEST, command, response);
-            }
-
-            final ExternalApplicationData extData = extAppDataOptional.get();
-
-            HueLight light;
-            try {
-                final HueApplicationData hueData = mapper.readValue(extData.data, HueApplicationData.class);
-                light = new HueLight(HueLight.DEFAULT_API_PATH, decryptedToken, hueData.bridgeId, hueData.whitelistId, hueData.groupId);
-
-            } catch (IOException io) {
-                LOGGER.error("error=bad-app-data device_id={}", senseId);
-                response.put("error", "bad-app-data");
-                response.put("result", HandlerResult.Outcome.FAIL.getValue());
-                return new HandlerResult(HandlerType.NEST, command, response);
-            }
-
-
-            if (text.contains("light on") | text.contains("turn on")) {
-                light.setLightState(true);
-                response.put("light", "on");
-            }
-            if (text.contains("light off") | text.contains("turn off")) {
-                light.setLightState(false);
-                response.put("light", "off");
-            }
-            if (text.contains("increase") | text.contains("bright")) {
-                light.adjustBrightness(BRIGHTNESS_INCREMENT);
-            }
-            if (text.contains("decrease") | text.contains("dim")) {
-                light.adjustBrightness(-BRIGHTNESS_INCREMENT);
-            }
-            if (text.contains("warmer") | text.contains("redder")) {
-                light.adjustTemperature(COLOR_TEMPERATURE_INCREMENT);
-            }
-            if (text.contains("cooler") | text.contains("bluer")) {
-                light.adjustTemperature(-COLOR_TEMPERATURE_INCREMENT);
-            }
-
-            response.put("result", HandlerResult.Outcome.OK.getValue());
-
+        if (!optionalCommand.isPresent()) {
+            LOGGER.error("error=no-command app_name=hue text={}", text);
+            response.put("error", "no-command");
+            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            return new HandlerResult(HandlerType.HUE, HandlerResult.EMPTY_COMMAND, response);
         }
 
-        return new HandlerResult(HandlerType.HUE, command, response);
-    }
+        final SpeechCommand command = optionalCommand.get();
 
+        final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, externalApp.id);
+        if(!externalTokenOptional.isPresent()) {
+            LOGGER.error("error=token-not-found device_id={}", senseId);
+            response.put("error", "token-not-found");
+            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            return new HandlerResult(HandlerType.HUE, HandlerResult.EMPTY_COMMAND, response);
+        }
+
+        final ExternalToken externalToken = externalTokenOptional.get();
+
+        final Map<String, String> encryptionContext = Maps.newHashMap();
+        encryptionContext.put("application_id", externalToken.appId.toString());
+        final Optional<String> decryptedTokenOptional = tokenKMSVault.decrypt(externalToken.accessToken, encryptionContext);
+
+        if(!decryptedTokenOptional.isPresent()) {
+            LOGGER.error("error=token-decryption-failure device_id={}", senseId);
+            response.put("error", "token-decryption-failure");
+            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            return new HandlerResult(HandlerType.HUE, HandlerResult.EMPTY_COMMAND, response);
+        }
+
+        final String decryptedToken = decryptedTokenOptional.get();
+
+        final Optional<ExternalApplicationData> extAppDataOptional = externalAppDataStore.getAppData(externalApp.id, senseId);
+        if(!extAppDataOptional.isPresent()) {
+            LOGGER.error("error=no-ext-app-data account_id={}", accountId);
+            response.put("error", "no-ext-app-data");
+            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            return new HandlerResult(HandlerType.HUE, HandlerResult.EMPTY_COMMAND, response);
+        }
+
+        final ExternalApplicationData extData = extAppDataOptional.get();
+
+        HueLight light;
+        try {
+            final HueApplicationData hueData = mapper.readValue(extData.data, HueApplicationData.class);
+            light = new HueLight(externalApp.apiURI, decryptedToken, hueData.bridgeId, hueData.whitelistId, hueData.groupId);
+
+        } catch (IOException io) {
+            LOGGER.error("error=bad-app-data device_id={}", senseId);
+            response.put("error", "bad-app-data");
+            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            return new HandlerResult(HandlerType.HUE, HandlerResult.EMPTY_COMMAND, response);
+        }
+
+        if (command.equals(SpeechCommand.LIGHT_TOGGLE)) {
+            final Pattern r = Pattern.compile(TOGGLE_ACTIVE_PATTERN);
+            final Matcher matcher = r.matcher(text);
+            if (matcher.find( )) {
+                final Boolean isOn = (matcher.group(1).equalsIgnoreCase("on"));
+                light.setLightState(isOn);
+
+                response.put("light_on", isOn.toString());
+                response.put("result", HandlerResult.Outcome.OK.getValue());
+                return new HandlerResult(HandlerType.HUE, command.getValue(), response);
+            }
+        }
+
+        if (command.equals(SpeechCommand.LIGHT_SET_BRIGHTNESS)) {
+            final ImmutableMap<String, Integer> adjustments = ImmutableMap.<String, Integer>builder()
+                .put("increase", BRIGHTNESS_INCREMENT)
+                .put("bright", BRIGHTNESS_INCREMENT)
+                .put("brighter", BRIGHTNESS_INCREMENT)
+                .put("decrease", -BRIGHTNESS_INCREMENT)
+                .put("dim", -BRIGHTNESS_INCREMENT)
+                .put("dimmer", -BRIGHTNESS_INCREMENT)
+                .build();
+
+            for(final Map.Entry<String, Integer> adjustment : adjustments.entrySet()) {
+                final Boolean isBrighter = (adjustment.getValue() > 0);
+                if(text.toLowerCase().contains(adjustment.getKey())){
+                    light.adjustBrightness(adjustment.getValue());
+                    response.put("light_brighter", isBrighter.toString());
+                    response.put("result", HandlerResult.Outcome.OK.getValue());
+                    return new HandlerResult(HandlerType.HUE, command.getValue(), response);
+                }
+            }
+        }
+
+        if (command.equals(SpeechCommand.LIGHT_SET_COLOR)) {
+            final ImmutableMap<String, Integer> adjustments = ImmutableMap.<String, Integer>builder()
+                .put("warmer", COLOR_TEMPERATURE_INCREMENT)
+                .put("redder", COLOR_TEMPERATURE_INCREMENT)
+                .put("cooler", -COLOR_TEMPERATURE_INCREMENT)
+                .put("bluer", -COLOR_TEMPERATURE_INCREMENT)
+                .build();
+
+            for(final Map.Entry<String, Integer> adjustment : adjustments.entrySet()) {
+                final Boolean isWarmer = (adjustment.getValue() > 0);
+                if(text.toLowerCase().contains(adjustment.getKey())){
+                    light.adjustBrightness(adjustment.getValue());
+                    response.put("light_warmer", isWarmer.toString());
+                    response.put("result", HandlerResult.Outcome.OK.getValue());
+                    return new HandlerResult(HandlerType.HUE, command.getValue(), response);
+                }
+            }
+        }
+
+        response.put("result", HandlerResult.Outcome.FAIL.getValue());
+        return new HandlerResult(HandlerType.HUE, command.getValue(), response);
+    }
 }
