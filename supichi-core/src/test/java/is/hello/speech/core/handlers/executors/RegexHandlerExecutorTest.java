@@ -147,42 +147,42 @@ public class RegexHandlerExecutorTest {
         correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light brighter");
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
-        assertEquals(correctResult.responseParameters.get("light_brighter"), "true");
+        assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_INCREMENT.toString());
 
         correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "brighten the light");
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
-        assertEquals(correctResult.responseParameters.get("light_brighter"), "true");
+        assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_INCREMENT.toString());
 
         correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light dimmer");
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
-        assertEquals(correctResult.responseParameters.get("light_brighter"), "false");
+        assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_DECREMENT.toString());
 
         correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "dim the light");
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
-        assertEquals(correctResult.responseParameters.get("light_brighter"), "false");
+        assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_DECREMENT.toString());
 
         correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light warmer");
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
-        assertEquals(correctResult.responseParameters.get("light_warmer"), "true");
+        assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_INCREMENT.toString());
 
         correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light redder");
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
-        assertEquals(correctResult.responseParameters.get("light_warmer"), "true");
+        assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_INCREMENT.toString());
 
         correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light cooler");
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
-        assertEquals(correctResult.responseParameters.get("light_warmer"), "false");
+        assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_DECREMENT.toString());
 
         correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light bluer");
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
-        assertEquals(correctResult.responseParameters.get("light_warmer"), "false");
+        assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_DECREMENT.toString());
 
 
         correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "Do something random for me");

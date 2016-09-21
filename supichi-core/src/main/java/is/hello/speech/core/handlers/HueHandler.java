@@ -45,8 +45,10 @@ public class HueHandler extends BaseHandler {
     private final ObjectMapper mapper = new ObjectMapper();
 
     private static final String TOGGLE_ACTIVE_PATTERN = "(?i)^.*turn.*(?:light|lamp)?\\s(on|off).*(?:light|lamp)?";
-    private static final Integer BRIGHTNESS_INCREMENT = 30;
-    private static final Integer COLOR_TEMPERATURE_INCREMENT = 100;
+    public static final Integer BRIGHTNESS_INCREMENT = 30;
+    public static final Integer BRIGHTNESS_DECREMENT = -BRIGHTNESS_INCREMENT;
+    public static final Integer COLOR_TEMPERATURE_INCREMENT = 100;
+    public static final Integer COLOR_TEMPERATURE_DECREMENT = -COLOR_TEMPERATURE_INCREMENT;
 
     public HueHandler(final SpeechCommandDAO speechCommandDAO,
                       final PersistentExternalTokenStore externalTokenStore,
@@ -165,16 +167,15 @@ public class HueHandler extends BaseHandler {
                 .put("increase", BRIGHTNESS_INCREMENT)
                 .put("bright", BRIGHTNESS_INCREMENT)
                 .put("brighter", BRIGHTNESS_INCREMENT)
-                .put("decrease", -BRIGHTNESS_INCREMENT)
-                .put("dim", -BRIGHTNESS_INCREMENT)
-                .put("dimmer", -BRIGHTNESS_INCREMENT)
+                .put("decrease", BRIGHTNESS_DECREMENT)
+                .put("dim", BRIGHTNESS_DECREMENT)
+                .put("dimmer", BRIGHTNESS_DECREMENT)
                 .build();
 
             for(final Map.Entry<String, Integer> adjustment : adjustments.entrySet()) {
-                final Boolean isBrighter = (adjustment.getValue() > 0);
                 if(text.toLowerCase().contains(adjustment.getKey())){
                     light.adjustBrightness(adjustment.getValue());
-                    response.put("light_brighter", isBrighter.toString());
+                    response.put("brightness_adjust", adjustment.getValue().toString());
                     response.put("result", HandlerResult.Outcome.OK.getValue());
                     return new HandlerResult(HandlerType.HUE, command.getValue(), response);
                 }
@@ -185,15 +186,14 @@ public class HueHandler extends BaseHandler {
             final ImmutableMap<String, Integer> adjustments = ImmutableMap.<String, Integer>builder()
                 .put("warmer", COLOR_TEMPERATURE_INCREMENT)
                 .put("redder", COLOR_TEMPERATURE_INCREMENT)
-                .put("cooler", -COLOR_TEMPERATURE_INCREMENT)
-                .put("bluer", -COLOR_TEMPERATURE_INCREMENT)
+                .put("cooler", COLOR_TEMPERATURE_DECREMENT)
+                .put("bluer", COLOR_TEMPERATURE_DECREMENT)
                 .build();
 
             for(final Map.Entry<String, Integer> adjustment : adjustments.entrySet()) {
-                final Boolean isWarmer = (adjustment.getValue() > 0);
                 if(text.toLowerCase().contains(adjustment.getKey())){
                     light.adjustBrightness(adjustment.getValue());
-                    response.put("light_warmer", isWarmer.toString());
+                    response.put("color_temp_adjust", adjustment.getValue().toString());
                     response.put("result", HandlerResult.Outcome.OK.getValue());
                     return new HandlerResult(HandlerType.HUE, command.getValue(), response);
                 }
