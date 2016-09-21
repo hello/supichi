@@ -1,10 +1,9 @@
 package is.hello.speech.core.handlers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
 
 import org.slf4j.Logger;
@@ -27,6 +26,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.AnnotatedTranscript;
 
 
 /**
@@ -34,7 +34,6 @@ import is.hello.speech.core.models.SpeechCommand;
  */
 public class HueHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(HueHandler.class);
-
 
     private final SpeechCommandDAO speechCommandDAO;
     private final PersistentExternalTokenStore externalTokenStore;
@@ -202,5 +201,10 @@ public class HueHandler extends BaseHandler {
 
         response.put("result", HandlerResult.Outcome.FAIL.getValue());
         return new HandlerResult(HandlerType.HUE, command.getValue(), response);
+    }
+    @Override
+    public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
+        // TODO HueAnnotation
+        return NO_ANNOTATION_SCORE;
     }
 }

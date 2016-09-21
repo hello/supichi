@@ -2,14 +2,14 @@ package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
-import java.util.Map;
-
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.response.SupichiResponseType;
+
+import java.util.Map;
 
 /**
  * Created by ksg on 6/17/16
@@ -23,7 +23,9 @@ public class AlarmHandler extends BaseHandler {
     private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
+        tempMap.put("set smart alarm", SpeechCommand.ALARM_SET);
         tempMap.put("set alarm", SpeechCommand.ALARM_SET);
+        tempMap.put("cancel alarm", SpeechCommand.ALARM_DELETE);
         tempMap.put("unset alarm", SpeechCommand.ALARM_DELETE);
         tempMap.put("remove alarm", SpeechCommand.ALARM_DELETE);
         tempMap.put("delete alarm", SpeechCommand.ALARM_DELETE);
@@ -31,6 +33,7 @@ public class AlarmHandler extends BaseHandler {
         tempMap.put("me up", SpeechCommand.ALARM_SET);
         return tempMap;
     }
+
 
     @Override
     public HandlerResult executeCommand(final String text, final String senseId, final Long accountId) {
@@ -47,6 +50,11 @@ public class AlarmHandler extends BaseHandler {
         }
 
         return new HandlerResult(HandlerType.ALARM, command, response);
+    }
+
+    @Override
+    public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
+        return annotatedTranscript.times.size();
     }
 
     @Override

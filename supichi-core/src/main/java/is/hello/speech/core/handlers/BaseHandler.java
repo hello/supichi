@@ -2,21 +2,23 @@ package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
+import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.AnnotatedTranscript;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.response.SupichiResponseType;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.response.SupichiResponseType;
-
 /**
  * Created by ksg on 6/20/16
  */
 public abstract class BaseHandler {
+    public static final int NO_ANNOTATION_SCORE = 0;
+
     private final String handlerName;
     private final ImmutableMap<String, SpeechCommand> commandMap;
     private final SpeechCommandDAO speechCommandDAO;
@@ -50,6 +52,10 @@ public abstract class BaseHandler {
     }
 
     public abstract HandlerResult executeCommand(final String text, final String senseId, final Long accountId);
+
+    public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
+        return NO_ANNOTATION_SCORE;
+    }
 
     public SupichiResponseType responseType() {
         return SupichiResponseType.S3;
