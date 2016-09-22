@@ -90,7 +90,6 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
 
         final List<BaseHandler> possibleHandlers = Lists.newArrayList();
         for(final Pattern pattern : commandToHandlerMap.keySet()) {
-            LOGGER.debug("Pattern {}, {}", pattern, commandToHandlerMap.get(pattern));
             Matcher m = pattern.matcher(command);
             if(m.find()) {
                 final HandlerType handlerType = commandToHandlerMap.get(pattern);
