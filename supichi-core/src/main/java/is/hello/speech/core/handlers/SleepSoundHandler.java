@@ -98,6 +98,7 @@ public class SleepSoundHandler extends BaseHandler {
         tempMap.put("play sleep sound", SpeechCommand.SLEEP_SOUND_PLAY);
         tempMap.put("play sleep", SpeechCommand.SLEEP_SOUND_PLAY);
         tempMap.put("white noise", SpeechCommand.SLEEP_SOUND_PLAY);
+        tempMap.put("White Noise", SpeechCommand.SLEEP_SOUND_PLAY);
 
         tempMap.put("stop", SpeechCommand.SLEEP_SOUND_STOP);
         tempMap.put("stop sound", SpeechCommand.SLEEP_SOUND_STOP);
