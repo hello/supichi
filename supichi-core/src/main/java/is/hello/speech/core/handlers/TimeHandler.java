@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
@@ -59,12 +60,12 @@ public class TimeHandler extends BaseHandler {
 
             final String currentTime = localNow.toString("HH_mm");
             LOGGER.debug("action=get-current-time now={} local_now={} string={} offset={} account_id={}", now.toString(), localNow.toString(), currentTime, offsetMillis, accountId);
-            response.put("result", HandlerResult.Outcome.OK.getValue());
+            response.put("result", Outcome.OK.getValue());
             response.put("time", currentTime);
             response.put("text", String.format("The time is %s", currentTime));
         }
 
-        return new HandlerResult(HandlerType.TIME_REPORT, command, response);
+        return new HandlerResult(HandlerType.TIME_REPORT, command, response, Optional.absent());
     }
 
     @Override

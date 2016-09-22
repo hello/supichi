@@ -40,7 +40,8 @@ public class Annotator {
 
         if (timezone.isPresent()) {
             final TimeDurations timeDurations = getTimeDurations(text.toLowerCase(), timezone.get());
-            builder.withTimes(timeDurations.times)
+            builder.withTimeZone(timezone)
+                    .withTimes(timeDurations.times)
                     .withDurations(timeDurations.durations);
         }
 
@@ -60,26 +61,28 @@ public class Annotator {
     private static TimeDurations getTimeDurations(final String text, final TimeZone timezone) {
         // final Parser timeParser = new Parser(DateTimeZone.forID("America/Los_Angeles").toTimeZone());
         final Parser timeParser = new Parser(timezone);
-        final List<TimeAnnotation> entities = Lists.newArrayList();
-        final List<DurationAnnotation> durationEntities = Lists.newArrayList();
+        final List<TimeAnnotation> times = Lists.newArrayList();
+        final List<DurationAnnotation> durations = Lists.newArrayList();
 
         final List<DateGroup> groups = timeParser.parse(text);
         for (final DateGroup group:groups) {
             final List<Date> dates = group.getDates();
             if (dates.size() == 2) {
                 // duration
-                final org.joda.time.Duration duration = new org.joda.time.Duration(new DateTime(dates.get(0)), new DateTime(dates.get(1)));
-                durationEntities.add(new DurationAnnotation(group.getText(), duration));
+                final DateTime endTime = new DateTime(dates.get(1).getTime());
+                final org.joda.time.Duration duration = new org.joda.time.Duration(new DateTime(dates.get(0).getTime()), endTime);
+                durations.add(new DurationAnnotation(group.getText(), duration));
+                times.add(new TimeAnnotation(group.getText(), endTime));
             } else {
                 for (final Date date : dates) {
                     final String matchingValue = group.getText();
                     final DateTime dateTime = new DateTime(date.getTime()); // local utc ts
                     LOGGER.debug("action=parse_time text={} date={} matched_string={} datetime={}",
                             text, date, matchingValue, dateTime);
-                    entities.add(new TimeAnnotation(matchingValue, dateTime));
+                    times.add(new TimeAnnotation(matchingValue, dateTime));
                 }
             }
         }
-        return new TimeDurations(entities, durationEntities);
+        return new TimeDurations(times, durations);
     }
 }

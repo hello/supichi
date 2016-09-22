@@ -1,14 +1,29 @@
 package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.hello.suripu.core.alarm.AlarmProcessor;
+import com.hello.suripu.core.db.AlarmDAODynamoDB;
+import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
+import com.hello.suripu.core.models.Alarm;
+import com.hello.suripu.core.models.AlarmSound;
+import com.hello.suripu.core.models.AlarmSource;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.AlarmResult;
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.annotations.TimeAnnotation;
 import is.hello.speech.core.response.SupichiResponseType;
+import jersey.repackaged.com.google.common.collect.Sets;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,15 +33,21 @@ import java.util.regex.Pattern;
  */
 public class AlarmHandler extends BaseHandler {
 
-    public AlarmHandler(SpeechCommandDAO speechCommandDAO) {
-        super("alarm", speechCommandDAO, getAvailableActions());
-    }
-
     private static final String CANCEL_ALARM_REGEX = "(cancel|delete|remove|unset).*(?:alarm)(s?)";
     private static final Pattern CANCEL_ALARM_PATTERN = Pattern.compile(CANCEL_ALARM_REGEX);
 
     private static final String SET_ALARM_REGEX = "((set).*(?:alarm))|(wake me)";
     private static final Pattern SET_ALARM__PATTERN = Pattern.compile(SET_ALARM_REGEX);
+
+    private static final AlarmSound DEFAULT_ALARM_SOUND = new AlarmSound(5, "Dusk", "");
+
+    private final AlarmProcessor alarmProcessor;
+
+    public AlarmHandler(final SpeechCommandDAO speechCommandDAO, final AlarmDAODynamoDB alarmDAODynamoDB, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
+        super("alarm", speechCommandDAO, getAvailableActions());
+        this.alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);
+    }
+
 
     private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
@@ -66,41 +87,80 @@ public class AlarmHandler extends BaseHandler {
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
         // TODO
         final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.transcript);
-        final Map<String, String> response;
+        final Map<String, String> response = Maps.newHashMap();
         String command = HandlerResult.EMPTY_COMMAND;
 
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
 
+            final AlarmResult result;
             if (optionalCommand.get().equals(SpeechCommand.ALARM_SET)) {
-                response = setAlarm(accountId, senseId, annotatedTranscript);
+                result = setAlarm(accountId, senseId, annotatedTranscript);
             } else {
-                response = cancelAlarm(accountId, senseId, annotatedTranscript);
+                result = cancelAlarm(accountId, senseId, annotatedTranscript);
+            }
+
+            response.put("result", result.outcome.getValue());
+            if (result.errorText.isPresent()) {
+                response.put("error", result.errorText.get());
+            } else {
+                response.put("text", result.responseText());
             }
 
         } else {
-            response = Maps.newHashMap();
-            response.put("result", HandlerResult.Outcome.OK.getValue());
+            response.put("result", Outcome.OK.getValue());
             response.put("text", "Ok, alarm set.");
         }
 
-        return new HandlerResult(HandlerType.ALARM, command, response);
+        return new HandlerResult(HandlerType.ALARM, command, response, Optional.absent());
     }
 
-    private Map<String, String> setAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
-        final Map<String, String> response = Maps.newHashMap();
-        response.put("result", HandlerResult.Outcome.OK.getValue());
-        response.put("text", "Ok, your alarm is set.");
-        return response;
+    private AlarmResult setAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
+        if (annotatedTranscript.times.isEmpty()) {
+            return new AlarmResult(Outcome.FAIL, Optional.of("no time give"), Optional.absent());
+        }
 
+        if (!annotatedTranscript.timeZoneOptional.isPresent()) {
+            return new AlarmResult(Outcome.FAIL, Optional.of("no timezone"), Optional.absent());
+        }
+
+        final TimeAnnotation timeAnnotation = annotatedTranscript.times.get(0); // note time is in utc, need to convert
+        final DateTime alarmTime = new DateTime(timeAnnotation.dateTime())
+                .withZone(DateTimeZone.forTimeZone(annotatedTranscript.timeZoneOptional.get()));
+
+        final Alarm newAlarm = new Alarm.Builder()
+                .withYear(alarmTime.getYear())
+                .withMonth(alarmTime.getMonthOfYear())
+                .withDay(alarmTime.getDayOfMonth())
+                .withHour(alarmTime.getHourOfDay())
+                .withMinute(alarmTime.getMinuteOfHour())
+                .withDayOfWeek(Sets.newHashSet(alarmTime.getDayOfWeek()))
+                .withIsRepeated(false)
+                .withAlarmSound(DEFAULT_ALARM_SOUND)
+                .withIsEnabled(true)
+                .withIsEditable(true)
+                .withIsSmart(false)
+                .withSource(AlarmSource.VOICE_SERVICE)
+                .build();
+
+
+        final List<Alarm> alarms = Lists.newArrayList();
+        alarms.addAll(alarmProcessor.getAlarms(accountId, senseId));
+        alarms.add(newAlarm);
+
+        try {
+            alarmProcessor.setAlarms(accountId, senseId, alarms);
+        } catch (Exception exception) {
+            return new AlarmResult(Outcome.FAIL, Optional.of(exception.getMessage()),
+                    Optional.of("Sorry, we're unable to set your alarm. Please try again later"));
+        }
+
+        final String responseText = String.format("Ok, your alarm is set for %s", alarmTime.toString(DateTimeFormat.forPattern("hh:mm a")));
+        return new AlarmResult(Outcome.OK, Optional.absent(), Optional.of (responseText));
     }
 
-    private Map<String, String> cancelAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
-        final Map<String, String> response = Maps.newHashMap();
-
-        response.put("result", HandlerResult.Outcome.OK.getValue());
-        response.put("text", "Ok, your alarm is canceled.");
-        return response;
+    private AlarmResult cancelAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
+        return new AlarmResult(Outcome.OK, Optional.absent(), Optional.of ("Ok, your alarm is canceled"));
     }
 
     @Override

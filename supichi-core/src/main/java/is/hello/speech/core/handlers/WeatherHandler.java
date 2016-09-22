@@ -69,11 +69,11 @@ public class WeatherHandler extends BaseHandler {
             final String responseText = String.format("It is %s", daily.getDay(0).summary());
             params.put("text", responseText);
             LOGGER.info("action=get-forecast account_id={} result={}", accountId, responseText);
-            return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params);
+            return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params, Optional.absent());
         }
 
         LOGGER.info("action=get-forecast result={}", accountId, defaultText);
-        return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params);
+        return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params, Optional.absent());
     }
 
     @Override

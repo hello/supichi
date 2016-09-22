@@ -15,6 +15,7 @@ import is.hello.speech.core.api.Response;
 import is.hello.speech.core.api.Speech;
 import is.hello.speech.core.api.SpeechResultsKinesis;
 import is.hello.speech.core.handlers.executors.HandlerExecutor;
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
@@ -249,7 +250,7 @@ public class UploadResource {
                 // save OK speech result
                 Result commandResult = Result.OK;
                 if (executeResult.responseParameters.containsKey("result")) {
-                    commandResult = executeResult.responseParameters.get("result").equals(HandlerResult.Outcome.OK.getValue()) ? Result.OK : Result.REJECTED;
+                    commandResult = executeResult.responseParameters.get("result").equals(Outcome.OK.getValue()) ? Result.OK : Result.REJECTED;
                 }
                 builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                         .withCommand(executeResult.command)

@@ -3,6 +3,7 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -11,8 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-
-import static java.awt.SystemColor.text;
 
 
 /**
@@ -58,29 +57,29 @@ public class TriviaHandler extends BaseHandler {
             command = optionalCommand.get().getValue();
 
           if (text.equalsIgnoreCase("the president")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
+                response.put("result", Outcome.OK.getValue());
                 response.put("answer", "president_obama");
                 response.put("text", "The current president of the United States is Barack Obama.");
 
             } else if (text.equalsIgnoreCase("hello ceo") || text.equalsIgnoreCase("hello co")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
+                response.put("result", Outcome.OK.getValue());
                 response.put("answer", "hello_ceo_james");
                 response.put("text", "The CEO of Hello Inc. will always be James Proud.");
             } else if (text.equalsIgnoreCase("next president")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
+                response.put("result", Outcome.OK.getValue());
                 response.put("answer", "next_president");
                 response.put("text", "The next president of the United States will either be Hillary Clinton, or Donald Trump.");
             } else if (text.equalsIgnoreCase("best basketball")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
+                response.put("result", Outcome.OK.getValue());
                 response.put("answer", "best_basketball");
                 response.put("text", "The best basketball team in the NBA is the Golden State Warriors.");
             } else if (text.equals("favorite retailer")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
+                response.put("result", Outcome.OK.getValue());
                 response.put("answer", "retailer_best_buy");
                 response.put("text", "Hello's favorite retailer is best buy.");
             }
         }
-        return new HandlerResult(HandlerType.TRIVIA, command, response);
+        return new HandlerResult(HandlerType.TRIVIA, command, response, Optional.absent());
     }
 
 }

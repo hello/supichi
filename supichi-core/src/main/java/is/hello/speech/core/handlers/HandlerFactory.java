@@ -2,15 +2,16 @@ package is.hello.speech.core.handlers;
 
 import com.github.dvdme.ForecastIOLib.ForecastIO;
 import com.hello.suripu.core.db.AccountLocationDAO;
+import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
+import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
-
 import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
 import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
@@ -35,6 +36,10 @@ public class HandlerFactory {
     private final Vault tokenKMSVault;
     private final PersistentExternalApplicationStore externalApplicationStore;
     private final PersistentExternalAppDataStore externalAppDataStore;
+    private final AlarmDAODynamoDB alarmDAODynamoDB;
+    private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
+
+
 
 
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
@@ -50,7 +55,9 @@ public class HandlerFactory {
                            final PersistentExternalTokenStore externalTokenStore,
                            final PersistentExternalApplicationStore externalApplicationStore,
                            final PersistentExternalAppDataStore externalAppDataStore,
-                           final Vault tokenKMSVault) {
+                           final Vault tokenKMSVault,
+                           final AlarmDAODynamoDB alarmDAODynamoDB,
+                           final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
@@ -65,6 +72,8 @@ public class HandlerFactory {
         this.externalApplicationStore = externalApplicationStore;
         this.externalAppDataStore = externalAppDataStore;
         this.tokenKMSVault = tokenKMSVault;
+        this.alarmDAODynamoDB = alarmDAODynamoDB;
+        this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
     }
 
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
@@ -80,11 +89,15 @@ public class HandlerFactory {
                                         final PersistentExternalTokenStore externalTokenStore,
                                         final PersistentExternalApplicationStore externalApplicationStore,
                                         final PersistentExternalAppDataStore externalAppDataStore,
-                                        final Vault tokenKMSVault) {
+                                        final Vault tokenKMSVault,
+                                        final AlarmDAODynamoDB alarmDAODynamoDB,
+                                        final MergedUserInfoDynamoDB mergedUserInfoDynamoDB
+    ) {
 
         return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor, deviceDataDAODynamoDB,
                 deviceDAO, senseColorDAO, calibrationDAO,timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
-            externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
+            externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault,
+                alarmDAODynamoDB, mergedUserInfoDynamoDB);
     }
 
     public WeatherHandler weatherHandler() {
@@ -93,7 +106,7 @@ public class HandlerFactory {
     }
 
     public AlarmHandler alarmHandler() {
-        return new AlarmHandler(speechCommandDAO);
+        return new AlarmHandler(speechCommandDAO, alarmDAODynamoDB, mergedUserInfoDynamoDB);
     }
 
     public TimeHandler timeHandler() {

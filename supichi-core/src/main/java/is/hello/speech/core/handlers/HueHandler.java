@@ -13,6 +13,7 @@ import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.gaibu.homeauto.services.HueLight;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
@@ -98,8 +99,8 @@ public class HueHandler extends BaseHandler {
             if(!externalTokenOptional.isPresent()) {
                 LOGGER.error("error=token-not-found device_id={}", senseId);
                 response.put("error", "token-not-found");
-                response.put("result", HandlerResult.Outcome.FAIL.getValue());
-                return new HandlerResult(HandlerType.NEST, command, response);
+                response.put("result", Outcome.FAIL.getValue());
+                return new HandlerResult(HandlerType.NEST, command, response, Optional.absent());
             }
 
             final ExternalToken externalToken = externalTokenOptional.get();
@@ -111,8 +112,8 @@ public class HueHandler extends BaseHandler {
             if(!decryptedTokenOptional.isPresent()) {
                 LOGGER.error("error=token-decryption-failure device_id={}", senseId);
                 response.put("error", "token-decryption-failure");
-                response.put("result", HandlerResult.Outcome.FAIL.getValue());
-                return new HandlerResult(HandlerType.NEST, command, response);
+                response.put("result", Outcome.FAIL.getValue());
+                return new HandlerResult(HandlerType.NEST, command, response, Optional.absent());
             }
 
             final String decryptedToken = decryptedTokenOptional.get();
@@ -121,8 +122,8 @@ public class HueHandler extends BaseHandler {
             if(!extAppDataOptional.isPresent()) {
                 LOGGER.error("error=no-ext-app-data account_id={}", accountId);
                 response.put("error", "no-ext-app-data");
-                response.put("result", HandlerResult.Outcome.FAIL.getValue());
-                return new HandlerResult(HandlerType.NEST, command, response);
+                response.put("result", Outcome.FAIL.getValue());
+                return new HandlerResult(HandlerType.NEST, command, response, Optional.absent());
             }
 
             final ExternalApplicationData extData = extAppDataOptional.get();
@@ -135,8 +136,8 @@ public class HueHandler extends BaseHandler {
             } catch (IOException io) {
                 LOGGER.error("error=bad-app-data device_id={}", senseId);
                 response.put("error", "bad-app-data");
-                response.put("result", HandlerResult.Outcome.FAIL.getValue());
-                return new HandlerResult(HandlerType.NEST, command, response);
+                response.put("result", Outcome.FAIL.getValue());
+                return new HandlerResult(HandlerType.NEST, command, response, Optional.absent());
             }
 
 
@@ -161,11 +162,11 @@ public class HueHandler extends BaseHandler {
                 light.adjustTemperature(-COLOR_TEMPERATURE_INCREMENT);
             }
 
-            response.put("result", HandlerResult.Outcome.OK.getValue());
+            response.put("result", Outcome.OK.getValue());
 
         }
 
-        return new HandlerResult(HandlerType.HUE, command, response);
+        return new HandlerResult(HandlerType.HUE, command, response, Optional.absent());
     }
 
     @Override
