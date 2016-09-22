@@ -45,7 +45,9 @@ public class WeatherHandler extends BaseHandler {
     }
 
     @Override
-    public HandlerResult executeCommand(final String text, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+        final String text = annotatedTranscript.transcript;
+
         final Optional<AccountLocation> accountLocationOptional = accountLocationDAO.getLastLocationByAccountId(accountId);
         final Map<String,String> params = Maps.newHashMap();
         final String defaultText = "Weather information is not available at this time";

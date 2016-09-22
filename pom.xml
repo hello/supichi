@@ -16,7 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <suripu.version>0.8.5620</suripu.version>
+        <suripu.version>0.8.5641</suripu.version>
         <gaibu.version>0.1.5</gaibu.version>
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <build-helper-maven-plugin.version>1.9.1</build-helper-maven-plugin.version>

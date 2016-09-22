@@ -3,6 +3,7 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
@@ -29,8 +30,10 @@ public class TimelineHandler extends BaseHandler {
     }
 
     @Override
-    public HandlerResult executeCommand(final String text, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
         // TODO
+        final String text = annotatedTranscript.transcript;
+
         final Optional<SpeechCommand> optionalCommand = getCommand(text);
 
         final Map<String, String> response = Maps.newHashMap();

@@ -44,7 +44,9 @@ public class TimeHandler extends BaseHandler {
 
 
     @Override
-    public HandlerResult executeCommand(String text, String senseId, Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+        final String text = annotatedTranscript.transcript;
+
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
         String command = HandlerResult.EMPTY_COMMAND;

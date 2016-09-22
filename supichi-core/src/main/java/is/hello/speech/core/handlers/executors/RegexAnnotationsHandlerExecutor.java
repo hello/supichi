@@ -58,7 +58,7 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
             final BaseHandler handler = optionalHandler.get();
             LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
 
-            final HandlerResult executeResult = handler.executeCommand(transcript, senseId, accountId);
+            final HandlerResult executeResult = handler.executeCommand(annotatedTranscript, senseId, accountId);
             LOGGER.debug("action=execute-command result={}", executeResult.responseParameters.toString());
             return executeResult;
         }
