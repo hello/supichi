@@ -1,9 +1,8 @@
 package is.hello.speech.resources.v2;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
-
-import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.models.DeviceAccountPair;
 import com.hello.suripu.core.speech.models.Result;
@@ -28,21 +27,13 @@ import is.hello.speech.resources.v1.InvalidSignatureException;
 import is.hello.speech.resources.v1.InvalidSignedBodyException;
 import is.hello.speech.resources.v1.SignedBodyHandler;
 import is.hello.speech.resources.v1.UploadData;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import uk.ac.open.audio.AudioException;
 import uk.ac.open.audio.adpcm.ADPCMDecoder;
 import uk.ac.open.audio.adpcm.ADPCMEncoder;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Map;
-import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -54,6 +45,11 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
 
 
 @Path("/v2/upload")
@@ -196,7 +192,6 @@ public class UploadResource {
         final ByteArrayOutputStream toDecodeStream = new ByteArrayOutputStream(); // intermediate stream
         final ByteArrayOutputStream decodedStream = new ByteArrayOutputStream();
 
-        int totalADPCMBytes = 0;
         for (int i = 0; i < chunks + 1; i++) {
 
             final int readSize = inputStream.read(dataBuffer, 0, chunkSize);
@@ -204,9 +199,6 @@ public class UploadResource {
                 LOGGER.debug("action=input-stream-read chunk={} expect={} read={}", i, chunkSize, readSize);
                 break;
             }
-
-            totalADPCMBytes += readSize;
-            final boolean toDrop = (totalADPCMBytes < 12000);
 
             toDecodeStream.write(startBuffer); // add previous state
             toDecodeStream.write(dataBuffer);
@@ -220,9 +212,7 @@ public class UploadResource {
             startBuffer[1] = decodeResult.data[outputSize - 1];
             startBuffer[2] = (byte) decodeResult.stepIndex;
 
-            if (!toDrop) {
-                decodedStream.write(decodeResult.data);
-            }
+            decodedStream.write(decodeResult.data);
         }
 
         // process audio
