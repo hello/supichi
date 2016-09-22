@@ -2,7 +2,7 @@ package is.hello.speech.core.models;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-import is.hello.speech.core.handlers.results.AlarmResult;
+import is.hello.speech.core.handlers.results.GenericResult;
 
 import java.util.Collections;
 import java.util.Map;
@@ -19,11 +19,11 @@ public class HandlerResult {
     public Map<String, String> responseParameters;
 
     // all the handler results
-    public final Optional<AlarmResult> alarmResult;
+    public final Optional<GenericResult> alarmResult;
 
 
     public HandlerResult(final HandlerType handlerType, final String command, final Map<String, String> responseParameters,
-                         final Optional<AlarmResult> alarmResult) {
+                         final Optional<GenericResult> alarmResult) {
         this.handlerType = handlerType;
         this.command = command;
         this.responseParameters = responseParameters;
@@ -46,7 +46,7 @@ public class HandlerResult {
         private HandlerType handlerType = HandlerType.NONE;
         private String command = EMPTY_COMMAND;
         private Map<String, String> parameters = Collections.emptyMap();
-        private Optional<AlarmResult> alarmResult = Optional.absent();
+        private Optional<GenericResult> alarmResult = Optional.absent();
 
         public Builder withHandlerType(final HandlerType handlerType) {
             this.handlerType = handlerType;
@@ -63,7 +63,7 @@ public class HandlerResult {
             return this;
         }
 
-        public Builder withAlarmResult(final AlarmResult result) {
+        public Builder withAlarmResult(final GenericResult result) {
             this.alarmResult = Optional.of(result);
             return this;
         }

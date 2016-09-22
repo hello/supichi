@@ -10,7 +10,7 @@ import com.hello.suripu.core.models.Alarm;
 import com.hello.suripu.core.models.AlarmSound;
 import com.hello.suripu.core.models.AlarmSource;
 import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.handlers.results.AlarmResult;
+import is.hello.speech.core.handlers.results.GenericResult;
 import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
@@ -22,6 +22,8 @@ import jersey.repackaged.com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -32,6 +34,7 @@ import java.util.regex.Pattern;
  * Created by ksg on 6/17/16
  */
 public class AlarmHandler extends BaseHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AlarmHandler.class);
 
     private static final String CANCEL_ALARM_REGEX = "(cancel|delete|remove|unset).*(?:alarm)(s?)";
     private static final Pattern CANCEL_ALARM_PATTERN = Pattern.compile(CANCEL_ALARM_REGEX);
@@ -93,7 +96,7 @@ public class AlarmHandler extends BaseHandler {
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
 
-            final AlarmResult result;
+            final GenericResult result;
             if (optionalCommand.get().equals(SpeechCommand.ALARM_SET)) {
                 result = setAlarm(accountId, senseId, annotatedTranscript);
             } else {
@@ -115,18 +118,23 @@ public class AlarmHandler extends BaseHandler {
         return new HandlerResult(HandlerType.ALARM, command, response, Optional.absent());
     }
 
-    private AlarmResult setAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
+    private GenericResult setAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
         if (annotatedTranscript.times.isEmpty()) {
-            return new AlarmResult(Outcome.FAIL, Optional.of("no time give"), Optional.absent());
+            return new GenericResult(Outcome.FAIL, Optional.of("no time give"), Optional.absent());
         }
 
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
-            return new AlarmResult(Outcome.FAIL, Optional.of("no timezone"), Optional.absent());
+            return new GenericResult(Outcome.FAIL, Optional.of("no timezone"), Optional.absent());
         }
 
         final TimeAnnotation timeAnnotation = annotatedTranscript.times.get(0); // note time is in utc, need to convert
-        final DateTime alarmTime = new DateTime(timeAnnotation.dateTime())
-                .withZone(DateTimeZone.forTimeZone(annotatedTranscript.timeZoneOptional.get()));
+        final DateTimeZone timezoneId = DateTimeZone.forTimeZone(annotatedTranscript.timeZoneOptional.get());
+        final DateTime annotatedTimeUTC = new DateTime(timeAnnotation.dateTime(), DateTimeZone.UTC);
+        final DateTime now = DateTime.now(DateTimeZone.UTC);
+
+        final DateTime alarmTime =  (annotatedTimeUTC.isAfter(now)) ? annotatedTimeUTC.withZone(timezoneId) : annotatedTimeUTC.plusDays(1).withZone(timezoneId);
+        LOGGER.debug("action=create-alarm-time account_id={} annotation_time={} now={} final_alarm={}",
+                accountId, annotatedTimeUTC.toString(), now, alarmTime.toString());
 
         final Alarm newAlarm = new Alarm.Builder()
                 .withYear(alarmTime.getYear())
@@ -151,16 +159,18 @@ public class AlarmHandler extends BaseHandler {
         try {
             alarmProcessor.setAlarms(accountId, senseId, alarms);
         } catch (Exception exception) {
-            return new AlarmResult(Outcome.FAIL, Optional.of(exception.getMessage()),
+            return new GenericResult(Outcome.FAIL, Optional.of(exception.getMessage()),
                     Optional.of("Sorry, we're unable to set your alarm. Please try again later"));
         }
 
-        final String responseText = String.format("Ok, your alarm is set for %s", alarmTime.toString(DateTimeFormat.forPattern("hh:mm a")));
-        return new AlarmResult(Outcome.OK, Optional.absent(), Optional.of (responseText));
+        final String alarmDay = (annotatedTimeUTC.isAfter(now)) ? "today" : "tomorrow";
+        final String responseText = String.format("Ok, your alarm is set for %s %s",
+                alarmTime.toString(DateTimeFormat.forPattern("hh:mm a")), alarmDay);
+        return new GenericResult(Outcome.OK, Optional.absent(), Optional.of (responseText));
     }
 
-    private AlarmResult cancelAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
-        return new AlarmResult(Outcome.OK, Optional.absent(), Optional.of ("Ok, your alarm is canceled"));
+    private GenericResult cancelAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
+        return new GenericResult(Outcome.OK, Optional.absent(), Optional.of ("Ok, your alarm is canceled"));
     }
 
     @Override

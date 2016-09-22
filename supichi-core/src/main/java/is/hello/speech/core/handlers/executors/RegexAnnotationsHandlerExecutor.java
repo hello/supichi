@@ -88,14 +88,20 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
         // Find a suitable handler via text
         final String command = annotatedTranscript.transcript;
 
+        // final Map<BaseHandler, Integer> possibleHandlers = Maps.newHashMap();
         final List<BaseHandler> possibleHandlers = Lists.newArrayList();
         for(final Pattern pattern : commandToHandlerMap.keySet()) {
-            LOGGER.debug("Pattern {}, {}", pattern, commandToHandlerMap.get(pattern));
+            final HandlerType handlerType = commandToHandlerMap.get(pattern);
             Matcher m = pattern.matcher(command);
             if(m.find()) {
-                final HandlerType handlerType = commandToHandlerMap.get(pattern);
+                LOGGER.debug("match_pattern={}, handler_type={}", pattern, handlerType);
                 if (availableHandlers.containsKey(handlerType)) {
-                    possibleHandlers.add(availableHandlers.get(handlerType));
+                    final BaseHandler matchedHandler = availableHandlers.get(handlerType);
+                    if (!possibleHandlers.contains(matchedHandler)) {
+                        possibleHandlers.add(matchedHandler);
+                    }
+//                    possibleHandlers.putIfAbsent(matchedHandler, 0);
+//                    possibleHandlers.replace(matchedHandler, possibleHandlers.get(matchedHandler) + 1);
                 }
             }
         }
