@@ -9,6 +9,9 @@ import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.models.Alarm;
 import com.hello.suripu.core.models.AlarmSound;
 import com.hello.suripu.core.models.AlarmSource;
+import com.hello.suripu.core.models.RingTime;
+import com.hello.suripu.core.models.UserInfo;
+import com.hello.suripu.core.processors.RingProcessor;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.results.GenericResult;
 import is.hello.speech.core.handlers.results.Outcome;
@@ -30,6 +33,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static is.hello.speech.core.models.HandlerResult.EMPTY_COMMAND;
+
 /**
  * Created by ksg on 6/17/16
  */
@@ -45,10 +50,12 @@ public class AlarmHandler extends BaseHandler {
     private static final AlarmSound DEFAULT_ALARM_SOUND = new AlarmSound(5, "Dusk", "");
 
     private final AlarmProcessor alarmProcessor;
+    private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
 
-    public AlarmHandler(final SpeechCommandDAO speechCommandDAO, final AlarmDAODynamoDB alarmDAODynamoDB, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
+    AlarmHandler(final SpeechCommandDAO speechCommandDAO, final AlarmDAODynamoDB alarmDAODynamoDB, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
         super("alarm", speechCommandDAO, getAvailableActions());
         this.alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);
+        this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
     }
 
 
@@ -91,33 +98,36 @@ public class AlarmHandler extends BaseHandler {
         // TODO
         final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.transcript);
         final Map<String, String> response = Maps.newHashMap();
-        String command = HandlerResult.EMPTY_COMMAND;
 
-        if (optionalCommand.isPresent()) {
-            command = optionalCommand.get().getValue();
 
-            final GenericResult result;
-            if (optionalCommand.get().equals(SpeechCommand.ALARM_SET)) {
-                result = setAlarm(accountId, senseId, annotatedTranscript);
-            } else {
-                result = cancelAlarm(accountId, senseId, annotatedTranscript);
-            }
-
-            response.put("result", result.outcome.getValue());
-            if (result.errorText.isPresent()) {
-                response.put("error", result.errorText.get());
-            } else {
-                response.put("text", result.responseText());
-            }
-
-        } else {
-            response.put("result", Outcome.OK.getValue());
-            response.put("text", "Ok, alarm set.");
+        if (!optionalCommand.isPresent()) {
+            response.put("result", Outcome.FAIL.getValue());
+            response.put("error", "no alarm set");
+            return new HandlerResult(HandlerType.ALARM, EMPTY_COMMAND, response, Optional.absent());
         }
 
-        return new HandlerResult(HandlerType.ALARM, command, response, Optional.absent());
+        final String command = optionalCommand.get().getValue();
+
+        final GenericResult alarmResult;
+        if (optionalCommand.get().equals(SpeechCommand.ALARM_SET)) {
+            alarmResult = setAlarm(accountId, senseId, annotatedTranscript);
+        } else {
+            alarmResult = cancelAlarm(accountId, senseId, annotatedTranscript);
+        }
+
+        response.put("result", alarmResult.outcome.getValue());
+        if (alarmResult.errorText.isPresent()) {
+            response.put("error", alarmResult.errorText.get());
+        } else {
+            response.put("text", alarmResult.responseText());
+        }
+
+        return new HandlerResult(HandlerType.ALARM, command, response, Optional.of(alarmResult));
     }
 
+    /**
+     * set alarm for the next matching time
+     */
     private GenericResult setAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
         if (annotatedTranscript.times.isEmpty()) {
             return new GenericResult(Outcome.FAIL, Optional.of("no time give"), Optional.absent());
@@ -169,7 +179,21 @@ public class AlarmHandler extends BaseHandler {
         return new GenericResult(Outcome.OK, Optional.absent(), Optional.of (responseText));
     }
 
+    /**
+     * only allow non-repeating, next-occurring alarm to be canceled
+     */
     private GenericResult cancelAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
+
+        final Optional<UserInfo> alarmInfoOptional = this.mergedUserInfoDynamoDB.getInfo(senseId, accountId);
+        if (!alarmInfoOptional.isPresent()) {
+            return new GenericResult(Outcome.FAIL, Optional.of("no user info"), Optional.absent());
+        }
+
+        final UserInfo userInfo = alarmInfoOptional.get();
+        final RingTime nextRingTime = RingProcessor.getRingTimeFromAlarmInfo(userInfo);
+
+        final List<Alarm> alarms = alarmProcessor.getAlarms(accountId, senseId);
+
         return new GenericResult(Outcome.OK, Optional.absent(), Optional.of ("Ok, your alarm is canceled"));
     }
 
