@@ -216,9 +216,7 @@ public class UploadResource {
             startBuffer[1] = decodeResult.data[outputSize - 1];
             startBuffer[2] = (byte) decodeResult.stepIndex;
 
-            if (!toDrop) {
-                decodedStream.write(decodeResult.data);
-            }
+            decodedStream.write(decodeResult.data);
         }
 
         // process audio
