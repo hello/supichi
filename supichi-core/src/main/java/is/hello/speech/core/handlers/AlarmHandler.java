@@ -11,7 +11,6 @@ import com.hello.suripu.core.models.AlarmSound;
 import com.hello.suripu.core.models.AlarmSource;
 import com.hello.suripu.core.models.RingTime;
 import com.hello.suripu.core.models.UserInfo;
-import com.hello.suripu.core.processors.RingProcessor;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.results.GenericResult;
 import is.hello.speech.core.handlers.results.Outcome;
@@ -28,6 +27,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -190,11 +190,52 @@ public class AlarmHandler extends BaseHandler {
         }
 
         final UserInfo userInfo = alarmInfoOptional.get();
-        final RingTime nextRingTime = RingProcessor.getRingTimeFromAlarmInfo(userInfo);
+        if (!userInfo.timeZone.isPresent()) {
+            return new GenericResult(Outcome.FAIL, Optional.of("no timezone"), Optional.absent());
+        }
 
-        final List<Alarm> alarms = alarmProcessor.getAlarms(accountId, senseId);
+        final DateTimeZone timeZone = userInfo.timeZone.get();
+        final DateTime now = DateTime.now(DateTimeZone.UTC);
+        final Map<Long, Integer> ringTimeIndexMap = Maps.newTreeMap();
 
-        return new GenericResult(Outcome.OK, Optional.absent(), Optional.of ("Ok, your alarm is canceled"));
+        int index = 0;
+        for (final Alarm alarm : userInfo.alarmList) {
+            final List<Alarm> alarms = Collections.singletonList(alarm);
+            final RingTime nextRingTime = Alarm.Utils.generateNextRingTimeFromAlarmTemplatesForUser(alarms, now.getMillis(), timeZone);
+            ringTimeIndexMap.put(nextRingTime.expectedRingTimeUTC, index++);
+        }
+
+        // traverse map ordered by ringtime in chronological order
+        final List<Alarm> newAlarms = Lists.newArrayList();
+        boolean foundAlarm = false;
+        for (final Long ringtime : ringTimeIndexMap.keySet()) {
+            final int alarmIndex = ringTimeIndexMap.get(ringtime);
+            final Alarm alarm = userInfo.alarmList.get(alarmIndex);
+
+            if (!foundAlarm && ringtime > now.getMillis()) {
+                foundAlarm = true;
+                if (!alarm.isRepeated && alarm.isEnabled) {
+                    continue;
+                }
+            }
+            newAlarms.add(alarm);
+        }
+
+
+        if (newAlarms.size() == userInfo.alarmList.size()) {
+            return new GenericResult(Outcome.OK, Optional.absent(),
+                    Optional.of("There aren't any non-repeating alarms to cancel."));
+
+        }
+
+        try {
+            alarmProcessor.setAlarms(accountId, senseId, newAlarms);
+        } catch (Exception exception) {
+            return new GenericResult(Outcome.FAIL, Optional.of(exception.getMessage()),
+                    Optional.of("Sorry, we're unable to cancel your alarm. Please try again later."));
+        }
+
+        return new GenericResult(Outcome.OK, Optional.absent(), Optional.of ("OK, your alarm is canceled."));
     }
 
     @Override
