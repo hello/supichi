@@ -130,10 +130,12 @@ public class AlarmHandler extends BaseHandler {
      */
     private GenericResult setAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
         if (annotatedTranscript.times.isEmpty()) {
+            LOGGER.error("error=no-alarm-set reason=no-time-given text={} account={}", annotatedTranscript.transcript, accountId);
             return new GenericResult(Outcome.FAIL, Optional.of("no time give"), Optional.absent());
         }
 
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
+            LOGGER.error("error=no-alarm-set reason=no-timezone account_id={}", accountId);
             return new GenericResult(Outcome.FAIL, Optional.of("no timezone"), Optional.absent());
         }
 
@@ -142,17 +144,20 @@ public class AlarmHandler extends BaseHandler {
         final DateTime annotatedTimeUTC = new DateTime(timeAnnotation.dateTime(), DateTimeZone.UTC);
         final DateTime now = DateTime.now(DateTimeZone.UTC);
 
-        final DateTime alarmTime =  (annotatedTimeUTC.isAfter(now)) ? annotatedTimeUTC.withZone(timezoneId) : annotatedTimeUTC.plusDays(1).withZone(timezoneId);
+        final DateTime alarmTimeLocal =  (annotatedTimeUTC.isAfter(now)) ? annotatedTimeUTC.withZone(timezoneId) : annotatedTimeUTC.plusDays(1).withZone(timezoneId);
         LOGGER.debug("action=create-alarm-time account_id={} annotation_time={} now={} final_alarm={}",
-                accountId, annotatedTimeUTC.toString(), now, alarmTime.toString());
+                accountId, annotatedTimeUTC.toString(), now, alarmTimeLocal.toString());
+
+        final String alarmDay = (alarmTimeLocal.getDayOfYear() ==  now.withZone(timezoneId).getDayOfYear()) ? "today" : "tomorrow";
+        final String newAlarmString = String.format("%s %s", alarmTimeLocal.toString(DateTimeFormat.forPattern("hh:mm a")), alarmDay);
 
         final Alarm newAlarm = new Alarm.Builder()
-                .withYear(alarmTime.getYear())
-                .withMonth(alarmTime.getMonthOfYear())
-                .withDay(alarmTime.getDayOfMonth())
-                .withHour(alarmTime.getHourOfDay())
-                .withMinute(alarmTime.getMinuteOfHour())
-                .withDayOfWeek(Sets.newHashSet(alarmTime.getDayOfWeek()))
+                .withYear(alarmTimeLocal.getYear())
+                .withMonth(alarmTimeLocal.getMonthOfYear())
+                .withDay(alarmTimeLocal.getDayOfMonth())
+                .withHour(alarmTimeLocal.getHourOfDay())
+                .withMinute(alarmTimeLocal.getMinuteOfHour())
+                .withDayOfWeek(Sets.newHashSet(alarmTimeLocal.getDayOfWeek()))
                 .withIsRepeated(false)
                 .withAlarmSound(DEFAULT_ALARM_SOUND)
                 .withIsEnabled(true)
@@ -164,19 +169,27 @@ public class AlarmHandler extends BaseHandler {
 
         final List<Alarm> alarms = Lists.newArrayList();
         alarms.addAll(alarmProcessor.getAlarms(accountId, senseId));
+
+        // check that alarm is not a duplicate
+        for (final Alarm alarm : alarms) {
+            if (alarm.equals(newAlarm)) {
+                LOGGER.error("error=no-alarm-set reason=duplicate-alarm alarm={} account_id={}", newAlarm.toString());
+                return new GenericResult(Outcome.OK, Optional.absent(),
+                        Optional.of(String.format("Sorry, no alarm was set, you already have an alarm set for %s", newAlarmString)));
+            }
+        }
         alarms.add(newAlarm);
 
         try {
             alarmProcessor.setAlarms(accountId, senseId, alarms);
         } catch (Exception exception) {
+            LOGGER.error("error=no-alarm-set error_msg={} account_id={}", exception.getMessage(), accountId);
             return new GenericResult(Outcome.FAIL, Optional.of(exception.getMessage()),
                     Optional.of("Sorry, we're unable to set your alarm. Please try again later"));
         }
 
-        final String alarmDay = (annotatedTimeUTC.isAfter(now)) ? "today" : "tomorrow";
-        final String responseText = String.format("Ok, your alarm is set for %s %s",
-                alarmTime.toString(DateTimeFormat.forPattern("hh:mm a")), alarmDay);
-        return new GenericResult(Outcome.OK, Optional.absent(), Optional.of (responseText));
+        return new GenericResult(Outcome.OK, Optional.absent(),
+                Optional.of (String.format("Ok, your alarm is set for %s", newAlarmString)));
     }
 
     /**
@@ -224,7 +237,7 @@ public class AlarmHandler extends BaseHandler {
 
         if (newAlarms.size() == userInfo.alarmList.size()) {
             return new GenericResult(Outcome.OK, Optional.absent(),
-                    Optional.of("There aren't any non-repeating alarms to cancel."));
+                    Optional.of("There is no alarm to cancel."));
 
         }
 
