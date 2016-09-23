@@ -49,6 +49,14 @@ public class AlarmHandler extends BaseHandler {
 
     private static final AlarmSound DEFAULT_ALARM_SOUND = new AlarmSound(5, "Dusk", "");
 
+    private static final String DUPLICATE_ALARM_RESPONSE = "Sorry, no alarm was set, you already have an alarm set for %s";
+    private static final String SET_ALARM_ERROR_RESPONSE = "Sorry, we're unable to set your alarm. Please try again later";
+    private static final String SET_ALARM_OK_RESPONSE = "Ok, your alarm is set for %s";
+    private static final String CANCEL_ALARM_ERROR_RESPONSE = "Sorry, we're unable to cancel your alarm. Please try again later.";
+    private static final String CANCEL_ALARM_OK_RESPONSE = "OK, your alarm is canceled.";
+    private static final String NO_ALARM_RESPONSE = "There is no alarm to cancel.";
+
+
     private final AlarmProcessor alarmProcessor;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
 
@@ -175,21 +183,22 @@ public class AlarmHandler extends BaseHandler {
             if (alarm.equals(newAlarm)) {
                 LOGGER.error("error=no-alarm-set reason=duplicate-alarm alarm={} account_id={}", newAlarm.toString());
                 return new GenericResult(Outcome.OK, Optional.absent(),
-                        Optional.of(String.format("Sorry, no alarm was set, you already have an alarm set for %s", newAlarmString)));
+                        Optional.of(String.format(DUPLICATE_ALARM_RESPONSE, newAlarmString)));
             }
         }
-        alarms.add(newAlarm);
 
+        // okay to set alarm
         try {
+            alarms.add(newAlarm);
             alarmProcessor.setAlarms(accountId, senseId, alarms);
+
         } catch (Exception exception) {
             LOGGER.error("error=no-alarm-set error_msg={} account_id={}", exception.getMessage(), accountId);
-            return new GenericResult(Outcome.FAIL, Optional.of(exception.getMessage()),
-                    Optional.of("Sorry, we're unable to set your alarm. Please try again later"));
+            return new GenericResult(Outcome.FAIL, Optional.of(exception.getMessage()), Optional.of(SET_ALARM_ERROR_RESPONSE));
         }
 
         return new GenericResult(Outcome.OK, Optional.absent(),
-                Optional.of (String.format("Ok, your alarm is set for %s", newAlarmString)));
+                Optional.of (String.format(SET_ALARM_OK_RESPONSE, newAlarmString)));
     }
 
     /**
@@ -237,7 +246,7 @@ public class AlarmHandler extends BaseHandler {
 
         if (newAlarms.size() == userInfo.alarmList.size()) {
             return new GenericResult(Outcome.OK, Optional.absent(),
-                    Optional.of("There is no alarm to cancel."));
+                    Optional.of(NO_ALARM_RESPONSE));
 
         }
 
@@ -245,10 +254,10 @@ public class AlarmHandler extends BaseHandler {
             alarmProcessor.setAlarms(accountId, senseId, newAlarms);
         } catch (Exception exception) {
             return new GenericResult(Outcome.FAIL, Optional.of(exception.getMessage()),
-                    Optional.of("Sorry, we're unable to cancel your alarm. Please try again later."));
+                    Optional.of(CANCEL_ALARM_ERROR_RESPONSE));
         }
 
-        return new GenericResult(Outcome.OK, Optional.absent(), Optional.of ("OK, your alarm is canceled."));
+        return new GenericResult(Outcome.OK, Optional.absent(), Optional.of(CANCEL_ALARM_OK_RESPONSE));
     }
 
     @Override
