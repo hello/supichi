@@ -1,7 +1,5 @@
 package is.hello.speech.core.handlers;
 
-import com.github.dvdme.ForecastIOLib.FIODaily;
-import com.github.dvdme.ForecastIOLib.ForecastIO;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -15,7 +13,7 @@ import is.hello.speech.core.models.SpeechCommand;
 import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import is.hello.gaibu.weather.interfaces.WeatherReport;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +23,7 @@ public class WeatherHandler extends BaseHandler {
 
     private static Map<String, SpeechCommand> commands;
     private final AccountLocationDAO accountLocationDAO;
-    private final ForecastIO forecastIO;
+    private final WeatherReport report;
     static {
         final Map<String, SpeechCommand> aMap = new HashMap<>();
         aMap.put("the weather", SpeechCommand.WEATHER);
@@ -33,15 +31,15 @@ public class WeatherHandler extends BaseHandler {
     }
 
 
-    private WeatherHandler(final SpeechCommandDAO speechCommandDAO, final ForecastIO forecastIO, final AccountLocationDAO accountLocationDAO) {
+    private WeatherHandler(final SpeechCommandDAO speechCommandDAO, final WeatherReport report, final AccountLocationDAO accountLocationDAO) {
         super("weather", speechCommandDAO, commands);
         this.accountLocationDAO = accountLocationDAO;
-        this.forecastIO = forecastIO;
+        this.report = report;
     }
 
 
-    public static WeatherHandler create(final SpeechCommandDAO speechCommandDAO, final ForecastIO forecastIO, final AccountLocationDAO accountLocationDAO) {
-        return new WeatherHandler(speechCommandDAO, forecastIO, accountLocationDAO);
+    public static WeatherHandler create(final SpeechCommandDAO speechCommandDAO, final WeatherReport report, final AccountLocationDAO accountLocationDAO) {
+        return new WeatherHandler(speechCommandDAO, report, accountLocationDAO);
     }
 
     @Override
@@ -60,17 +58,9 @@ public class WeatherHandler extends BaseHandler {
 
         LOGGER.info("action=get-forecast account_id={} latitude={} longitude={}", accountId, latitude, longitude);
 
-        // WARNING: THIS IS A TERRIBLE LIBRARY AND IS NOT THREADSAFE
-        final boolean success = forecastIO.getForecast(String.valueOf(latitude), String.valueOf(longitude));
-        if(success) {
-            final FIODaily daily = new FIODaily(forecastIO);
-            final String responseText = String.format("It is %s", daily.getDay(0).summary());
-            params.put("text", responseText);
-            LOGGER.info("action=get-forecast account_id={} result={}", accountId, responseText);
-            return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params);
-        }
-
-        LOGGER.info("action=get-forecast result={}", accountId, defaultText);
+        final String summary = report.get(new Float(latitude), new Float(longitude), accountId, senseId);
+        params.put("text", summary);
+        LOGGER.info("action=get-forecast account_id={} result={}", accountId, summary);
         return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params);
     }
 
@@ -84,11 +74,4 @@ public class WeatherHandler extends BaseHandler {
     public SupichiResponseType responseType() {
         return SupichiResponseType.WATSON;
     }
-
-//    ForecastIO fio = new ForecastIO(your_api_key); //instantiate the class with the API key.
-//    fio.setUnits(ForecastIO.UNITS_SI);             //sets the units as SI - optional
-//    fio.setExcludeURL("hourly,minutely");             //excluded the minutely and hourly reports from the reply
-//    fio.getForecast("38.7252993", "-9.1500364");
-
-
 }

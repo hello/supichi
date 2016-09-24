@@ -1,6 +1,5 @@
 package is.hello.speech.core.handlers;
 
-import com.github.dvdme.ForecastIOLib.ForecastIO;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
@@ -10,10 +9,11 @@ import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
-
 import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
 import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
+import is.hello.gaibu.weather.clients.DarkSky;
+import is.hello.gaibu.weather.interfaces.WeatherReport;
 import is.hello.speech.core.db.SpeechCommandDAO;
 
 /**
@@ -88,8 +88,8 @@ public class HandlerFactory {
     }
 
     public WeatherHandler weatherHandler() {
-        final ForecastIO forecastIOClient = new ForecastIO(forecastio);
-        return WeatherHandler.create(speechCommandDAO, forecastIOClient, accountLocationDAO);
+        final WeatherReport weatherReport = DarkSky.create(forecastio, "https://api.darksky.net/forecast/");
+        return WeatherHandler.create(speechCommandDAO, weatherReport, accountLocationDAO);
     }
 
     public AlarmHandler alarmHandler() {
