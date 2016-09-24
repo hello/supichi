@@ -1,6 +1,7 @@
 package is.hello.speech.core.text2speech;
 
 import com.google.common.base.Optional;
+import com.google.common.io.LittleEndianDataOutputStream;
 import davaguine.jeq.core.EqualizerInputStream;
 import net.sourceforge.lame.lowlevel.LameEncoder;
 import net.sourceforge.lame.mp3.Lame;
@@ -17,7 +18,6 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -304,7 +304,7 @@ public class AudioUtils {
             final int outputSize = (adpcm.length + 1) * 4;
 
             final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
+            final LittleEndianDataOutputStream dataOutputStream = new LittleEndianDataOutputStream(outputStream);
 
             short valpred = 0;
             int index = 0;
