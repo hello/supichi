@@ -22,6 +22,7 @@ import is.hello.speech.core.models.UploadResponseParam;
 import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
+import is.hello.speech.core.text2speech.AudioUtils;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
 import is.hello.speech.resources.v1.InvalidSignatureException;
 import is.hello.speech.resources.v1.InvalidSignedBodyException;
@@ -179,44 +180,49 @@ public class UploadResource {
         }
 
         // convert audio: ADPCM to 16-bit 16k PCM
-        final int chunkSize = ADPCMEncoder.BLOCKBYTES - ADPCM_STATE_SIZE;
-        final int chunks = body.length / chunkSize;
+        final byte[] decoded;
+        if (true) {
+             decoded = AudioUtils.decodeADPShitMAudio(body);
+        } else {
+            final int chunkSize = ADPCMEncoder.BLOCKBYTES - ADPCM_STATE_SIZE;
+            final int chunks = body.length / chunkSize;
 
-        // for reading body bytes
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(body);
-        byte[] dataBuffer = new byte[chunkSize];
+            // for reading body bytes
+            final ByteArrayInputStream inputStream = new ByteArrayInputStream(body);
+            byte[] dataBuffer = new byte[chunkSize];
 
-        // first 3 bytes to decoder contains previous chunk values and last stepIndex
-        byte[] startBuffer = new byte[]{0, 0, 0};
+            // first 3 bytes to decoder contains previous chunk values and last stepIndex
+            byte[] startBuffer = new byte[]{0, 0, 0};
 
-        final ByteArrayOutputStream toDecodeStream = new ByteArrayOutputStream(); // intermediate stream
-        final ByteArrayOutputStream decodedStream = new ByteArrayOutputStream();
+            final ByteArrayOutputStream toDecodeStream = new ByteArrayOutputStream(); // intermediate stream
+            final ByteArrayOutputStream decodedStream = new ByteArrayOutputStream();
 
-        for (int i = 0; i < chunks + 1; i++) {
+            for (int i = 0; i < chunks + 1; i++) {
 
-            final int readSize = inputStream.read(dataBuffer, 0, chunkSize);
-            if (readSize != chunkSize) {
-                LOGGER.debug("action=input-stream-read chunk={} expect={} read={}", i, chunkSize, readSize);
-                break;
+                final int readSize = inputStream.read(dataBuffer, 0, chunkSize);
+                if (readSize != chunkSize) {
+                    LOGGER.debug("action=input-stream-read chunk={} expect={} read={}", i, chunkSize, readSize);
+                    break;
+                }
+
+                toDecodeStream.write(startBuffer); // add previous state
+                toDecodeStream.write(dataBuffer);
+
+                final ADPCMDecoder.DecodeResult decodeResult = ADPCMDecoder.decodeBlock(toDecodeStream.toByteArray(), 0);
+                toDecodeStream.reset();
+
+                // fill in previous values
+                final int outputSize = decodeResult.data.length;
+                startBuffer[0] = decodeResult.data[outputSize - 2];
+                startBuffer[1] = decodeResult.data[outputSize - 1];
+                startBuffer[2] = (byte) decodeResult.stepIndex;
+
+                decodedStream.write(decodeResult.data);
             }
 
-            toDecodeStream.write(startBuffer); // add previous state
-            toDecodeStream.write(dataBuffer);
-
-            final ADPCMDecoder.DecodeResult decodeResult = ADPCMDecoder.decodeBlock(toDecodeStream.toByteArray(), 0);
-            toDecodeStream.reset();
-
-            // fill in previous values
-            final int outputSize = decodeResult.data.length;
-            startBuffer[0] = decodeResult.data[outputSize - 2];
-            startBuffer[1] = decodeResult.data[outputSize - 1];
-            startBuffer[2] = (byte) decodeResult.stepIndex;
-
-            decodedStream.write(decodeResult.data);
+            // process audio
+            decoded = decodedStream.toByteArray();
         }
-
-        // process audio
-        final byte[] decoded = decodedStream.toByteArray();
         LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
 
         try {

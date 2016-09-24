@@ -150,7 +150,8 @@ if __name__ == '__main__':
     print "protobuf size: ", len(pb_str)
     pb_size = struct.pack('>I', len(pb_str))
 
-    file_data = pb_size + pb_str + file_data;
+    # add protobuf
+    #file_data = pb_size + pb_str + file_data;
 
     hashed = hmac.new(aes_key, file_data, hashlib.sha1)
     print "length of hash", len(hashed.digest())
@@ -168,7 +169,7 @@ if __name__ == '__main__':
         ENDPOINT = "http://localhost:8181/upload/text?response=%s" % (audio_type)
         headers = {"content-type": "application/json", "X-Hello-Sense-Id": "721E040D184F2CAE"}
     elif env == 'local':
-        ENDPOINT = "http://localhost:8181/demo/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
+        ENDPOINT = "http://localhost:8181/v1/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
     elif env == 'localv2':
         ENDPOINT = "http://localhost:8181/v2/upload/audio"
     elif env == 'localdemo':
