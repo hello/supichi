@@ -369,6 +369,7 @@ public class AudioUtils {
                 dataOutputStream.writeShort(valpred);
             }
 
+            dataInputStream.close();
             return outputStream.toByteArray();
 
         }
