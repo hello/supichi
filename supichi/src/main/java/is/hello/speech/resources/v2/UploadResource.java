@@ -33,8 +33,6 @@ import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.open.audio.AudioException;
-import uk.ac.open.audio.adpcm.ADPCMDecoder;
-import uk.ac.open.audio.adpcm.ADPCMEncoder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -46,8 +44,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
@@ -180,49 +176,7 @@ public class UploadResource {
         }
 
         // convert audio: ADPCM to 16-bit 16k PCM
-        final byte[] decoded;
-        if (true) {
-             decoded = AudioUtils.decodeADPShitMAudio(body);
-        } else {
-            final int chunkSize = ADPCMEncoder.BLOCKBYTES - ADPCM_STATE_SIZE;
-            final int chunks = body.length / chunkSize;
-
-            // for reading body bytes
-            final ByteArrayInputStream inputStream = new ByteArrayInputStream(body);
-            byte[] dataBuffer = new byte[chunkSize];
-
-            // first 3 bytes to decoder contains previous chunk values and last stepIndex
-            byte[] startBuffer = new byte[]{0, 0, 0};
-
-            final ByteArrayOutputStream toDecodeStream = new ByteArrayOutputStream(); // intermediate stream
-            final ByteArrayOutputStream decodedStream = new ByteArrayOutputStream();
-
-            for (int i = 0; i < chunks + 1; i++) {
-
-                final int readSize = inputStream.read(dataBuffer, 0, chunkSize);
-                if (readSize != chunkSize) {
-                    LOGGER.debug("action=input-stream-read chunk={} expect={} read={}", i, chunkSize, readSize);
-                    break;
-                }
-
-                toDecodeStream.write(startBuffer); // add previous state
-                toDecodeStream.write(dataBuffer);
-
-                final ADPCMDecoder.DecodeResult decodeResult = ADPCMDecoder.decodeBlock(toDecodeStream.toByteArray(), 0);
-                toDecodeStream.reset();
-
-                // fill in previous values
-                final int outputSize = decodeResult.data.length;
-                startBuffer[0] = decodeResult.data[outputSize - 2];
-                startBuffer[1] = decodeResult.data[outputSize - 1];
-                startBuffer[2] = (byte) decodeResult.stepIndex;
-
-                decodedStream.write(decodeResult.data);
-            }
-
-            // process audio
-            decoded = decodedStream.toByteArray();
-        }
+        final byte[] decoded = AudioUtils.decodeADPShitMAudio(body);
         LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
 
         try {
