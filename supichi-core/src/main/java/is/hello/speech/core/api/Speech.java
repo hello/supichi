@@ -146,6 +146,16 @@ public final class Speech {
      * </pre>
      */
     int getConfidence();
+
+    // optional int32 version = 3;
+    /**
+     * <code>optional int32 version = 3;</code>
+     */
+    boolean hasVersion();
+    /**
+     * <code>optional int32 version = 3;</code>
+     */
+    int getVersion();
   }
   /**
    * Protobuf type {@code speech_data}
@@ -212,6 +222,11 @@ public final class Speech {
             case 16: {
               bitField0_ |= 0x00000002;
               confidence_ = input.readInt32();
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
+              version_ = input.readInt32();
               break;
             }
           }
@@ -294,9 +309,26 @@ public final class Speech {
       return confidence_;
     }
 
+    // optional int32 version = 3;
+    public static final int VERSION_FIELD_NUMBER = 3;
+    private int version_;
+    /**
+     * <code>optional int32 version = 3;</code>
+     */
+    public boolean hasVersion() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional int32 version = 3;</code>
+     */
+    public int getVersion() {
+      return version_;
+    }
+
     private void initFields() {
       word_ = Speech.keyword.NULL;
       confidence_ = 0;
+      version_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -316,6 +348,9 @@ public final class Speech {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeInt32(2, confidence_);
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeInt32(3, version_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -332,6 +367,10 @@ public final class Speech {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt32Size(2, confidence_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(3, version_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -453,6 +492,8 @@ public final class Speech {
         bitField0_ = (bitField0_ & ~0x00000001);
         confidence_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
+        version_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -489,6 +530,10 @@ public final class Speech {
           to_bitField0_ |= 0x00000002;
         }
         result.confidence_ = confidence_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.version_ = version_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -510,6 +555,9 @@ public final class Speech {
         }
         if (other.hasConfidence()) {
           setConfidence(other.getConfidence());
+        }
+        if (other.hasVersion()) {
+          setVersion(other.getVersion());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -623,6 +671,39 @@ public final class Speech {
         return this;
       }
 
+      // optional int32 version = 3;
+      private int version_ ;
+      /**
+       * <code>optional int32 version = 3;</code>
+       */
+      public boolean hasVersion() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional int32 version = 3;</code>
+       */
+      public int getVersion() {
+        return version_;
+      }
+      /**
+       * <code>optional int32 version = 3;</code>
+       */
+      public Builder setVersion(int value) {
+        bitField0_ |= 0x00000004;
+        version_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 version = 3;</code>
+       */
+      public Builder clearVersion() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        version_ = 0;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:speech_data)
     }
 
@@ -648,10 +729,10 @@ public final class Speech {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\014speech.proto\"9\n\013speech_data\022\026\n\004word\030\001 " +
-      "\001(\0162\010.keyword\022\022\n\nconfidence\030\002 \001(\005*B\n\007key" +
-      "word\022\010\n\004NULL\020\000\022\014\n\010OK_SENSE\020\001\022\010\n\004STOP\020\002\022\n" +
-      "\n\006SNOOZE\020\003\022\t\n\005ALEXA\020\004"
+      "\n\014speech.proto\"J\n\013speech_data\022\026\n\004word\030\001 " +
+      "\001(\0162\010.keyword\022\022\n\nconfidence\030\002 \001(\005\022\017\n\007ver" +
+      "sion\030\003 \001(\005*B\n\007keyword\022\010\n\004NULL\020\000\022\014\n\010OK_SE" +
+      "NSE\020\001\022\010\n\004STOP\020\002\022\n\n\006SNOOZE\020\003\022\t\n\005ALEXA\020\004"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -663,7 +744,7 @@ public final class Speech {
           internal_static_speech_data_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_speech_data_descriptor,
-              new java.lang.String[] { "Word", "Confidence", });
+              new java.lang.String[] { "Word", "Confidence", "Version", });
           return null;
         }
       };

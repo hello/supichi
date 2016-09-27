@@ -55,8 +55,7 @@ public class TriviaHandler extends BaseHandler {
 
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
-
-          if (text.equalsIgnoreCase("the president")) {
+            if (text.equalsIgnoreCase("the president")) {
                 response.put("result", Outcome.OK.getValue());
                 response.put("answer", "president_obama");
                 response.put("text", "The current president of the United States is Barack Obama.");

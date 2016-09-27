@@ -3,7 +3,6 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.models.Alarm;
@@ -57,12 +56,12 @@ public class AlarmHandler extends BaseHandler {
     private static final String NO_ALARM_RESPONSE = "There is no alarm to cancel.";
 
 
-    private final AlarmProcessor alarmProcessor;
+//    private final AlarmProcessor alarmProcessor;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
 
     AlarmHandler(final SpeechCommandDAO speechCommandDAO, final AlarmDAODynamoDB alarmDAODynamoDB, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
         super("alarm", speechCommandDAO, getAvailableActions());
-        this.alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);
+//        this.alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);
         this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
     }
 
@@ -176,7 +175,7 @@ public class AlarmHandler extends BaseHandler {
 
 
         final List<Alarm> alarms = Lists.newArrayList();
-        alarms.addAll(alarmProcessor.getAlarms(accountId, senseId));
+//        alarms.addAll(alarmProcessor.getAlarms(accountId, senseId));
 
         // check that alarm is not a duplicate
         for (final Alarm alarm : alarms) {
@@ -190,7 +189,7 @@ public class AlarmHandler extends BaseHandler {
         // okay to set alarm
         try {
             alarms.add(newAlarm);
-            alarmProcessor.setAlarms(accountId, senseId, alarms);
+//            alarmProcessor.setAlarms(accountId, senseId, alarms);
 
         } catch (Exception exception) {
             LOGGER.error("error=no-alarm-set error_msg={} account_id={}", exception.getMessage(), accountId);
@@ -251,7 +250,7 @@ public class AlarmHandler extends BaseHandler {
         }
 
         try {
-            alarmProcessor.setAlarms(accountId, senseId, newAlarms);
+//            alarmProcessor.setAlarms(accountId, senseId, newAlarms);
         } catch (Exception exception) {
             return new GenericResult(Outcome.FAIL, Optional.of(exception.getMessage()),
                     Optional.of(CANCEL_ALARM_ERROR_RESPONSE));

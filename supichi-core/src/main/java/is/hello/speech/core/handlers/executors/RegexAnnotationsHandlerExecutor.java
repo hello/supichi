@@ -91,6 +91,7 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
         // final Map<BaseHandler, Integer> possibleHandlers = Maps.newHashMap();
         final List<BaseHandler> possibleHandlers = Lists.newArrayList();
         for(final Pattern pattern : commandToHandlerMap.keySet()) {
+
             final HandlerType handlerType = commandToHandlerMap.get(pattern);
             Matcher m = pattern.matcher(command);
             if(m.find()) {
