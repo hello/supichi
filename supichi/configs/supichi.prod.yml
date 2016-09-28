@@ -60,6 +60,7 @@ logging:
   loggers:
     is.hello.speech: DEBUG
     com.amazonaws: WARN
+    com.joestelmach.natty: INFO
   appenders:
     - type: file
       threshold: DEBUG

@@ -1,6 +1,7 @@
 package is.hello.speech.core.handlers;
 
 import com.github.dvdme.ForecastIOLib.ForecastIO;
+import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -22,17 +23,17 @@ import is.hello.speech.core.db.SpeechCommandDAO;
  */
 public class HandlerFactory {
 
-    final private SpeechCommandDAO speechCommandDAO;
-    final private MessejiClient messejiClient;
-    final private SleepSoundsProcessor sleepSoundsProcessor;
-    final private DeviceDataDAODynamoDB deviceDataDAODynamoDB;
-    final private DeviceDAO deviceDAO;
-    final private SenseColorDAO senseColorDAO;
-    final private CalibrationDAO calibrationDAO;
-    final private TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB;
-    final private String forecastio;
-    final private AccountLocationDAO accountLocationDAO;
-    final private PersistentExternalTokenStore externalTokenStore;
+    private final SpeechCommandDAO speechCommandDAO;
+    private final MessejiClient messejiClient;
+    private final SleepSoundsProcessor sleepSoundsProcessor;
+    private final DeviceDataDAODynamoDB deviceDataDAODynamoDB;
+    private final DeviceDAO deviceDAO;
+    private final SenseColorDAO senseColorDAO;
+    private final CalibrationDAO calibrationDAO;
+    private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB;
+    private final String forecastio;
+    private final AccountLocationDAO accountLocationDAO;
+    private final PersistentExternalTokenStore externalTokenStore;
     private final Vault tokenKMSVault;
     private final PersistentExternalApplicationStore externalApplicationStore;
     private final PersistentExternalAppDataStore externalAppDataStore;
@@ -106,7 +107,8 @@ public class HandlerFactory {
     }
 
     public AlarmHandler alarmHandler() {
-        return new AlarmHandler(speechCommandDAO, alarmDAODynamoDB, mergedUserInfoDynamoDB);
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);
+        return new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
     }
 
     public TimeHandler timeHandler() {

@@ -3,7 +3,7 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.hello.suripu.core.db.AlarmDAODynamoDB;
+import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.models.Alarm;
 import com.hello.suripu.core.models.AlarmSound;
@@ -46,22 +46,23 @@ public class AlarmHandler extends BaseHandler {
     private static final String SET_ALARM_REGEX = "((set).*(?:alarm))|(wake me)";
     private static final Pattern SET_ALARM__PATTERN = Pattern.compile(SET_ALARM_REGEX);
 
-    private static final AlarmSound DEFAULT_ALARM_SOUND = new AlarmSound(5, "Dusk", "");
+    public static final AlarmSound DEFAULT_ALARM_SOUND = new AlarmSound(5, "Dusk", "");
 
-    private static final String DUPLICATE_ALARM_RESPONSE = "Sorry, no alarm was set, you already have an alarm set for %s";
-    private static final String SET_ALARM_ERROR_RESPONSE = "Sorry, we're unable to set your alarm. Please try again later";
-    private static final String SET_ALARM_OK_RESPONSE = "Ok, your alarm is set for %s";
-    private static final String CANCEL_ALARM_ERROR_RESPONSE = "Sorry, we're unable to cancel your alarm. Please try again later.";
-    private static final String CANCEL_ALARM_OK_RESPONSE = "OK, your alarm is canceled.";
-    private static final String NO_ALARM_RESPONSE = "There is no alarm to cancel.";
+    public static final String DUPLICATE_ALARM_RESPONSE = "Sorry, no alarm was set, you already have an alarm set for %s";
+    public static final String SET_ALARM_ERROR_RESPONSE = "Sorry, we're unable to set your alarm. Please try again later";
+    public static final String SET_ALARM_OK_RESPONSE = "Ok, your alarm is set for %s";
+
+    public static final String CANCEL_ALARM_ERROR_RESPONSE = "Sorry, we're unable to cancel your alarm. Please try again later.";
+    public static final String CANCEL_ALARM_OK_RESPONSE = "OK, your alarm is canceled.";
+    public static final String NO_ALARM_RESPONSE = "There is no alarm to cancel.";
 
 
-//    private final AlarmProcessor alarmProcessor;
+    private final AlarmProcessor alarmProcessor;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
 
-    AlarmHandler(final SpeechCommandDAO speechCommandDAO, final AlarmDAODynamoDB alarmDAODynamoDB, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
+    public AlarmHandler(final SpeechCommandDAO speechCommandDAO, final AlarmProcessor alarmProcessor, final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
         super("alarm", speechCommandDAO, getAvailableActions());
-//        this.alarmProcessor = new AlarmProcessor(alarmDAODynamoDB, mergedUserInfoDynamoDB);
+        this.alarmProcessor = alarmProcessor;
         this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
     }
 
@@ -175,7 +176,7 @@ public class AlarmHandler extends BaseHandler {
 
 
         final List<Alarm> alarms = Lists.newArrayList();
-//        alarms.addAll(alarmProcessor.getAlarms(accountId, senseId));
+        alarms.addAll(alarmProcessor.getAlarms(accountId, senseId));
 
         // check that alarm is not a duplicate
         for (final Alarm alarm : alarms) {
@@ -189,7 +190,7 @@ public class AlarmHandler extends BaseHandler {
         // okay to set alarm
         try {
             alarms.add(newAlarm);
-//            alarmProcessor.setAlarms(accountId, senseId, alarms);
+            alarmProcessor.setAlarms(accountId, senseId, alarms);
 
         } catch (Exception exception) {
             LOGGER.error("error=no-alarm-set error_msg={} account_id={}", exception.getMessage(), accountId);
@@ -250,7 +251,7 @@ public class AlarmHandler extends BaseHandler {
         }
 
         try {
-//            alarmProcessor.setAlarms(accountId, senseId, newAlarms);
+            alarmProcessor.setAlarms(accountId, senseId, newAlarms);
         } catch (Exception exception) {
             return new GenericResult(Outcome.FAIL, Optional.of(exception.getMessage()),
                     Optional.of(CANCEL_ALARM_ERROR_RESPONSE));

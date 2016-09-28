@@ -2,17 +2,18 @@ package is.hello.speech.core.handlers.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
+import com.hello.suripu.core.db.AccountLocationDAO;
+import com.hello.suripu.core.db.AlarmDAODynamoDB;
+import com.hello.suripu.core.db.CalibrationDAO;
+import com.hello.suripu.core.db.DeviceDAO;
+import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
+import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
+import com.hello.suripu.core.db.colors.SenseColorDAO;
+import com.hello.suripu.core.models.TimeZoneHistory;
+import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
-
-import org.joda.time.DateTime;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.util.Map;
-
+import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import is.hello.gaibu.core.models.ExternalApplication;
 import is.hello.gaibu.core.models.ExternalApplicationData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -20,29 +21,48 @@ import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
 import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.handlers.HueHandler;
 import is.hello.speech.core.handlers.NestHandler;
-import is.hello.speech.core.handlers.TriviaHandler;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.util.Map;
+
+import static is.hello.speech.core.models.SpeechCommand.ALARM_DELETE;
+import static is.hello.speech.core.models.SpeechCommand.ALARM_SET;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
 public class RegexAnnotationsHandlerExecutorTest {
+    private final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
+    private final PersistentExternalTokenStore externalTokenStore = mock(PersistentExternalTokenStore.class);
+    private final PersistentExternalTokenStore badTokenStore = mock(PersistentExternalTokenStore.class);
+    private final PersistentExternalApplicationStore externalApplicationStore = mock(PersistentExternalApplicationStore.class);
+    private final PersistentExternalAppDataStore externalAppDataStore = mock(PersistentExternalAppDataStore.class);
+    private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = mock(TimeZoneHistoryDAODynamoDB.class);
+    private final Vault tokenKMSVault = mock(Vault.class);
+    private final AlarmDAODynamoDB alarmDAO = mock(AlarmDAODynamoDB.class);
+    private final MergedUserInfoDynamoDB mergedUserDAO = mock(MergedUserInfoDynamoDB.class);
 
-    final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
-    final PersistentExternalTokenStore externalTokenStore = mock(PersistentExternalTokenStore.class);
-    final PersistentExternalTokenStore badTokenStore = mock(PersistentExternalTokenStore.class);
-    final PersistentExternalApplicationStore externalApplicationStore = mock(PersistentExternalApplicationStore.class);
-    final PersistentExternalAppDataStore externalAppDataStore = mock(PersistentExternalAppDataStore.class);
-    final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = mock(TimeZoneHistoryDAODynamoDB.class);
-    final Vault tokenKMSVault = mock(Vault.class);
+    private final MessejiClient messejiClient = mock(MessejiClient.class);
+    private final SleepSoundsProcessor sleepSoundsProcessor = mock(SleepSoundsProcessor.class);
+    private final DeviceDataDAODynamoDB deviceDataDAODynamoDB = mock(DeviceDataDAODynamoDB.class);
+    private final DeviceDAO deviceDAO = mock(DeviceDAO.class);
+    private final SenseColorDAO senseColorDAO = mock(SenseColorDAO.class);
+    private final CalibrationDAO calibrationDAO = mock(CalibrationDAO.class);
+    private final AccountLocationDAO accountLocationDAO = mock(AccountLocationDAO.class);
 
-    final String CLIENT_ID = "client_id";
-    final String SENSE_ID = "123456789";
-    final Long ACCOUNT_ID = 99L;
+    private final String SENSE_ID = "123456789";
+    private final Long ACCOUNT_ID = 99L;
+    private final DateTimeZone TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
+
 
     @Before
     public void setUp() {
@@ -60,6 +80,7 @@ public class RegexAnnotationsHandlerExecutorTest {
             .withCreated(DateTime.now())
             .build();
 
+        String CLIENT_ID = "client_id";
         final ExternalApplication fakeHueApplication = new ExternalApplication(1L, "Hue", CLIENT_ID, "client_secret", "http://localhost/",  "auth_uri", "token_uri", "Fake Hue Application", DateTime.now(), 2);
         final ExternalApplication fakeNestApplication = new ExternalApplication(2L, "Nest", CLIENT_ID, "client_secret", "http://localhost/",  "auth_uri", "token_uri", "Fake Nest Application", DateTime.now(), 2);
 
@@ -82,26 +103,97 @@ public class RegexAnnotationsHandlerExecutorTest {
         Mockito.when(tokenKMSVault.decrypt(fakeToken.accessToken, encryptionContext)).thenReturn(Optional.of(fakeToken.accessToken));
         Mockito.when(externalAppDataStore.getAppData(1L, SENSE_ID)).thenReturn(Optional.of(fakeHueApplicationData));
         Mockito.when(externalAppDataStore.getAppData(2L, SENSE_ID)).thenReturn(Optional.of(fakeNestApplicationData));
-        Mockito.when(timeZoneHistoryDAODynamoDB.getCurrentTimeZone(Mockito.anyLong())).thenReturn(Optional.absent());
+
+        final int offsetMillis = TIME_ZONE.getOffset(DateTime.now(DateTimeZone.UTC).getMillis());
+        final Optional<TimeZoneHistory> optionalTimeZoneHistory = Optional.of(new TimeZoneHistory(offsetMillis, "America/Los_Angeles"));
+        Mockito.when(timeZoneHistoryDAODynamoDB.getCurrentTimeZone(Mockito.anyLong())).thenReturn(optionalTimeZoneHistory);
+
+        Mockito.when(mergedUserDAO.getInfo(SENSE_ID, ACCOUNT_ID)).thenReturn(Optional.absent());
 
     }
+
+    private HandlerExecutor getExecutor() {
+        final HandlerFactory handlerFactory = HandlerFactory.create(
+                speechCommandDAO,
+                messejiClient,
+                sleepSoundsProcessor,
+                deviceDataDAODynamoDB,
+                deviceDAO,
+                senseColorDAO,
+                calibrationDAO,
+                timeZoneHistoryDAODynamoDB,
+                "BLAH", // forecastio
+                accountLocationDAO,
+                externalTokenStore,
+                externalApplicationStore,
+                externalAppDataStore,
+                tokenKMSVault,
+                alarmDAO,
+                mergedUserDAO
+        );
+
+        return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
+                .register(HandlerType.ALARM, handlerFactory.alarmHandler())
+                .register(HandlerType.WEATHER, handlerFactory.weatherHandler())
+                .register(HandlerType.SLEEP_SOUNDS, handlerFactory.sleepSoundHandler())
+                .register(HandlerType.ROOM_CONDITIONS, handlerFactory.roomConditionsHandler())
+                .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
+                .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
+                .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
+                .register(HandlerType.HUE, handlerFactory.hueHandler())
+                .register(HandlerType.NEST, handlerFactory.nestHandler());
+    }
+
+    @Test
+    public void TestAlarmHandlers() {
+        // test handler mapping
+        final HandlerExecutor handlerExecutor = getExecutor();
+        HandlerResult result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "set my alarm for 7 am");
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.alarmResult.isPresent(), true);
+        assertEquals(result.command, ALARM_SET.getValue());
+
+        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "wake me at 7 am");
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.alarmResult.isPresent(), true);
+        assertEquals(result.command, ALARM_SET.getValue());
+
+        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "wake her up at 7 am");
+        assertEquals(result.handlerType, HandlerType.NONE);
+
+        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "alarm my dentist");
+        assertEquals(result.handlerType, HandlerType.NONE);
+        assertEquals(result.alarmResult.isPresent(), false);
+
+        // cancel alarm
+        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "cancel my alarm");
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.alarmResult.isPresent(), true);
+        assertEquals(result.command, ALARM_DELETE.getValue());
+
+        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "delete tomorrow's alarm");
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.alarmResult.isPresent(), true);
+        assertEquals(result.command, ALARM_DELETE.getValue());
+
+        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "cancel all my appointments");
+        assertEquals(result.handlerType, HandlerType.NONE);
+        assertEquals(result.alarmResult.isPresent(), false);
+    }
+
 
     //Reproduce tests for UnigramHandlerExecutor to ensure regex executor doesn't break anything
     @Test
     public void TestHandleEmptyHandler() {
+        final HandlerExecutor handlerExecutor = getExecutor();
 
-        final RegexHandlerExecutor executor = new RegexHandlerExecutor();
-        final HandlerResult result = executor.handle("123456789", 99L, "whatever");
+        final HandlerResult result = handlerExecutor.handle("123456789", 99L, "whatever");
         assertEquals(result.handlerType, HandlerType.NONE);
     }
 
     @Test
     public void TestHandleSingleHandler() {
-
-        final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
-        final TriviaHandler handler = new TriviaHandler(speechCommandDAO);
-        final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
-                .register(HandlerType.TRIVIA, handler);
+        final HandlerExecutor executor = getExecutor();
 
         final HandlerResult correctResult = executor.handle("123456789", 99L, "the president");
         assertEquals(correctResult.handlerType, HandlerType.TRIVIA);
@@ -114,12 +206,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     @Test
     public void TestHueHandler() {
 
-        final HueHandler hueHandler = new HueHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
-        final NestHandler nestHandler = new NestHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
-
-        final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
-            .register(HandlerType.NEST, nestHandler)
-            .register(HandlerType.HUE, hueHandler);
+        final HandlerExecutor executor = getExecutor();
 
         HandlerResult correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "turn off the light");
         assertEquals(HandlerType.HUE, correctResult.handlerType);
@@ -195,12 +282,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     @Test
     public void TestNestHandler() {
 
-        final HueHandler hueHandler = new HueHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
-        final NestHandler nestHandler = new NestHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
-
-        final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
-            .register(HandlerType.NEST, nestHandler)
-            .register(HandlerType.HUE, hueHandler);
+        final HandlerExecutor executor = getExecutor();
 
         HandlerResult correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "set the temp to seventy seven degrees");
         assertEquals(HandlerType.NEST, correctResult.handlerType);
@@ -218,7 +300,6 @@ public class RegexAnnotationsHandlerExecutorTest {
     public void TestBadToken() {
         final HueHandler hueHandler = new HueHandler(speechCommandDAO, badTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
         final NestHandler nestHandler = new NestHandler(speechCommandDAO, badTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
-
 
         final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
             .register(HandlerType.NEST, nestHandler)

@@ -65,7 +65,7 @@ public class Annotator {
         final List<DurationAnnotation> durations = Lists.newArrayList();
 
         final List<DateGroup> groups = timeParser.parse(text);
-        for (final DateGroup group:groups) {
+        for (final DateGroup group : groups) {
             final List<Date> dates = group.getDates();
             if (dates.size() == 2) {
                 // duration
@@ -83,6 +83,7 @@ public class Annotator {
                 }
             }
         }
+
         return new TimeDurations(times, durations);
     }
 }

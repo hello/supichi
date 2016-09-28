@@ -35,7 +35,8 @@
                     <artifactId>logback-core</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>        <dependency>
+        </dependency>
+        <dependency>
             <groupId>com.ibm.watson.developer_cloud</groupId>
             <artifactId>java-sdk</artifactId>
             <version>3.0.1</version>
