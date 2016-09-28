@@ -61,6 +61,8 @@ public class AlarmHandler extends BaseHandler {
     public static final String CANCEL_ALARM_OK_RESPONSE = "OK, your alarm is canceled.";
     public static final String NO_ALARM_RESPONSE = "There is no alarm to cancel.";
 
+    // error text
+    public static final String NO_TIME_ERROR = "no time given";
     public static final String NO_TIMEZONE = "no timezone";
     public static final String NO_USER_INFO = "no user info";
     public static final String TOO_SOON_ERROR = "alarm time too soon";
@@ -150,7 +152,7 @@ public class AlarmHandler extends BaseHandler {
     private GenericResult setAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
         if (annotatedTranscript.times.isEmpty()) {
             LOGGER.error("error=no-alarm-set reason=no-time-given text={} account={}", annotatedTranscript.transcript, accountId);
-            return GenericResult.failWithResponse("no time give", SET_ALARM_ERROR_NO_TIME_RESPONSE);
+            return GenericResult.failWithResponse(NO_TIME_ERROR, SET_ALARM_ERROR_NO_TIME_RESPONSE);
         }
 
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
