@@ -1,5 +1,6 @@
 package is.hello.speech.resources.v2;
 
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -71,6 +72,8 @@ public class UploadResource {
     private final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders;
     private final Map<HandlerType, SupichiResponseType> handlerMap;
 
+    private final MetricRegistry metrics;
+
     @Context
     HttpServletRequest request;
 
@@ -80,7 +83,8 @@ public class UploadResource {
                           final DeviceDAO deviceDAO,
                           final SpeechKinesisProducer speechKinesisProducer,
                           final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders,
-                          final Map<HandlerType, SupichiResponseType> handlerMap) {
+                          final Map<HandlerType, SupichiResponseType> handlerMap,
+                          final MetricRegistry metricRegistry) {
         this.speechClient = speechClient;
         this.signedBodyHandler = signedBodyHandler;
         this.handlerExecutor = handlerExecutor;
@@ -88,6 +92,7 @@ public class UploadResource {
         this.speechKinesisProducer = speechKinesisProducer;
         this.responseBuilders = responseBuilders;
         this.handlerMap = handlerMap;
+        this.metrics = metricRegistry;
     }
 
     @Path("/audio")
