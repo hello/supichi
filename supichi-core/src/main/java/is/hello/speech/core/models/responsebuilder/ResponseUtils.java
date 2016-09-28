@@ -3,6 +3,7 @@ package is.hello.speech.core.models.responsebuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.S3Object;
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.text2speech.AudioUtils;
 import org.apache.commons.compress.utils.IOUtils;
@@ -19,9 +20,9 @@ import java.util.Arrays;
 public class ResponseUtils {
     private final static Logger LOGGER = LoggerFactory.getLogger(ResponseUtils.class);
 
-    public static HandlerResult.Outcome getOutcome (final HandlerResult handlerResult) {
+    public static Outcome getOutcome (final HandlerResult handlerResult) {
         final String outcomeString = handlerResult.responseParameters.get("result");
-        return HandlerResult.Outcome.fromString(outcomeString);
+        return Outcome.fromString(outcomeString);
     }
 
     public static byte [] getAudioFromS3(final AmazonS3 s3, final String s3Bucket, final String filename) {

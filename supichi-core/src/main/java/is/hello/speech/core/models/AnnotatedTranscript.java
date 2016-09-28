@@ -1,5 +1,6 @@
 package is.hello.speech.core.models;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import is.hello.speech.core.models.annotations.DurationAnnotation;
 import is.hello.speech.core.models.annotations.SleepSoundAnnotation;
@@ -7,6 +8,7 @@ import is.hello.speech.core.models.annotations.TimeAnnotation;
 import is.hello.speech.core.models.annotations.VolumeAnnotation;
 
 import java.util.List;
+import java.util.TimeZone;
 
 /**
  * Created by ksg on 9/20/16
@@ -14,6 +16,8 @@ import java.util.List;
 public class AnnotatedTranscript {
 
     public final String transcript;
+
+    public final Optional<TimeZone> timeZoneOptional;
 
     public final List<TimeAnnotation> times;
 
@@ -30,8 +34,13 @@ public class AnnotatedTranscript {
     // location
     // house location
 
-    public AnnotatedTranscript(final String transcript, final List<TimeAnnotation> times, final List<DurationAnnotation> durations, final List<SleepSoundAnnotation> sleepSounds, final List<VolumeAnnotation> volumes) {
+    public AnnotatedTranscript(final String transcript, final Optional<TimeZone> timeZoneOptional,
+                               final List<TimeAnnotation> times,
+                               final List<DurationAnnotation> durations,
+                               final List<SleepSoundAnnotation> sleepSounds,
+                               final List<VolumeAnnotation> volumes) {
         this.transcript = transcript;
+        this.timeZoneOptional = timeZoneOptional;
         this.times = times;
         this.durations = durations;
         this.sleepSounds = sleepSounds;
@@ -40,6 +49,7 @@ public class AnnotatedTranscript {
 
     public static class Builder {
         private String transcript = "";
+        private Optional<TimeZone> timeZoneOptional = Optional.absent();
         private List<TimeAnnotation> times = Lists.newArrayList();
         private List<DurationAnnotation> durations = Lists.newArrayList();
         private List<SleepSoundAnnotation> sleepSounds = Lists.newArrayList();
@@ -47,6 +57,11 @@ public class AnnotatedTranscript {
 
         public Builder withTranscript(final String text) {
             this.transcript = text;
+            return this;
+        }
+
+        public Builder withTimeZone(final Optional<TimeZone> timeZone) {
+            this.timeZoneOptional = timeZone;
             return this;
         }
 
@@ -71,7 +86,7 @@ public class AnnotatedTranscript {
         }
 
         public AnnotatedTranscript build() {
-            return new AnnotatedTranscript(transcript, times, durations, sleepSounds, volumes);
+            return new AnnotatedTranscript(transcript, timeZoneOptional, times, durations, sleepSounds, volumes);
         }
     }
 }

@@ -161,7 +161,7 @@ if __name__ == '__main__':
     headers = {"content-type": "application/octet-stream",
             "X-Hello-Sense-Id": "8AF6441AF72321F4"}
 
-    if env == 'text':
+    if env == 'localtext':
         text = sys.argv[5]
         su = json.dumps({'sense_id': '721E040D184F2CAE', 'transcript': text})
         headers = {"content-type": "application/json", "X-Hello-Sense-Id": "721E040D184F2CAE"}

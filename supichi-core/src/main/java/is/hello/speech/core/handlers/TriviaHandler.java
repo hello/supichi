@@ -3,6 +3,8 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.Outcome;
+import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
@@ -44,39 +46,39 @@ public class TriviaHandler extends BaseHandler {
 
 
     @Override
-    public HandlerResult executeCommand(String originalText, String senseId, Long accountId) {
-        final String text = originalText.toLowerCase();
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+        final String text = annotatedTranscript.transcript;
+
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
         String command = HandlerResult.EMPTY_COMMAND;
 
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
-
-          if (text.contains("the president")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
+            if (text.equalsIgnoreCase("the president")) {
+                response.put("result", Outcome.OK.getValue());
                 response.put("answer", "president_obama");
                 response.put("text", "The current president of the United States is Barack Obama.");
 
-            } else if (text.contains("hello ceo") || text.contains("hello co")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
+            } else if (text.equalsIgnoreCase("hello ceo") || text.equalsIgnoreCase("hello co")) {
+                response.put("result", Outcome.OK.getValue());
                 response.put("answer", "hello_ceo_james");
                 response.put("text", "The CEO of Hello Inc. will always be James Proud.");
-            } else if (text.contains("next president")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
+            } else if (text.equalsIgnoreCase("next president")) {
+                response.put("result", Outcome.OK.getValue());
                 response.put("answer", "next_president");
                 response.put("text", "The next president of the United States will either be Hillary Clinton, or Donald Trump.");
-            } else if (text.contains("best basketball")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
+            } else if (text.equalsIgnoreCase("best basketball")) {
+                response.put("result", Outcome.OK.getValue());
                 response.put("answer", "best_basketball");
                 response.put("text", "The best basketball team in the NBA is the Golden State Warriors.");
-            } else if (text.contains("favorite retailer")) {
-                response.put("result", HandlerResult.Outcome.OK.getValue());
+            } else if (text.equals("favorite retailer")) {
+                response.put("result", Outcome.OK.getValue());
                 response.put("answer", "retailer_best_buy");
                 response.put("text", "Hello's favorite retailer is best buy.");
             }
         }
-        return new HandlerResult(HandlerType.TRIVIA, command, response);
+        return new HandlerResult(HandlerType.TRIVIA, command, response, Optional.absent());
     }
 
 }
