@@ -38,6 +38,7 @@ import static is.hello.speech.core.handlers.AlarmHandler.CANCEL_ALARM_OK_RESPONS
 import static is.hello.speech.core.handlers.AlarmHandler.DEFAULT_ALARM_SOUND;
 import static is.hello.speech.core.handlers.AlarmHandler.DUPLICATE_ALARM_RESPONSE;
 import static is.hello.speech.core.handlers.AlarmHandler.NO_ALARM_RESPONSE;
+import static is.hello.speech.core.handlers.AlarmHandler.NO_TIMEZONE;
 import static is.hello.speech.core.handlers.AlarmHandler.SET_ALARM_ERROR_RESPONSE;
 import static is.hello.speech.core.handlers.AlarmHandler.SET_ALARM_OK_RESPONSE;
 import static is.hello.speech.core.models.SpeechCommand.ALARM_DELETE;
@@ -54,8 +55,6 @@ public class AlarmHandlerTestIT {
 
     private final String tableName = "alarm_info_test";
     private static final String RACE_CONDITION_ERROR_MSG = "Cannot update alarm, please refresh and try again.";
-    private static final String NO_TIMEZONE = "no timezone";
-
 
     private final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
     private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = mock(TimeZoneHistoryDAODynamoDB.class);
@@ -208,8 +207,8 @@ public class AlarmHandlerTestIT {
         assertEquals(result.command, ALARM_SET.getValue());
 
         if (result.alarmResult.isPresent()) {
-            assertEquals(result.alarmResult.get().outcome, Outcome.OK);
-            assertEquals(result.alarmResult.get().responseText.isPresent(), true);
+            assertEquals(result.alarmResult.get().outcome, Outcome.FAIL);
+            assertEquals(result.alarmResult.get().errorText.isPresent(), true);
 
             final DateTime localNow = DateTime.now(TIME_ZONE);
             final int currentHour = localNow.getHourOfDay();
@@ -220,8 +219,8 @@ public class AlarmHandlerTestIT {
                 dayString = String.format(DUPLICATE_ALARM_RESPONSE, "09:00 AM today");
             }
 
-            final String response = result.alarmResult.get().responseText.get();
-            assertEquals(response, dayString);
+            final String errorText = result.alarmResult.get().errorText.get();
+            assertEquals(errorText, dayString);
         } else {
             assertEquals(result.alarmResult.isPresent(), true);
         }
@@ -349,10 +348,10 @@ public class AlarmHandlerTestIT {
         assertEquals(cancelResult3.handlerType, HandlerType.ALARM);
         assertEquals(cancelResult3.command, ALARM_DELETE.getValue());
         if (result.alarmResult.isPresent()) {
-            assertEquals(cancelResult3.alarmResult.get().outcome, Outcome.OK);
-            assertEquals(cancelResult3.alarmResult.get().responseText.isPresent(), true);
-            final String responseText = cancelResult3.alarmResult.get().responseText.get();
-            assertEquals(responseText, NO_ALARM_RESPONSE);
+            assertEquals(cancelResult3.alarmResult.get().outcome, Outcome.FAIL);
+            assertEquals(cancelResult3.alarmResult.get().errorText.isPresent(), true);
+            final String errorText = cancelResult3.alarmResult.get().errorText.get();
+            assertEquals(errorText, NO_ALARM_RESPONSE);
         }
 
     }

@@ -163,7 +163,6 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "alarm my dentist");
         assertEquals(result.handlerType, HandlerType.NONE);
-        assertEquals(result.alarmResult.isPresent(), false);
 
         // cancel alarm
         result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "cancel my alarm");

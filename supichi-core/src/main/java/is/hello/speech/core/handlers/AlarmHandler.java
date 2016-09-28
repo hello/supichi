@@ -56,6 +56,8 @@ public class AlarmHandler extends BaseHandler {
     public static final String CANCEL_ALARM_OK_RESPONSE = "OK, your alarm is canceled.";
     public static final String NO_ALARM_RESPONSE = "There is no alarm to cancel.";
 
+    public static final String NO_TIMEZONE = "no timezone";
+    public static final String NO_USER_INFO = "no user info";
 
     private final AlarmProcessor alarmProcessor;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
@@ -139,12 +141,12 @@ public class AlarmHandler extends BaseHandler {
     private GenericResult setAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
         if (annotatedTranscript.times.isEmpty()) {
             LOGGER.error("error=no-alarm-set reason=no-time-given text={} account={}", annotatedTranscript.transcript, accountId);
-            return new GenericResult(Outcome.FAIL, Optional.of("no time give"), Optional.absent());
+            return GenericResult.fail("no time give");
         }
 
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
             LOGGER.error("error=no-alarm-set reason=no-timezone account_id={}", accountId);
-            return new GenericResult(Outcome.FAIL, Optional.of("no timezone"), Optional.absent());
+            return GenericResult.fail(NO_TIMEZONE);
         }
 
         final TimeAnnotation timeAnnotation = annotatedTranscript.times.get(0); // note time is in utc, need to convert
@@ -181,9 +183,9 @@ public class AlarmHandler extends BaseHandler {
         // check that alarm is not a duplicate
         for (final Alarm alarm : alarms) {
             if (alarm.equals(newAlarm)) {
+                // duplicate alarm
                 LOGGER.error("error=no-alarm-set reason=duplicate-alarm alarm={} account_id={}", newAlarm.toString());
-                return new GenericResult(Outcome.OK, Optional.absent(),
-                        Optional.of(String.format(DUPLICATE_ALARM_RESPONSE, newAlarmString)));
+                return GenericResult.fail(String.format(DUPLICATE_ALARM_RESPONSE, newAlarmString));
             }
         }
 
@@ -194,11 +196,10 @@ public class AlarmHandler extends BaseHandler {
 
         } catch (Exception exception) {
             LOGGER.error("error=no-alarm-set error_msg={} account_id={}", exception.getMessage(), accountId);
-            return new GenericResult(Outcome.FAIL, Optional.of(exception.getMessage()), Optional.of(SET_ALARM_ERROR_RESPONSE));
+            return GenericResult.failWithResponse(exception.getMessage(), SET_ALARM_ERROR_RESPONSE);
         }
 
-        return new GenericResult(Outcome.OK, Optional.absent(),
-                Optional.of (String.format(SET_ALARM_OK_RESPONSE, newAlarmString)));
+        return GenericResult.ok(String.format(SET_ALARM_OK_RESPONSE, newAlarmString));
     }
 
     /**
@@ -208,12 +209,12 @@ public class AlarmHandler extends BaseHandler {
 
         final Optional<UserInfo> alarmInfoOptional = this.mergedUserInfoDynamoDB.getInfo(senseId, accountId);
         if (!alarmInfoOptional.isPresent()) {
-            return new GenericResult(Outcome.FAIL, Optional.of("no user info"), Optional.absent());
+            return GenericResult.fail(NO_USER_INFO);
         }
 
         final UserInfo userInfo = alarmInfoOptional.get();
         if (!userInfo.timeZone.isPresent()) {
-            return new GenericResult(Outcome.FAIL, Optional.of("no timezone"), Optional.absent());
+            return GenericResult.fail(NO_TIMEZONE);
         }
 
         final DateTimeZone timeZone = userInfo.timeZone.get();
@@ -245,19 +246,16 @@ public class AlarmHandler extends BaseHandler {
 
 
         if (newAlarms.size() == userInfo.alarmList.size()) {
-            return new GenericResult(Outcome.OK, Optional.absent(),
-                    Optional.of(NO_ALARM_RESPONSE));
-
+            return GenericResult.fail(NO_ALARM_RESPONSE);
         }
 
         try {
             alarmProcessor.setAlarms(accountId, senseId, newAlarms);
         } catch (Exception exception) {
-            return new GenericResult(Outcome.FAIL, Optional.of(exception.getMessage()),
-                    Optional.of(CANCEL_ALARM_ERROR_RESPONSE));
+            return GenericResult.failWithResponse(exception.getMessage(), CANCEL_ALARM_ERROR_RESPONSE);
         }
 
-        return new GenericResult(Outcome.OK, Optional.absent(), Optional.of(CANCEL_ALARM_OK_RESPONSE));
+        return GenericResult.ok(CANCEL_ALARM_OK_RESPONSE);
     }
 
     @Override
