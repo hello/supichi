@@ -40,6 +40,8 @@ import static is.hello.speech.core.models.HandlerResult.EMPTY_COMMAND;
 public class AlarmHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AlarmHandler.class);
 
+    private static final int MIN_ALARM_MINUTES_FROM_NOW = 5;
+
     private static final String CANCEL_ALARM_REGEX = "(cancel|delete|remove|unset).*(?:alarm)(s?)";
     private static final Pattern CANCEL_ALARM_PATTERN = Pattern.compile(CANCEL_ALARM_REGEX);
 
@@ -48,9 +50,12 @@ public class AlarmHandler extends BaseHandler {
 
     public static final AlarmSound DEFAULT_ALARM_SOUND = new AlarmSound(5, "Dusk", "");
 
+    // TODO: these responses should be moved to a dedicated AlarmResponseBuilder
     public static final String DUPLICATE_ALARM_RESPONSE = "Sorry, no alarm was set, you already have an alarm set for %s";
     public static final String SET_ALARM_ERROR_RESPONSE = "Sorry, we're unable to set your alarm. Please try again later";
     public static final String SET_ALARM_OK_RESPONSE = "Ok, your alarm is set for %s";
+    public static final String SET_ALARM_ERROR_TOO_SOON_RESPONSE = "Sorry, we're unable to set your alarm. Please set a time greater than 5 minutes from now";
+    public static final String SET_ALARM_ERROR_NO_TIME_RESPONSE = "Sorry, we're unable to set your alarm. Please specify an alarm time.";
 
     public static final String CANCEL_ALARM_ERROR_RESPONSE = "Sorry, we're unable to cancel your alarm. Please try again later.";
     public static final String CANCEL_ALARM_OK_RESPONSE = "OK, your alarm is canceled.";
@@ -58,6 +63,7 @@ public class AlarmHandler extends BaseHandler {
 
     public static final String NO_TIMEZONE = "no timezone";
     public static final String NO_USER_INFO = "no user info";
+    public static final String TOO_SOON_ERROR = "alarm time too soon";
 
     private final AlarmProcessor alarmProcessor;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
@@ -128,6 +134,9 @@ public class AlarmHandler extends BaseHandler {
         response.put("result", alarmResult.outcome.getValue());
         if (alarmResult.errorText.isPresent()) {
             response.put("error", alarmResult.errorText.get());
+            if (alarmResult.responseText.isPresent()) {
+                response.put("text", alarmResult.responseText());
+            }
         } else {
             response.put("text", alarmResult.responseText());
         }
@@ -141,7 +150,7 @@ public class AlarmHandler extends BaseHandler {
     private GenericResult setAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
         if (annotatedTranscript.times.isEmpty()) {
             LOGGER.error("error=no-alarm-set reason=no-time-given text={} account={}", annotatedTranscript.transcript, accountId);
-            return GenericResult.fail("no time give");
+            return GenericResult.failWithResponse("no time give", SET_ALARM_ERROR_NO_TIME_RESPONSE);
         }
 
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
@@ -155,10 +164,19 @@ public class AlarmHandler extends BaseHandler {
         final DateTime now = DateTime.now(DateTimeZone.UTC);
 
         final DateTime alarmTimeLocal =  (annotatedTimeUTC.isAfter(now)) ? annotatedTimeUTC.withZone(timezoneId) : annotatedTimeUTC.plusDays(1).withZone(timezoneId);
-        LOGGER.debug("action=create-alarm-time account_id={} annotation_time={} now={} final_alarm={}",
-                accountId, annotatedTimeUTC.toString(), now, alarmTimeLocal.toString());
+        final DateTime localNow = now.withZone(timezoneId);
 
-        final String alarmDay = (alarmTimeLocal.getDayOfYear() ==  now.withZone(timezoneId).getDayOfYear()) ? "today" : "tomorrow";
+        LOGGER.debug("action=create-alarm-time account_id={} annotation_time_utc={} now_utc={} local_alarm_time={} local_now={}",
+                accountId, annotatedTimeUTC.toString(), now, alarmTimeLocal.toString(), localNow.toString());
+
+        // check alarm time is more than 5 minutes from localNow
+        if (alarmTimeLocal.isBefore(localNow.plusMinutes(MIN_ALARM_MINUTES_FROM_NOW))) {
+            LOGGER.error("error=alarm-time-too-soon local_now={} alarm_now={}", localNow, alarmTimeLocal);
+            return GenericResult.failWithResponse(TOO_SOON_ERROR, SET_ALARM_ERROR_TOO_SOON_RESPONSE);
+
+        }
+
+        final String alarmDay = (alarmTimeLocal.getDayOfYear() ==  localNow.getDayOfYear()) ? "today" : "tomorrow";
         final String newAlarmString = String.format("%s %s", alarmTimeLocal.toString(DateTimeFormat.forPattern("hh:mm a")), alarmDay);
 
         final Alarm newAlarm = new Alarm.Builder()
@@ -175,7 +193,6 @@ public class AlarmHandler extends BaseHandler {
                 .withIsSmart(false)
                 .withSource(AlarmSource.VOICE_SERVICE)
                 .build();
-
 
         final List<Alarm> alarms = Lists.newArrayList();
         alarms.addAll(alarmProcessor.getAlarms(accountId, senseId));

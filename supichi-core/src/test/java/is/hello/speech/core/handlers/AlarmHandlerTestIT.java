@@ -40,7 +40,9 @@ import static is.hello.speech.core.handlers.AlarmHandler.DUPLICATE_ALARM_RESPONS
 import static is.hello.speech.core.handlers.AlarmHandler.NO_ALARM_RESPONSE;
 import static is.hello.speech.core.handlers.AlarmHandler.NO_TIMEZONE;
 import static is.hello.speech.core.handlers.AlarmHandler.SET_ALARM_ERROR_RESPONSE;
+import static is.hello.speech.core.handlers.AlarmHandler.SET_ALARM_ERROR_TOO_SOON_RESPONSE;
 import static is.hello.speech.core.handlers.AlarmHandler.SET_ALARM_OK_RESPONSE;
+import static is.hello.speech.core.handlers.AlarmHandler.TOO_SOON_ERROR;
 import static is.hello.speech.core.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.speech.core.models.SpeechCommand.ALARM_SET;
 import static org.junit.Assert.assertEquals;
@@ -285,12 +287,38 @@ public class AlarmHandlerTestIT {
         if (result.alarmResult.isPresent()) {
             assertEquals(result.alarmResult.get().outcome, Outcome.FAIL);
             assertEquals(result.alarmResult.get().errorText.get(), "no merge info");
-            assertEquals(result.alarmResult.get().responseText.get(), SET_ALARM_ERROR_RESPONSE);
+            if (result.alarmResult.get().responseText.isPresent()) {
+                assertEquals(result.alarmResult.get().responseText.get(), SET_ALARM_ERROR_RESPONSE);
+            }
         } else {
             assertEquals(result.alarmResult.isPresent(), true);
         }
     }
 
+    @Test
+    public void testSetAlarmFailTooSoon() {
+        final AlarmProcessor alarmProcessor = new AlarmProcessor(alarmDAO, mergedUserInfoDynamoDB);
+        final AlarmHandler alarmHandler = new AlarmHandler(speechCommandDAO, alarmProcessor, mergedUserInfoDynamoDB);
+        final String transcript = "wake me up in 5 minutes";
+        final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
+
+        // apparently, only setting pill color is not enough
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, FAIL_SENSE_ID, FAIL_ACCOUNT_ID);
+        assertEquals(result.handlerType, HandlerType.ALARM);
+        assertEquals(result.command, ALARM_SET.getValue());
+
+        if (result.alarmResult.isPresent()) {
+            assertEquals(result.alarmResult.get().outcome, Outcome.FAIL);
+            assertEquals(result.alarmResult.get().errorText.get(), TOO_SOON_ERROR);
+            if (result.alarmResult.get().responseText.isPresent()) {
+                assertEquals(result.alarmResult.get().responseText.get(), SET_ALARM_ERROR_TOO_SOON_RESPONSE);
+            }
+
+        } else {
+            assertEquals(result.alarmResult.isPresent(), true);
+        }
+
+    }
 
     @Test
     public void testCancelAlarmOK() {
