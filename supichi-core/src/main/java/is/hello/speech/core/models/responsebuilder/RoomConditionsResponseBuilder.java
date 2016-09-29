@@ -3,6 +3,7 @@ package is.hello.speech.core.models.responsebuilder;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.models.Sensor;
 import is.hello.speech.core.api.Response;
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,10 +54,10 @@ public class RoomConditionsResponseBuilder implements ResponseBuilderInterface{
             s3Bucket += String.format("/%s", sensorName);
         }
 
-        final HandlerResult.Outcome outcome = ResponseUtils.getOutcome(handlerResult);
+        final Outcome outcome = ResponseUtils.getOutcome(handlerResult);
 
         // compose filename from outcomes
-        if (outcome.equals(HandlerResult.Outcome.FAIL)) {
+        if (outcome.equals(Outcome.FAIL)) {
 
             final String errorMessage = handlerResult.responseParameters.get("error");
             if (errorMessage.equalsIgnoreCase(ERROR_NO_DATA) || errorMessage.equalsIgnoreCase(ERROR_DATA_TOO_OLD)) {

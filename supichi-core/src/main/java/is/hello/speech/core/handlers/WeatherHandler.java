@@ -45,7 +45,9 @@ public class WeatherHandler extends BaseHandler {
     }
 
     @Override
-    public HandlerResult executeCommand(final String text, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+        final String text = annotatedTranscript.transcript;
+
         final Optional<AccountLocation> accountLocationOptional = accountLocationDAO.getLastLocationByAccountId(accountId);
         final Map<String,String> params = Maps.newHashMap();
         final String defaultText = "Weather information is not available at this time";
@@ -67,11 +69,11 @@ public class WeatherHandler extends BaseHandler {
             final String responseText = String.format("It is %s", daily.getDay(0).summary());
             params.put("text", responseText);
             LOGGER.info("action=get-forecast account_id={} result={}", accountId, responseText);
-            return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params);
+            return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params, Optional.absent());
         }
 
         LOGGER.info("action=get-forecast result={}", accountId, defaultText);
-        return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params);
+        return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params, Optional.absent());
     }
 
     @Override

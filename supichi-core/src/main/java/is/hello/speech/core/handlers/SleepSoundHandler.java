@@ -111,7 +111,9 @@ public class SleepSoundHandler extends BaseHandler {
     }
 
     @Override
-    public HandlerResult executeCommand(final String text, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+        final String text = annotatedTranscript.transcript;
+
         final Optional<SpeechCommand> optionalCommand = getCommand(text);
         final Map<String, String> response = Maps.newHashMap();
         boolean result = false;
@@ -128,7 +130,7 @@ public class SleepSoundHandler extends BaseHandler {
 
         response.put("result", String.valueOf(result));
         response.put("text", "Goodnight");
-        return new HandlerResult(HandlerType.SLEEP_SOUNDS, command, response);
+        return new HandlerResult(HandlerType.SLEEP_SOUNDS, command, response, Optional.absent());
 
     }
 

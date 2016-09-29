@@ -26,6 +26,17 @@
             <version>${suripu.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.hello.suripu</groupId>
+            <artifactId>suripu-core</artifactId>
+            <version>${suripu.version}</version>
+            <!--<exclusions>-->
+                <!--<exclusion>-->
+                    <!--<groupId>ch.qos.logback</groupId>-->
+                    <!--<artifactId>logback-core</artifactId>-->
+                <!--</exclusion>-->
+            <!--</exclusions>-->
+        </dependency>
+        <dependency>
             <groupId>com.ibm.watson.developer_cloud</groupId>
             <artifactId>java-sdk</artifactId>
             <version>3.0.1</version>

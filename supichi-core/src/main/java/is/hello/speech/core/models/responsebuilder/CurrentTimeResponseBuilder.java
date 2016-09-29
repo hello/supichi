@@ -1,5 +1,6 @@
 package is.hello.speech.core.models.responsebuilder;
 
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +28,8 @@ public class CurrentTimeResponseBuilder implements ResponseBuilderInterface{
         String filename = FILENAME_PREFIX;
         final String responseText;
 
-        final HandlerResult.Outcome outcome = ResponseUtils.getOutcome(handlerResult);
-        if (outcome.equals(HandlerResult.Outcome.OK)) {
+        final Outcome outcome = ResponseUtils.getOutcome(handlerResult);
+        if (outcome.equals(Outcome.OK)) {
             final String timeString = handlerResult.responseParameters.get("time");
             filename += String.format("-%s-%s-%s-16k.wav", timeString, voiceService, voiceName);
             responseText = String.format(RESPONSE_TEXT_FORMATTER, timeString);

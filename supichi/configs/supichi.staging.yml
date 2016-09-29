@@ -75,6 +75,7 @@ logging:
   loggers:
     is.hello.speech: DEBUG
     com.amazonaws: WARN
+    com.joestelmach.natty: INFO
   appenders:
     - type: console
       threshold: DEBUG
@@ -104,6 +105,8 @@ messeji_http_client:
 dynamodb:
   region: us-east-1
   tables:
+    alarm: alarm
+    alarm_info: alarm_info
     calibration: calibration
     device_data: sense_data
     file_manifest: file_manifest
@@ -114,6 +117,8 @@ dynamodb:
     timezone_history: timezone_history
 
   endpoints:
+    alarm: http://dynamodb.us-east-1.amazonaws.com
+    alarm_info: http://dynamodb.us-east-1.amazonaws.com
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com

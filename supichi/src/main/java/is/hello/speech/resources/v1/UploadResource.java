@@ -11,6 +11,7 @@ import com.hello.suripu.core.speech.models.SpeechToTextService;
 import com.hello.suripu.core.speech.models.WakeWord;
 import com.hello.suripu.core.util.HelloHttpHeader;
 
+import is.hello.speech.core.handlers.results.Outcome;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -175,7 +176,7 @@ public class UploadResource {
                 // save OK speech result
                 Result commandResult = Result.OK;
                 if (executeResult.responseParameters.containsKey("result")) {
-                    commandResult = executeResult.responseParameters.get("result").equals(HandlerResult.Outcome.OK.getValue()) ? Result.OK : Result.REJECTED;
+                    commandResult = executeResult.responseParameters.get("result").equals(Outcome.OK.getValue()) ? Result.OK : Result.REJECTED;
                 }
 
                 builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))

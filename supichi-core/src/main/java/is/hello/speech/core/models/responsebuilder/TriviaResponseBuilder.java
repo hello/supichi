@@ -1,6 +1,7 @@
 package is.hello.speech.core.models.responsebuilder;
 
 import is.hello.speech.core.api.Response;
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +22,8 @@ public class TriviaResponseBuilder implements ResponseBuilderInterface{
         String filename = FILENAME_PREFIX;
         final String responseText;
 
-        final HandlerResult.Outcome outcome = ResponseUtils.getOutcome(handlerResult);
-        if (outcome.equals(HandlerResult.Outcome.OK)) {
+        final Outcome outcome = ResponseUtils.getOutcome(handlerResult);
+        if (outcome.equals(Outcome.OK)) {
             final String answer = handlerResult.responseParameters.get("answer");
             filename += String.format("-%s-%s-%s-16k.wav", answer, voiceService, voiceName);
             responseText = handlerResult.responseParameters.get("text");
