@@ -222,7 +222,7 @@ public class UploadResource {
                     .withResult(Result.TRY_AGAIN);
             speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
+            return EMPTY_BYTE; //responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }

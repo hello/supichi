@@ -178,11 +178,17 @@ public class AlarmHandler extends BaseHandler {
         if (alarmTimeLocal.isBefore(localNow.plusMinutes(MIN_ALARM_MINUTES_FROM_NOW))) {
             LOGGER.error("error=alarm-time-too-soon local_now={} alarm_now={}", localNow, alarmTimeLocal);
             return GenericResult.failWithResponse(TOO_SOON_ERROR, SET_ALARM_ERROR_TOO_SOON_RESPONSE);
-
         }
 
-        final String alarmDay = (alarmTimeLocal.getDayOfYear() ==  localNow.getDayOfYear()) ? "today" : "tomorrow";
-        final String newAlarmString = String.format("%s %s", alarmTimeLocal.toString(DateTimeFormat.forPattern("hh:mm a")), alarmDay);
+        final String newAlarmString;
+        if (alarmTimeLocal.getDayOfYear() ==  localNow.getDayOfYear()) {
+            newAlarmString = String.format("%s today", alarmTimeLocal.toString(DateTimeFormat.forPattern("hh:mm a")));
+        } else if ( alarmTimeLocal.getDayOfYear() == localNow.plusDays(1).getDayOfYear()) {
+            newAlarmString = String.format("%s tomorrow", alarmTimeLocal.toString(DateTimeFormat.forPattern("hh:mm a")));
+        } else {
+            newAlarmString = timeAnnotation.matchingText();
+        }
+
 
         final Alarm newAlarm = new Alarm.Builder()
                 .withYear(alarmTimeLocal.getYear())
