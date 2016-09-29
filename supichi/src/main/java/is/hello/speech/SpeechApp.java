@@ -16,6 +16,9 @@ import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
+import com.codahale.metrics.graphite.Graphite;
+import com.codahale.metrics.graphite.GraphiteReporter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
@@ -45,7 +48,9 @@ import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
+import com.hello.suripu.coredropwizard.configuration.GraphiteConfiguration;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.metrics.RegexMetricFilter;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
@@ -91,16 +96,21 @@ import is.hello.speech.resources.v1.UploadResource;
 import is.hello.speech.utils.S3ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 import org.skife.jdbi.v2.DBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpeechApp.class);
 
     public static void main(String[] args) throws Exception {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
@@ -123,7 +133,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
     public void run(final SpeechAppConfiguration speechAppConfiguration, Environment environment) throws Exception {
 
         final DBIFactory factory = new DBIFactory();
-        final DBI commonDB = factory.build(environment, speechAppConfiguration.getCommonDB(), "commonDB");
+        final DBI commonDB = factory.build(environment, speechAppConfiguration.commonDB(), "commonDB");
 
         commonDB.registerArgumentFactory(new JodaArgumentFactory());
         commonDB.registerContainerFactory(new OptionalContainerFactory());
@@ -135,8 +145,34 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final SenseColorDAO senseColorDAO = commonDB.onDemand(SenseColorDAOSQLImpl.class);
         final AccountLocationDAO accountLocationDAO = commonDB.onDemand(AccountLocationDAO.class);
 
-//        final FileInfoDAO fileInfoDAO = commonDB.onDemand(FileInfoDAO.class);
+        if (speechAppConfiguration.metricsEnabled()) {
+            final GraphiteConfiguration graphiteConfig = speechAppConfiguration.graphite();
+            final String graphiteHostName = graphiteConfig.getHost();
+            final String apiKey = graphiteConfig.getApiKey();
+            final Integer interval = graphiteConfig.getReportingIntervalInSeconds();
 
+            final String env = (speechAppConfiguration.debug()) ? "dev" : "prod";
+            final String prefix = String.format("%s.%s.supichi", apiKey, env);
+
+            final ImmutableList<String> metrics = ImmutableList.copyOf(graphiteConfig.getIncludeMetrics());
+            final RegexMetricFilter metricFilter = new RegexMetricFilter(metrics);
+
+            final Graphite graphite = new Graphite(new InetSocketAddress(graphiteHostName, 2003));
+
+            final GraphiteReporter reporter = GraphiteReporter.forRegistry(environment.metrics())
+                    .prefixedWith(prefix)
+                    .convertRatesTo(TimeUnit.SECONDS)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .filter(metricFilter)
+                    .build(graphite);
+            reporter.start(interval, TimeUnit.SECONDS);
+
+            LOGGER.info("info=metrics-enabled.");
+        } else {
+            LOGGER.warn("warning=metrics-not-enabled.");
+        }
+
+        LOGGER.warn("DEBUG_MODE={}", speechAppConfiguration.debug());
 
         final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
         final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider, speechAppConfiguration.dynamoDBConfiguration());
@@ -176,9 +212,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 new HttpClientBuilder(environment).using(messejiHttpClientConfiguration.getHttpClientConfiguration()).build("messeji"),
                 messejiHttpClientConfiguration.getEndpoint());
 
-
         // TODO: add additional handler resources here
-      // set up KMS for timeline encryption
+        // set up KMS for timeline encryption
         final KMSConfiguration kmsConfig = speechAppConfiguration.kmsConfiguration();
         final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
         awskmsClient.setEndpoint(kmsConfig.endpoint());
@@ -228,7 +263,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
 
         // setup SQS for QueueMessage API
-        final SQSConfiguration sqsConfig = speechAppConfiguration.getSqsConfiguration();
+        final SQSConfiguration sqsConfig = speechAppConfiguration.sqsConfiguration();
         final int maxConnections = sqsConfig.getSqsMaxConnections();
         final AmazonSQSAsync sqsClient = new AmazonSQSBufferedAsyncClient(
                 new AmazonSQSAsyncClient(awsCredentialsProvider, new ClientConfiguration()
@@ -245,7 +280,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         // set up watson
         final TextToSpeech watson = new TextToSpeech();
-        final WatsonConfiguration watsonConfiguration = speechAppConfiguration.getWatsonConfiguration();
+        final WatsonConfiguration watsonConfiguration = speechAppConfiguration.watsonConfiguration();
         watson.setUsernameAndPassword(watsonConfiguration.getUsername(), watsonConfiguration.getPassword());
         final Map<String, String> headers = ImmutableMap.of("X-Watson-Learning-Opt-Out", "true");
         watson.setDefaultHeaders(headers);
@@ -271,7 +306,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                     speechAppConfiguration.watsonAudioConfiguration().getAudioPrefixRaw(),
                     speechAppConfiguration.watsonAudioConfiguration().getAudioPrefix(),
                     watson, watsonConfiguration.getVoiceName(),
-                    sqsClient, sqsQueueUrl, speechAppConfiguration.getSqsConfiguration(),
+                    sqsClient, sqsQueueUrl, speechAppConfiguration.sqsConfiguration(),
                     queueConsumerExecutor);
 
             environment.lifecycle().manage(text2SpeechQueueConsumer);
@@ -348,7 +383,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final SpeechClient client = new SpeechClient(
                 speechAppConfiguration.getGoogleAPIHost(),
                 speechAppConfiguration.getGoogleAPIPort(),
-                speechAppConfiguration.getAudioConfiguration());
+                speechAppConfiguration.audioConfiguration());
 
         final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
         environment.lifecycle().manage(speechClientManaged);
@@ -371,7 +406,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         environment.jersey().register(new DemoResource(handlerExecutor, deviceDAO, s3ResponseBuilder, watsonResponseBuilder, speechAppConfiguration.debug()));
         environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
         environment.jersey().register(new is.hello.speech.resources.v2.UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO,
-                speechKinesisProducer, responseBuilders, handlersToBuilders));
+                speechKinesisProducer, responseBuilders, handlersToBuilders, environment.metrics()));
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.watsonAudioConfiguration().getBucketName()));
 
         // start Chris testing unequalized audio
