@@ -1,5 +1,6 @@
 package is.hello.speech.resources.v2;
 
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
@@ -73,6 +74,10 @@ public class UploadResource {
     private final Map<HandlerType, SupichiResponseType> handlerMap;
 
     private final MetricRegistry metrics;
+    protected Meter commandOK;
+    protected Meter commandFail;
+    protected Meter commandTryAgain;
+    protected Meter commandRejected;
 
     @Context
     HttpServletRequest request;
@@ -92,7 +97,12 @@ public class UploadResource {
         this.speechKinesisProducer = speechKinesisProducer;
         this.responseBuilders = responseBuilders;
         this.handlerMap = handlerMap;
+
         this.metrics = metricRegistry;
+        this.commandOK = metrics.meter("command_ok");
+        this.commandFail = metrics.meter("command_fail");
+        this.commandTryAgain = metrics.meter("command_try_again");
+        this.commandRejected = metrics.meter("command_rejected");
     }
 
     @Path("/audio")
@@ -210,6 +220,13 @@ public class UploadResource {
                 if (executeResult.responseParameters.containsKey("result")) {
                     commandResult = executeResult.responseParameters.get("result").equals(HandlerResult.Outcome.OK.getValue()) ? Result.OK : Result.REJECTED;
                 }
+
+                if (commandResult.equals(Result.OK)) {
+                    this.commandOK.mark(1);
+                } else {
+                    this.commandFail.mark(1);
+                }
+
                 builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                         .withCommand(executeResult.command)
                         .withHandlerType(executeResult.handlerType.value)
@@ -220,13 +237,14 @@ public class UploadResource {
                 return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
             }
 
+            this.commandTryAgain.mark(1);
             // save TRY_AGAIN speech result
             builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                     .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN))
                     .withResult(Result.TRY_AGAIN);
             speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
+            return EMPTY_BYTE; // responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
@@ -237,6 +255,7 @@ public class UploadResource {
                 .withResult(Result.REJECTED);
         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
+        this.commandRejected.mark(1);
         return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
     }
 
