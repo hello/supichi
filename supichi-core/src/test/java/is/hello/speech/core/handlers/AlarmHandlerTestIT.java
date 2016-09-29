@@ -37,6 +37,7 @@ import java.util.List;
 import static is.hello.speech.core.handlers.AlarmHandler.CANCEL_ALARM_OK_RESPONSE;
 import static is.hello.speech.core.handlers.AlarmHandler.DEFAULT_ALARM_SOUND;
 import static is.hello.speech.core.handlers.AlarmHandler.DUPLICATE_ALARM_RESPONSE;
+import static is.hello.speech.core.handlers.AlarmHandler.DUPLICATE_ERROR;
 import static is.hello.speech.core.handlers.AlarmHandler.NO_ALARM_RESPONSE;
 import static is.hello.speech.core.handlers.AlarmHandler.NO_TIMEZONE;
 import static is.hello.speech.core.handlers.AlarmHandler.NO_TIME_ERROR;
@@ -222,7 +223,7 @@ public class AlarmHandlerTestIT {
             }
 
             final String errorText = result.alarmResult.get().errorText.get();
-            assertEquals(errorText, dayString);
+            assertEquals(errorText, DUPLICATE_ERROR);
         } else {
             assertEquals(result.alarmResult.isPresent(), true);
         }
