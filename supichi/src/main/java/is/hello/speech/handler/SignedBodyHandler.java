@@ -1,4 +1,4 @@
-package is.hello.speech.resources.v1;
+package is.hello.speech.handler;
 
 import com.google.common.base.Optional;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -107,8 +107,8 @@ public class SignedBodyHandler {
         }
 
         try {
-            final Speech.speech_data parsedData = Speech.speech_data.parseFrom(pbBytes);
-            return new UploadData(pbSize, parsedData, audioBody);
+            final Speech.SpeechRequest request = Speech.SpeechRequest.parseFrom(pbBytes);
+            return new UploadData(pbSize, request, audioBody);
         } catch (InvalidProtocolBufferException e) {
             LOGGER.error("error=fail-to-decode-upload-speech-data error_msg={} sense_id={}", e.getMessage(), senseId);
         }

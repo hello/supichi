@@ -66,6 +66,7 @@ import is.hello.speech.cli.WatsonTextToSpeech;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.clients.SpeechClientManaged;
 import is.hello.speech.configuration.SpeechAppConfiguration;
+import is.hello.speech.core.api.Speech;
 import is.hello.speech.core.configuration.KMSConfiguration;
 import is.hello.speech.core.configuration.KinesisConsumerConfiguration;
 import is.hello.speech.core.configuration.KinesisProducerConfiguration;
@@ -80,14 +81,14 @@ import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
+import is.hello.speech.handler.AudioRequestHandler;
+import is.hello.speech.handler.SignedBodyHandler;
 import is.hello.speech.kinesis.KinesisData;
 import is.hello.speech.kinesis.SpeechKinesisConsumer;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
-import is.hello.speech.resources.demo.DemoResource;
-import is.hello.speech.resources.demo.PCMResource;
+import is.hello.speech.resources.demo.DemoUploadResource;
 import is.hello.speech.resources.demo.QueueMessageResource;
-import is.hello.speech.resources.v1.SignedBodyHandler;
-import is.hello.speech.resources.v1.UploadResource;
+import is.hello.speech.resources.v2.UploadResource;
 import is.hello.speech.utils.S3ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 import org.skife.jdbi.v2.DBI;
@@ -353,36 +354,30 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final SpeechClientManaged speechClientManaged = new SpeechClientManaged(client);
         environment.lifecycle().manage(speechClientManaged);
 
-
+        // Map Eq profile to s3 bucket/path
         final String s3ResponseBucket = String.format("%s/%s", speechBucket, speechAppConfiguration.watsonAudioConfiguration().getAudioPrefix());
+        final String s3ResponseBucketNoEq = String.format("%s/voice/watson-text2speech/16k", speechBucket);
+        final Map<Speech.Equalizer, String> eqMap = ImmutableMap.<Speech.Equalizer, String>builder()
+                .put(Speech.Equalizer.SENSE_ONE, s3ResponseBucket)
+                .put(Speech.Equalizer.NONE, s3ResponseBucketNoEq)
+                .build();
 
-        final S3ResponseBuilder s3ResponseBuilder = new S3ResponseBuilder(amazonS3, s3ResponseBucket, "WATSON", watsonConfiguration.getVoiceName());
+        final S3ResponseBuilder s3ResponseBuilder = new S3ResponseBuilder(amazonS3, eqMap, "WATSON", watsonConfiguration.getVoiceName());
         final WatsonResponseBuilder watsonResponseBuilder = new WatsonResponseBuilder(watson, watsonConfiguration.getVoiceName());
-        final WatsonResponseBuilder watsonJpResponseBuilder = new WatsonResponseBuilder(watson, "ja-JP_EmiVoice");
         final SignedBodyHandler signedBodyHandler = new SignedBodyHandler(keystore);
 
         final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders = Maps.newHashMap();
         responseBuilders.put(SupichiResponseType.S3, s3ResponseBuilder);
         responseBuilders.put(SupichiResponseType.WATSON, watsonResponseBuilder);
-        responseBuilders.put(SupichiResponseType.WATSON_JP, watsonJpResponseBuilder);
 
         final Map<HandlerType, SupichiResponseType> handlersToBuilders = handlerExecutor.responseBuilders();
 
-        environment.jersey().register(new DemoResource(handlerExecutor, deviceDAO, s3ResponseBuilder, watsonResponseBuilder, speechAppConfiguration.debug()));
-        environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
-        environment.jersey().register(new is.hello.speech.resources.v2.UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO,
-                speechKinesisProducer, responseBuilders, handlersToBuilders));
-        environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.watsonAudioConfiguration().getBucketName()));
+        final AudioRequestHandler audioRequestHandler = new AudioRequestHandler(
+                client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders
+        );
 
-        // start Chris testing unequalized audio
-        final String s3ResponseBucketNoEq = String.format("%s/voice/watson-text2speech/16k", speechBucket);
-        final S3ResponseBuilder s3ResponseBuilderNoEq = new S3ResponseBuilder(amazonS3, s3ResponseBucketNoEq, "WATSON", watsonConfiguration.getVoiceName());
-        final Map<SupichiResponseType, SupichiResponseBuilder> responseBuildersNoEq = Maps.newHashMap();
-        responseBuildersNoEq.put(SupichiResponseType.S3, s3ResponseBuilderNoEq);
-        responseBuildersNoEq.put(SupichiResponseType.WATSON, watsonResponseBuilder);
-        environment.jersey().register(new is.hello.speech.resources.demo.UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO,
-                speechKinesisProducer, responseBuildersNoEq, handlersToBuilders));
-        // end Chris testing
+        environment.jersey().register(new DemoUploadResource(audioRequestHandler));
+        environment.jersey().register(new UploadResource(audioRequestHandler));
 
     }
 }

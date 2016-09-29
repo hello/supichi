@@ -9,6 +9,10 @@ import traceback
 import response_pb2
 import json
 
+# construct protobuf
+import speech_pb2
+import struct
+
 class SlowUpload(object):
   def __init__(self, fp, verbose=False):
     self.f = open(fp, 'rb')
@@ -111,6 +115,7 @@ if __name__ == '__main__':
     sampling_rate = sys.argv[2]
     env = sys.argv[3]
     audio_type = sys.argv[4]
+    eq = sys.argv[5]
 
     if audio_type not in ['mp3', 'adpcm']:
         print "audio type needs to be mp3 or adpcm"
@@ -123,18 +128,28 @@ if __name__ == '__main__':
     else:
         aes_key = "729FD5B0ADCC7AFF2173D5406FC0AB5C".decode("hex"); # for 9ECA262C40A3E894
 
+    eq_options = {
+        "sense_one" : speech_pb2.SENSE_ONE,
+        "none" : speech_pb2.NONE
+    }
+
+    audio_options = {
+        "mp3" : speech_pb2.MP3,
+        "adpcm" : speech_pb2.ADPCM
+    }
+
     # read audio data
     fp = open(filename, 'rb')
     file_data = fp.read();
     fp.close()
 
-    # construct protobuf
-    import speech_pb2
-    import struct
-    speech_data = speech_pb2.speech_data()
+    
+    speech_data = speech_pb2.SpeechRequest()
     speech_data.word = speech_pb2.OK_SENSE
     speech_data.version = 1
     speech_data.confidence = 125
+    speech_data.eq = eq_options.get(eq, speech_pb2.NONE)
+    speech_data.response = audio_options.get(audio_type, speech_pb2.MP3)
     pb_str = speech_data.SerializeToString()
 
     print "speech_data:", speech_data
@@ -154,7 +169,7 @@ if __name__ == '__main__':
     su = file_data + hashed.digest()
 
     # check protobuf again
-    speech_data2 = speech_pb2.speech_data()
+    speech_data2 = speech_pb2.SpeechRequest()
     speech_data2.ParseFromString(pb_str)
     print "Parsed", speech_data2
 
@@ -168,22 +183,11 @@ if __name__ == '__main__':
         ENDPOINT = "http://localhost:8181/upload/text?response=%s" % (audio_type)
 
     elif env == 'local':
-        ENDPOINT = "http://localhost:8181/v1/upload/audio?r=%s&pb=%s&response=%s" % (sampling_rate, pb, audio_type)
-
-    elif env == 'localv2':
         ENDPOINT = "http://localhost:8181/v2/upload/audio"
-
-    elif env == 'localdemo':
-        ENDPOINT = "http://localhost:8181/demo/upload/audio"
 
     # dev endpoints
     elif env == 'dev':
-        ENDPOINT = "https://dev-speech.hello.is/v1/upload/audio?r=%s&response=%s" % (sampling_rate, audio_type)
-    elif env == 'dev2':
         ENDPOINT = "https://dev-speech.hello.is/v2/upload/audio"
-    elif env == 'devdemo':
-        ENDPOINT = "https://dev-speech.hello.is/demo/upload/audio"
-
     # prod
     elif env == "prod":
         ENDPOINT = "https://speech.hello.is/v2/upload/audio"
@@ -213,12 +217,6 @@ if __name__ == '__main__':
         msg = get_message(r.content, response_pb2.SpeechResponse)
         print "protobuf:\n", msg
     else:
-        if audio_type == "mp3":
-            fp = open('./tmp1.mp3', 'wb')
-        else:
-            fp = open('./tmp1.wav', 'wb')
-        fp.write(r.content)
-        fp.close()
-
-
-
+        fname = "./tmp1-eq-%s.%s" % (eq, audio_type)
+        with open(fname, 'wb') as fp:
+            fp.write(r.content)

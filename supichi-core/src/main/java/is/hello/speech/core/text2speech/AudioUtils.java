@@ -280,21 +280,22 @@ public class AudioUtils {
     private static Optional<AudioInputStream> getAudioStream(final byte[] bytes, Optional<javax.sound.sampled.AudioFormat> optionalSourceFormat) {
 
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-        final AudioInputStream sourceStream;
+
         if (optionalSourceFormat.isPresent()) {
-            sourceStream = new AudioInputStream(inputStream, optionalSourceFormat.get(), bytes.length);
-        } else {
-            try {
-                sourceStream = AudioSystem.getAudioInputStream(inputStream);
-            } catch (UnsupportedAudioFileException e) {
-                LOGGER.error("error=fail-to-get-audio-stream reason=unsupported-audio-file error_msg={}", e.getMessage());
-                return Optional.absent();
-            } catch (IOException e) {
-                LOGGER.error("error=fail-to-get-audio-stream reason=io-exception error_msg={}", e.getMessage());
-                return Optional.absent();
-            }
+            final AudioInputStream sourceStream = new AudioInputStream(inputStream, optionalSourceFormat.get(), bytes.length);
+            return Optional.of(sourceStream);
         }
-        return Optional.of(sourceStream);
+
+        try {
+            final AudioInputStream sourceStream = AudioSystem.getAudioInputStream(inputStream);
+            return Optional.of(sourceStream);
+        } catch (UnsupportedAudioFileException e) {
+            LOGGER.error("error=fail-to-get-audio-stream reason=unsupported-audio-file error_msg={}", e.getMessage());
+
+        } catch (IOException e) {
+            LOGGER.error("error=fail-to-get-audio-stream reason=io-exception error_msg={}", e.getMessage());
+        }
+        return Optional.absent();
     }
 
     public static byte[] decodeADPShitMAudio(byte[] adpcm) throws IOException {
