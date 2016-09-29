@@ -8,18 +8,22 @@ from boto3.dynamodb.conditions import Key, Attr
 def debug(args):
     account_id = args.account
 
-    session = boto3.Session(
+    ddb = boto3.resource('dynamodb',
+        aws_access_key_id=args.key,
+        aws_secret_access_key=args.secret)
+
+    speech_timeline = ddb.Table('speech_timeline')
+    speech_results = ddb.Table('speech_results')
+
+    kms = boto3.client('kms',
         aws_access_key_id=args.key,
         aws_secret_access_key=args.secret,
         region_name="us-east-1")
 
-    dynamodb = boto3.resource('dynamodb')
-    speech_timeline = dynamodb.Table('speech_timeline')
-    speech_results = dynamodb.Table('speech_results')
-
-    kms = boto3.client('kms')
-
-    s3 = boto3.client('s3')
+    s3 = boto3.client('s3',
+        aws_access_key_id=args.key,
+        aws_secret_access_key=args.secret,
+        region_name="us-east-1")
 
     # get speech timeline
     response = speech_timeline.query(
@@ -68,8 +72,12 @@ def debug(args):
         index += 1
 
         if args.download:
+            exist = os.path.isdir("account_%s" % account_id)
+            if not exist:
+                os.mkdir("account_%s" % account_id)
+
             filename = "%s.raw" % (uuid)
-            with open(filename, "wb") as f:
+            with open("account_%s/%s" %(account_id, filename), "wb") as f:
                 s3.download_fileobj(
                     "hello-voice-upload-dev", "sense_1_5/%s" % filename, f)
                 

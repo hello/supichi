@@ -93,13 +93,14 @@ public class DemoResource {
         try {
 
             final HandlerResult executeResult = handlerExecutor.handle(query.senseId, accountId, query.transcript);
+            final HandlerType handlerType = executeResult.handlerType;
 
-            if (executeResult.handlerType.equals(HandlerType.WEATHER)) {
+            if (handlerType.equals(HandlerType.WEATHER) || handlerType.equals(HandlerType.ALARM)) {
                 return watsonResponseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult, responseParam);
             }
 
             // TODO: response-builder
-            if (!executeResult.handlerType.equals(HandlerType.NONE)) {
+            if (!handlerType.equals(HandlerType.NONE)) {
                 return s3ResponseBuilder.response(Response.SpeechResponse.Result.OK, false, executeResult, responseParam);
             }
             return s3ResponseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, false, executeResult, responseParam);

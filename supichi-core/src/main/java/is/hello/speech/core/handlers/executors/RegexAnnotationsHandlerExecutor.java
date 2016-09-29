@@ -58,7 +58,7 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
             final BaseHandler handler = optionalHandler.get();
             LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
 
-            final HandlerResult executeResult = handler.executeCommand(transcript, senseId, accountId);
+            final HandlerResult executeResult = handler.executeCommand(annotatedTranscript, senseId, accountId);
             LOGGER.debug("action=execute-command result={}", executeResult.responseParameters.toString());
             return executeResult;
         }
@@ -88,13 +88,21 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
         // Find a suitable handler via text
         final String command = annotatedTranscript.transcript;
 
+        // final Map<BaseHandler, Integer> possibleHandlers = Maps.newHashMap();
         final List<BaseHandler> possibleHandlers = Lists.newArrayList();
         for(final Pattern pattern : commandToHandlerMap.keySet()) {
+
+            final HandlerType handlerType = commandToHandlerMap.get(pattern);
             Matcher m = pattern.matcher(command);
             if(m.find()) {
-                final HandlerType handlerType = commandToHandlerMap.get(pattern);
+                LOGGER.debug("match_pattern={}, handler_type={}", pattern, handlerType);
                 if (availableHandlers.containsKey(handlerType)) {
-                    possibleHandlers.add(availableHandlers.get(handlerType));
+                    final BaseHandler matchedHandler = availableHandlers.get(handlerType);
+                    if (!possibleHandlers.contains(matchedHandler)) {
+                        possibleHandlers.add(matchedHandler);
+                    }
+//                    possibleHandlers.putIfAbsent(matchedHandler, 0);
+//                    possibleHandlers.replace(matchedHandler, possibleHandlers.get(matchedHandler) + 1);
                 }
             }
         }
