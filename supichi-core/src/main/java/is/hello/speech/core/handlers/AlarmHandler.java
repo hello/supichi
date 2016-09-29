@@ -56,6 +56,7 @@ public class AlarmHandler extends BaseHandler {
     public static final String SET_ALARM_OK_RESPONSE = "Ok, your alarm is set for %s";
     public static final String SET_ALARM_ERROR_TOO_SOON_RESPONSE = "Sorry, we're unable to set your alarm. Please set a time greater than 5 minutes from now";
     public static final String SET_ALARM_ERROR_NO_TIME_RESPONSE = "Sorry, we're unable to set your alarm. Please specify an alarm time.";
+    public static final String SET_ALARM_ERROR_NO_TIME_ZONE = "Sorry, we're unable to set your alarm. Please set your timezone in the app.";
 
     public static final String CANCEL_ALARM_ERROR_RESPONSE = "Sorry, we're unable to cancel your alarm. Please try again later.";
     public static final String CANCEL_ALARM_OK_RESPONSE = "OK, your alarm is canceled.";
@@ -150,15 +151,16 @@ public class AlarmHandler extends BaseHandler {
      * set alarm for the next matching time
      */
     private GenericResult setAlarm(final Long accountId, final String senseId, final AnnotatedTranscript annotatedTranscript) {
+        if (!annotatedTranscript.timeZoneOptional.isPresent()) {
+            LOGGER.error("error=no-alarm-set reason=no-timezone account_id={}", accountId);
+            return GenericResult.failWithResponse(NO_TIMEZONE, SET_ALARM_ERROR_NO_TIME_ZONE);
+        }
+
         if (annotatedTranscript.times.isEmpty()) {
             LOGGER.error("error=no-alarm-set reason=no-time-given text={} account={}", annotatedTranscript.transcript, accountId);
             return GenericResult.failWithResponse(NO_TIME_ERROR, SET_ALARM_ERROR_NO_TIME_RESPONSE);
         }
 
-        if (!annotatedTranscript.timeZoneOptional.isPresent()) {
-            LOGGER.error("error=no-alarm-set reason=no-timezone account_id={}", accountId);
-            return GenericResult.fail(NO_TIMEZONE);
-        }
 
         final TimeAnnotation timeAnnotation = annotatedTranscript.times.get(0); // note time is in utc, need to convert
         final DateTimeZone timezoneId = DateTimeZone.forTimeZone(annotatedTranscript.timeZoneOptional.get());
