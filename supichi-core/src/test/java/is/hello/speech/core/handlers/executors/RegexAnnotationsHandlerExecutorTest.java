@@ -75,6 +75,7 @@ public class RegexAnnotationsHandlerExecutorTest {
             .withDeviceId(SENSE_ID)
             .withData("{\"whitelist_id\":\"123abc\", \"bridge_id\":\"fake_bridge\", \"group_id\": 1}")
             .withCreated(DateTime.now())
+            .withEnabled(true)
             .build();
 
         final ExpansionData fakeNestApplicationData = new ExpansionData.Builder()
@@ -82,6 +83,7 @@ public class RegexAnnotationsHandlerExecutorTest {
             .withDeviceId(SENSE_ID)
             .withData("{\"thermostat_id\":\"123abc\"}")
             .withCreated(DateTime.now())
+            .withEnabled(true)
             .build();
 
         String CLIENT_ID = "client_id";

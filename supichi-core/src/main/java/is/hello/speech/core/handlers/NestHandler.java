@@ -62,7 +62,7 @@ public class NestHandler extends BaseHandler {
     }
 
     private void init() {
-        final Optional<Expansion> externalApplicationOptional = externalApplicationStore.getApplicationByName("Hue");
+        final Optional<Expansion> externalApplicationOptional = externalApplicationStore.getApplicationByName("Nest");
         if(!externalApplicationOptional.isPresent()) {
             LOGGER.error("error=application-not-found app_name=Nest");
         }
@@ -106,7 +106,7 @@ public class NestHandler extends BaseHandler {
             LOGGER.error("error=application-not-found app_name=Nest");
             response.put("error", "no-application");
             response.put("result", Outcome.FAIL.getValue());
-            return new HandlerResult(HandlerType.HUE, HandlerResult.EMPTY_COMMAND, response, Optional.absent());
+            return new HandlerResult(HandlerType.NEST, HandlerResult.EMPTY_COMMAND, response, Optional.absent());
         }
 
         final Expansion expansion = expansionOptional.get();
