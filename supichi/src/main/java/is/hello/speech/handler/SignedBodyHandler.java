@@ -18,7 +18,7 @@ public class SignedBodyHandler {
 
     private static final int PREFIX_LENGTH = 4; // bytes in network byte order
     private static final int SIGNATURE_LENGTH = 20; // HMAC size
-    private static final int MAX_PB_SIZE = 20;
+    private static final int MAX_PB_SIZE = 40;
 
     private final KeyStore keystore;
 

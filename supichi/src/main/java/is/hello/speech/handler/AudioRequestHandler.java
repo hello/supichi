@@ -70,8 +70,10 @@ public class AudioRequestHandler {
         try {
             uploadData = signedBodyHandler.extractUploadData(senseId, signedBody);
         } catch (InvalidSignedBodyException e) {
+            LOGGER.error("error=invalid-signed-body sense_id={} msg={}", senseId, e.getMessage());
             return WrappedResponse.error(RequestError.INVALID_BODY);
         } catch(InvalidSignatureException e) {
+            LOGGER.error("error=invalid-signature sense_id={} msg={}", senseId, e.getMessage());
             return WrappedResponse.error(RequestError.INVALID_SIGNATURE);
         }
 

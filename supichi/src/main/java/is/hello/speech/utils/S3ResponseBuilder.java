@@ -72,6 +72,7 @@ public class S3ResponseBuilder implements SupichiResponseBuilder {
                 builderResponse = DefaultResponseBuilder.response(result);
         }
 
+        LOGGER.info("response-type={} eq={}", request.getResponse().name(), request.getEq().name());
         // get raw audio bytes from S3
         byte [] audioBytes = getAudio(builderResponse.s3Bucket, builderResponse.s3Filename, request.getEq());
 

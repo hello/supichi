@@ -225,7 +225,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
                 .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
                 .register(HandlerType.HUE, handlerFactory.hueHandler())
-                .register(HandlerType.NEST, handlerFactory.nestHandler());
+                .register(HandlerType.NEST, handlerFactory.nestHandler())
+                .register(HandlerType.ALEXA, handlerFactory.alexaHandler());
 
 
         // setup SQS for QueueMessage API

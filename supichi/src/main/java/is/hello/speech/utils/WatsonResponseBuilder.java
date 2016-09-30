@@ -60,7 +60,8 @@ public class WatsonResponseBuilder implements SupichiResponseBuilder {
                     AudioUtils.SENSE_SAMPLING_RATE
             );
 
-            if (request.hasResponse() && request.getResponse().equals(Speech.AudioFormat.MP3)) {
+            LOGGER.info("response-type={} eq={}", request.getResponse().name(), request.getEq().name());
+            if (request.getResponse().equals(Speech.AudioFormat.MP3)) {
                 LOGGER.debug("action=convert-pcm-to-mp3 size={}", downSampledBytes.contentSize);
                 final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(downSampledBytes);
                 outputStream.write(mp3Bytes);
