@@ -67,7 +67,7 @@ public class HueHandler extends BaseHandler {
         if(!externalApplicationOptional.isPresent()) {
             LOGGER.error("error=application-not-found app_name=Hue");
         }
-//        externalApp = externalApplicationOptional.get();
+        externalApp = externalApplicationOptional.get();
     }
 
     private static Map<String, SpeechCommand> getAvailableActions() {
