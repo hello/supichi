@@ -1,6 +1,5 @@
-package is.hello.speech.resources.demo;
+package is.hello.speech.handler;
 
-import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.DeviceDAO;
@@ -9,7 +8,6 @@ import com.hello.suripu.core.speech.models.Result;
 import com.hello.suripu.core.speech.models.SpeechResult;
 import com.hello.suripu.core.speech.models.SpeechToTextService;
 import com.hello.suripu.core.speech.models.WakeWord;
-import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
 import is.hello.speech.core.api.Speech;
@@ -19,47 +17,22 @@ import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
-import is.hello.speech.core.models.UploadResponseParam;
 import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
 import is.hello.speech.core.text2speech.AudioUtils;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
-import is.hello.speech.resources.v1.InvalidSignatureException;
-import is.hello.speech.resources.v1.InvalidSignedBodyException;
-import is.hello.speech.resources.v1.SignedBodyHandler;
-import is.hello.speech.resources.v1.UploadData;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.open.audio.AudioException;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
+public class AudioRequestHandler {
 
-@Path("/demo/upload")
-@Produces(MediaType.APPLICATION_JSON)
-public class UploadResource {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
-    private static final byte[] EMPTY_BYTE = new byte[0];
-    private static final int ADPCM_BYTES_TO_DROP = 12000;
-
-    private static final int ADPCM_STATE_SIZE = 3;
-
+    private static Logger LOGGER = LoggerFactory.getLogger(AudioRequestHandler.class);
     private final SpeechClient speechClient;
     private final SignedBodyHandler signedBodyHandler;
     private final HandlerExecutor handlerExecutor;
@@ -67,21 +40,19 @@ public class UploadResource {
     private final DeviceDAO deviceDAO;
 
     private final SpeechKinesisProducer speechKinesisProducer;
-
-
     private final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders;
     private final Map<HandlerType, SupichiResponseType> handlerMap;
 
-    @Context
-    HttpServletRequest request;
+    private static final byte[] EMPTY_BYTE = new byte[0];
 
-    public UploadResource(final SpeechClient speechClient,
-                          final SignedBodyHandler signedBodyHandler,
-                          final HandlerExecutor handlerExecutor,
-                          final DeviceDAO deviceDAO,
-                          final SpeechKinesisProducer speechKinesisProducer,
-                          final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders,
-                          final Map<HandlerType, SupichiResponseType> handlerMap) {
+
+    public AudioRequestHandler(final SpeechClient speechClient,
+                               final SignedBodyHandler signedBodyHandler,
+                               final HandlerExecutor handlerExecutor,
+                               final DeviceDAO deviceDAO,
+                               final SpeechKinesisProducer speechKinesisProducer,
+                               final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders,
+                               final Map<HandlerType, SupichiResponseType> handlerMap) {
         this.speechClient = speechClient;
         this.signedBodyHandler = signedBodyHandler;
         this.handlerExecutor = handlerExecutor;
@@ -91,41 +62,26 @@ public class UploadResource {
         this.handlerMap = handlerMap;
     }
 
-    @Path("/audio")
-    @POST
-    @Timed
-    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
-    @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public byte[] streaming(final byte[] signedBody,
-                            @DefaultValue("16000") @QueryParam("r") final Integer sampling,
-                            @DefaultValue("false") @QueryParam("pb") final boolean includeProtobuf,
-                            @DefaultValue("mp3") @QueryParam("response") final UploadResponseParam responseParam
-    ) throws InterruptedException, IOException, AudioException {
-
+    public WrappedResponse handle(final byte[] signedBody, final String senseId) {
         LOGGER.debug("action=received-bytes size={}", signedBody.length);
-
-        final String senseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
-        if(senseId == null) {
-            LOGGER.error("error=missing-sense-id-header");
-            throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
-        }
 
         // parse audio and protobuf
         final UploadData uploadData;
         try {
             uploadData = signedBodyHandler.extractUploadData(senseId, signedBody);
         } catch (InvalidSignedBodyException e) {
-            throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
+            LOGGER.error("error=invalid-signed-body sense_id={} msg={}", senseId, e.getMessage());
+            return WrappedResponse.error(RequestError.INVALID_BODY);
         } catch(InvalidSignatureException e) {
-            throw new WebApplicationException(javax.ws.rs.core.Response.Status.UNAUTHORIZED);
+            LOGGER.error("error=invalid-signature sense_id={} msg={}", senseId, e.getMessage());
+            return WrappedResponse.error(RequestError.INVALID_SIGNATURE);
         }
 
-        LOGGER.debug("action=get-pb-values word={} confidence={}", uploadData.speechData.getWord(), uploadData.speechData.getConfidence());
-
+        LOGGER.debug("action=get-pb-values word={} confidence={}", uploadData.request.getWord(), uploadData.request.getConfidence());
         final byte[] body = uploadData.audioBody;
 
         if(body.length == 0) {
-            throw new WebApplicationException(javax.ws.rs.core.Response.Status.BAD_REQUEST);
+            return WrappedResponse.error(RequestError.EMPTY_BODY);
         }
 
         final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(senseId);
@@ -134,7 +90,8 @@ public class UploadResource {
 
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", senseId);
-            return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
+            final byte[] content = responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, executeResult, uploadData.request);
+            return WrappedResponse.ok(content);
         }
 
         // TODO: for now, pick the smallest account-id as the primary id
@@ -145,7 +102,7 @@ public class UploadResource {
             }
         }
 
-        LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", senseId, accountId, responseParam.type().name());
+        LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", senseId, accountId, uploadData.request.getResponse());
 
         // save audio to Kinesis
         final String audioUUID = UUID.randomUUID().toString();
@@ -159,42 +116,43 @@ public class UploadResource {
         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
 
         // return empty bytes for certain wakeword
-        final Speech.keyword keyword = uploadData.speechData.getWord();
+        final Speech.Keyword keyword = uploadData.request.getWord();
         final WakeWord wakeWord = WakeWord.fromString(keyword.name());
-        final Map<String, Float> wakeWordConfidence = setWakeWordConfidence(wakeWord, (float) uploadData.speechData.getConfidence());
+        final Map<String, Float> wakeWordConfidence = setWakeWordConfidence(wakeWord, (float) uploadData.request.getConfidence());
         builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                 .withWakeWord(wakeWord)
                 .withWakeWordsConfidence(wakeWordConfidence)
                 .withService(SpeechToTextService.GOOGLE);
 
 
-        if (keyword.equals(Speech.keyword.STOP) || keyword.equals(Speech.keyword.SNOOZE)) {
+        if (keyword.equals(Speech.Keyword.STOP) || keyword.equals(Speech.Keyword.SNOOZE)) {
             LOGGER.debug("action=encounter-STOP-SNOOZE keyword={}", keyword);
             builder.withResult(Result.OK);
             speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-            return EMPTY_BYTE;
+            return WrappedResponse.empty();
         }
 
-        // convert audio: ADPCM to 16-bit 16k PCM
-        final byte[] decoded =  AudioUtils.decodeADPShitMAudio(body);
-        LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
-
         try {
-            final SpeechServiceResult resp = speechClient.stream(decoded, sampling);
+            // convert audio: ADPCM to 16-bit 16k PCM
+            final byte[] decoded = AudioUtils.decodeADPShitMAudio(body);
+            LOGGER.debug("action=convert-adpcm-pcm input_size={} output_size={}", body.length, decoded.length);
+            final SpeechServiceResult resp = speechClient.stream(decoded, uploadData.request.getSamplingRate());
 
-            // try to execute command in transcript
-            if (resp.getTranscript().isPresent()) {
 
-                // save transcript results to Kinesis
-                final String transcribedText = resp.getTranscript().get();
-                builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
-                        .withConfidence(resp.getConfidence())
-                        .withText(transcribedText);
-
-                // try to execute text command
-                executeResult = handlerExecutor.handle(senseId, accountId, transcribedText);
+            if (!resp.getTranscript().isPresent()) {
+                LOGGER.warn("action=google-transcript-failed sense_id={}", senseId);
+                return WrappedResponse.empty();
             }
+
+            // save transcript results to Kinesis
+            final String transcribedText = resp.getTranscript().get();
+            builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
+                    .withConfidence(resp.getConfidence())
+                    .withText(transcribedText);
+
+            // try to execute text command
+            executeResult = handlerExecutor.handle(senseId, accountId, transcribedText);
 
             final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.S3);
             final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);
@@ -213,7 +171,8 @@ public class UploadResource {
                         .withResult(commandResult);
                 speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-                return responseBuilder.response(Response.SpeechResponse.Result.OK, includeProtobuf, executeResult, responseParam);
+                final byte[] content = responseBuilder.response(Response.SpeechResponse.Result.OK, executeResult, uploadData.request);
+                return WrappedResponse.ok(content);
             }
 
             // save TRY_AGAIN speech result
@@ -222,7 +181,8 @@ public class UploadResource {
                     .withResult(Result.TRY_AGAIN);
             speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-            return responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, includeProtobuf, executeResult, responseParam);
+            final byte[] content = responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, executeResult, uploadData.request);
+            return WrappedResponse.ok(content);
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
@@ -233,7 +193,8 @@ public class UploadResource {
                 .withResult(Result.REJECTED);
         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 
-        return responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, includeProtobuf, executeResult, responseParam);
+        final byte[] content = responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, executeResult, uploadData.request);
+        return WrappedResponse.ok(content);
     }
 
     private Map<String, Float> setWakeWordConfidence(final WakeWord wakeWord, final Float confidence) {
