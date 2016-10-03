@@ -1,4 +1,4 @@
-package is.hello.speech.resources.v1;
+package is.hello.speech.handler;
 
 import com.google.common.base.Optional;
 import com.hello.suripu.core.db.KeyStore;

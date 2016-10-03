@@ -2,6 +2,7 @@ package is.hello.speech.core.models;
 
 import is.hello.speech.core.handlers.AlarmHandler;
 import is.hello.speech.core.handlers.HueHandler;
+import is.hello.speech.core.handlers.AlexaHandler;
 import is.hello.speech.core.handlers.NestHandler;
 import is.hello.speech.core.handlers.RoomConditionsHandler;
 import is.hello.speech.core.handlers.SleepSoundHandler;
@@ -32,7 +33,8 @@ public enum SpeechCommand {
     TIME_REPORT("time_report",TimeHandler.class),
     TRIVIA("trivia", TriviaHandler.class),
     WEATHER("weather", WeatherHandler.class),
-    TIMELINE("timeline",TimelineHandler.class);
+    TIMELINE("timeline",TimelineHandler.class),
+    ALEXA("alexa",AlexaHandler.class);
 
     private String value;
     private Class commandClass;

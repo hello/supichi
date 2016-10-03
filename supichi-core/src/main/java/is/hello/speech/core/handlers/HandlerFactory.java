@@ -139,4 +139,9 @@ public class HandlerFactory {
         return new NestHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
 
     }
+
+    public AlexaHandler alexaHandler() {
+        return new AlexaHandler(speechCommandDAO);
+
+    }
 }
