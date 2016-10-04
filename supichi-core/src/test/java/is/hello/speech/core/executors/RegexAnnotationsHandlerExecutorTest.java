@@ -146,7 +146,6 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
                 .register(HandlerType.ALARM, handlerFactory.alarmHandler())
-                .register(HandlerType.WEATHER, handlerFactory.weatherHandler())
                 .register(HandlerType.SLEEP_SOUNDS, handlerFactory.sleepSoundHandler())
                 .register(HandlerType.ROOM_CONDITIONS, handlerFactory.roomConditionsHandler())
                 .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
