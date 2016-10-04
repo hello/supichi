@@ -2,6 +2,7 @@ package is.hello.speech.core.handlers.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -14,18 +15,7 @@ import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
-import is.hello.gaibu.core.models.ExternalApplication;
-import is.hello.gaibu.core.models.ExternalApplicationData;
-import is.hello.gaibu.core.models.ExternalToken;
-import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
-import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
-import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
-import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.handlers.HandlerFactory;
-import is.hello.speech.core.handlers.HueHandler;
-import is.hello.speech.core.handlers.NestHandler;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Before;
@@ -33,6 +23,20 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.Map;
+
+import is.hello.gaibu.core.models.Expansion;
+import is.hello.gaibu.core.models.ExpansionData;
+import is.hello.gaibu.core.models.ExternalToken;
+import is.hello.gaibu.core.models.MultiDensityImage;
+import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.core.stores.PersistentExpansionStore;
+import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
+import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.HandlerFactory;
+import is.hello.speech.core.handlers.HueHandler;
+import is.hello.speech.core.handlers.NestHandler;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
 
 import static is.hello.speech.core.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.speech.core.models.SpeechCommand.ALARM_SET;
@@ -44,8 +48,8 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
     private final PersistentExternalTokenStore externalTokenStore = mock(PersistentExternalTokenStore.class);
     private final PersistentExternalTokenStore badTokenStore = mock(PersistentExternalTokenStore.class);
-    private final PersistentExternalApplicationStore externalApplicationStore = mock(PersistentExternalApplicationStore.class);
-    private final PersistentExternalAppDataStore externalAppDataStore = mock(PersistentExternalAppDataStore.class);
+    private final PersistentExpansionStore externalApplicationStore = mock(PersistentExpansionStore.class);
+    private final PersistentExpansionDataStore externalAppDataStore = mock(PersistentExpansionDataStore.class);
     private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = mock(TimeZoneHistoryDAODynamoDB.class);
     private final Vault tokenKMSVault = mock(Vault.class);
     private final AlarmDAODynamoDB alarmDAO = mock(AlarmDAODynamoDB.class);
@@ -66,24 +70,34 @@ public class RegexAnnotationsHandlerExecutorTest {
 
     @Before
     public void setUp() {
-        final ExternalApplicationData fakeHueApplicationData = new ExternalApplicationData.Builder()
+        final ExpansionData fakeHueApplicationData = new ExpansionData.Builder()
             .withAppId(1L)
             .withDeviceId(SENSE_ID)
             .withData("{\"whitelist_id\":\"123abc\", \"bridge_id\":\"fake_bridge\", \"group_id\": 1}")
             .withCreated(DateTime.now())
+            .withEnabled(true)
             .build();
 
-        final ExternalApplicationData fakeNestApplicationData = new ExternalApplicationData.Builder()
+        final ExpansionData fakeNestApplicationData = new ExpansionData.Builder()
             .withAppId(2L)
             .withDeviceId(SENSE_ID)
             .withData("{\"thermostat_id\":\"123abc\"}")
             .withCreated(DateTime.now())
+            .withEnabled(true)
             .build();
 
         String CLIENT_ID = "client_id";
-        final ExternalApplication fakeHueApplication = new ExternalApplication(1L, "Hue", CLIENT_ID, "client_secret", "http://localhost/",  "auth_uri", "token_uri", "Fake Hue Application", DateTime.now(), 2);
-        final ExternalApplication fakeNestApplication = new ExternalApplication(2L, "Nest", CLIENT_ID, "client_secret", "http://localhost/",  "auth_uri", "token_uri", "Fake Nest Application", DateTime.now(), 2);
+        final MultiDensityImage icon = new MultiDensityImage("icon@1x.png", "icon@2x.png", "icon@3x.png");
 
+        final Expansion fakeHueApplication = new Expansion(1L, Expansion.ServiceName.HUE,
+            "Hue Light", "Fake Hue Application", icon, CLIENT_ID, "client_secret",
+            "http://localhost/",  "auth_uri", "token_uri", "refresh_uri", Expansion.Category.LIGHT,
+            DateTime.now(), 2, "completion_uri", Expansion.State.NOT_CONNECTED);
+
+        final Expansion fakeNestApplication = new Expansion(2L, Expansion.ServiceName.NEST,
+            "Nest Thermostat", "Fake Nest Application", icon, CLIENT_ID, "client_secret",
+            "http://localhost/",  "auth_uri", "token_uri", "refresh_uri", Expansion.Category.TEMPERATURE,
+            DateTime.now(), 2, "completion_uri", Expansion.State.NOT_CONNECTED);
 
         final ExternalToken fakeToken = new ExternalToken.Builder()
             .withAccessToken("fake_token")
