@@ -6,6 +6,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.response.SupichiResponseType;
 
 import java.util.Map;
@@ -51,7 +52,7 @@ public abstract class BaseHandler {
         return Optional.absent();
     }
 
-    public abstract HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId);
+    public abstract HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request);
 
     public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
         return NO_ANNOTATION_SCORE;

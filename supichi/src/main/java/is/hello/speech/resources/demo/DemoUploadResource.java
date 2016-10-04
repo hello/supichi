@@ -3,7 +3,9 @@ package is.hello.speech.resources.demo;
 import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.util.HelloHttpHeader;
 import is.hello.speech.handler.AudioRequestHandler;
+import is.hello.speech.handler.RawRequest;
 import is.hello.speech.handler.WrappedResponse;
+import is.hello.speech.utils.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +46,8 @@ public class DemoUploadResource {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
 
-        final WrappedResponse response = audioRequestHandler.handle(signedBody, senseId);
+        final RawRequest rawRequest = RawRequest.create(signedBody, senseId, Metadata.getIpAddress(request));
+        final WrappedResponse response = audioRequestHandler.handle(rawRequest);
         if(response.hasError()) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }

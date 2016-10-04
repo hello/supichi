@@ -174,3 +174,7 @@ keys_management_service:
     token: arn:aws:kms:us-east-1:053216739513:key/9ab23bc3-1b49-4f02-a951-a9d97ca906bc # external app tokens
 
 s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms
+
+geoip_db:
+    s3_bucket_name: hello-dev
+    s3_key_name: GeoLite2-City.mmdb

@@ -1,8 +1,9 @@
-package is.hello.speech.core.handlers.executors;
+package is.hello.speech.core.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import is.hello.speech.core.handlers.BaseHandler;
+import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -27,8 +28,9 @@ public class RegexHandlerExecutor implements HandlerExecutor {
 
 
     @Override
-    public HandlerResult handle(final String senseId, final Long accountId, final String transcript) {
+    public HandlerResult handle(final VoiceRequest request) {
         // TODO: command-parser
+        final String transcript = request.transcript;
         final Optional<BaseHandler> optionalHandler = getHandler(transcript);
 
         if (optionalHandler.isPresent()) {
@@ -37,12 +39,12 @@ public class RegexHandlerExecutor implements HandlerExecutor {
 
             final AnnotatedTranscript annotatedTranscript = new AnnotatedTranscript.Builder().withTranscript(transcript).build();
 
-            final HandlerResult executeResult = handler.executeCommand(annotatedTranscript, senseId, accountId);
+            final HandlerResult executeResult = handler.executeCommand(annotatedTranscript, request);
             LOGGER.debug("action=execute-command result={}", executeResult.responseParameters.toString());
             return executeResult;
         }
 
-        LOGGER.debug("action=fail-to-find-command account_id={} sense_id={} transcript={}", accountId, senseId, transcript);
+        LOGGER.debug("action=fail-to-find-command account_id={} sense_id={} transcript={}", request.accountId, request.senseId, transcript);
         return HandlerResult.emptyResult();
     }
 

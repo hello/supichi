@@ -8,6 +8,7 @@ import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.response.SupichiResponseType;
 
 import java.util.Map;
@@ -31,7 +32,7 @@ public class TimelineHandler extends BaseHandler {
     }
 
     @Override
-    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
         // TODO
         final String text = annotatedTranscript.transcript;
 
