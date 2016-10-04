@@ -1,6 +1,7 @@
 package is.hello.speech.core.text2speech;
 
 import com.google.common.base.Optional;
+import com.google.common.io.LittleEndianDataOutputStream;
 import davaguine.jeq.core.EqualizerInputStream;
 import net.sourceforge.lame.lowlevel.LameEncoder;
 import net.sourceforge.lame.mp3.Lame;
@@ -16,6 +17,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -71,6 +73,24 @@ public class AudioUtils {
             DEFAULT_FRAME_SIZE,
             SENSE_SAMPLING_RATE,
             BIG_ENDIAN_FALSE);
+
+    // For ADPCM Decoding
+    final static int[] STEP_SIZE_TABLE = {
+            7, 8, 9, 10, 11, 12, 13, 14, 16, 17,
+            19, 21, 23, 25, 28, 31, 34, 37, 41, 45,
+            50, 55, 60, 66, 73, 80, 88, 97, 107, 118,
+            130, 143, 157, 173, 190, 209, 230, 253, 279, 307,
+            337, 371, 408, 449, 494, 544, 598, 658, 724, 796,
+            876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066,
+            2272, 2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358,
+            5894, 6484, 7132, 7845, 8630, 9493, 10442, 11487, 12635, 13899,
+            15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
+    };
+
+    final static int[] INDEX_TABLE = {
+            -1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8,
+    };
+
 
     public static class AudioBytes {
         public final byte [] bytes;
@@ -260,20 +280,99 @@ public class AudioUtils {
     private static Optional<AudioInputStream> getAudioStream(final byte[] bytes, Optional<javax.sound.sampled.AudioFormat> optionalSourceFormat) {
 
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-        final AudioInputStream sourceStream;
+
         if (optionalSourceFormat.isPresent()) {
-            sourceStream = new AudioInputStream(inputStream, optionalSourceFormat.get(), bytes.length);
-        } else {
-            try {
-                sourceStream = AudioSystem.getAudioInputStream(inputStream);
-            } catch (UnsupportedAudioFileException e) {
-                LOGGER.error("error=fail-to-get-audio-stream reason=unsupported-audio-file error_msg={}", e.getMessage());
-                return Optional.absent();
-            } catch (IOException e) {
-                LOGGER.error("error=fail-to-get-audio-stream reason=io-exception error_msg={}", e.getMessage());
-                return Optional.absent();
-            }
+            final AudioInputStream sourceStream = new AudioInputStream(inputStream, optionalSourceFormat.get(), bytes.length);
+            return Optional.of(sourceStream);
         }
-        return Optional.of(sourceStream);
+
+        try {
+            final AudioInputStream sourceStream = AudioSystem.getAudioInputStream(inputStream);
+            return Optional.of(sourceStream);
+        } catch (UnsupportedAudioFileException e) {
+            LOGGER.error("error=fail-to-get-audio-stream reason=unsupported-audio-file error_msg={}", e.getMessage());
+
+        } catch (IOException e) {
+            LOGGER.error("error=fail-to-get-audio-stream reason=io-exception error_msg={}", e.getMessage());
+        }
+        return Optional.absent();
+    }
+
+    public static byte[] decodeADPShitMAudio(byte[] adpcm) throws IOException {
+        {
+            final DataInputStream dataInputStream = new DataInputStream(new ByteArrayInputStream(adpcm));
+
+            final int outputSize = (adpcm.length + 1) * 4;
+
+            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            final LittleEndianDataOutputStream dataOutputStream = new LittleEndianDataOutputStream(outputStream);
+
+            short valpred = 0;
+            int index = 0;
+            int step = STEP_SIZE_TABLE[0];
+
+            boolean bufferstep = false;
+
+            int sign;
+            int vpdiff;
+
+            int delta;
+            int inPos = 0;
+
+            int readValue = 0;
+            for (int i = 0; i < adpcm.length * 2 - 1; i++) {
+
+                // step 1
+                final byte currentData = adpcm[inPos];
+
+                if (bufferstep) {
+                    delta = readValue & 0x0f;
+                } else {
+                    readValue = dataInputStream.readByte();
+                    delta = (currentData >> 4) & 0x0f;
+                    inPos++;
+                }
+
+                bufferstep = !bufferstep;
+
+                // step 2
+                index += INDEX_TABLE[delta];
+                if (index < 0) index = 0;
+                if (index > 88) index = 88;
+
+                // step 3
+                sign = delta & 8;
+                delta = delta & 7;
+
+                // step 4
+                vpdiff = step >> 3;
+                if ((delta & 4) != 0) vpdiff += step;
+                if ((delta & 2) != 0) vpdiff += step >> 1;
+                if ((delta & 1) != 0) vpdiff += step >> 2;
+
+                if (sign != 0) {
+                    valpred -= vpdiff;
+                } else {
+                    valpred += vpdiff;
+                }
+
+                // step 5 - clamp values
+                if (valpred > 32767) {
+                    valpred = 32767;
+                } else if (valpred < -32768) {
+                    valpred = -32768;
+                }
+
+                // step 6 - update step
+                step = STEP_SIZE_TABLE[index];
+
+                // step 7 - output value
+                dataOutputStream.writeShort(valpred);
+            }
+
+            dataInputStream.close();
+            return outputStream.toByteArray();
+
+        }
     }
 }

@@ -51,7 +51,7 @@ public abstract class BaseHandler {
         return Optional.absent();
     }
 
-    public abstract HandlerResult executeCommand(final String text, final String senseId, final Long accountId);
+    public abstract HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId);
 
     public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
         return NO_ANNOTATION_SCORE;

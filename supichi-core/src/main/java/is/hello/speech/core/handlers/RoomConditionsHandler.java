@@ -14,6 +14,7 @@ import com.hello.suripu.core.models.Sensor;
 import com.hello.suripu.core.roomstate.Condition;
 import com.hello.suripu.core.roomstate.CurrentRoomState;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -70,7 +71,9 @@ public class RoomConditionsHandler extends BaseHandler {
 
 
     @Override
-    public HandlerResult executeCommand(final String text, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+        final String text = annotatedTranscript.transcript;
+
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
         final Map<String, String> response = Maps.newHashMap();
 
@@ -81,7 +84,7 @@ public class RoomConditionsHandler extends BaseHandler {
             response.putAll(getCurrentRoomConditions(accountId, optionalCommand.get(), DEFAULT_SENSOR_UNIT));
         }
 
-        return new HandlerResult(HandlerType.ROOM_CONDITIONS, command, response);
+        return new HandlerResult(HandlerType.ROOM_CONDITIONS, command, response, Optional.absent());
     }
 
     @Override
@@ -96,7 +99,7 @@ public class RoomConditionsHandler extends BaseHandler {
 
         final Optional<DeviceAccountPair> optionalDeviceAccountPair = deviceDAO.getMostRecentSensePairByAccountId(accountId);
         if (!optionalDeviceAccountPair.isPresent()) {
-            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            response.put("result", Outcome.FAIL.getValue());
             response.put("error", "no paired sense");
             return response;
         }
@@ -116,7 +119,7 @@ public class RoomConditionsHandler extends BaseHandler {
         response.put("sensor", sensorName);
 
         if (!optionalData.isPresent()) {
-            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            response.put("result", Outcome.FAIL.getValue());
             response.put("error", "no data");
             return response;
         }
@@ -127,7 +130,7 @@ public class RoomConditionsHandler extends BaseHandler {
 
         final CurrentRoomState roomState = CurrentRoomState.fromDeviceData(deviceData, DateTime.now(), thresholdInMinutes, unit, calibrationOptional, NO_SOUND_FILL_VALUE_DB);
         if (roomState.temperature().condition().equals(Condition.UNKNOWN)) {
-            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            response.put("result", Outcome.FAIL.getValue());
             response.put("error", "data too old");
             return response;
         }
@@ -170,10 +173,10 @@ public class RoomConditionsHandler extends BaseHandler {
         LOGGER.debug("action=get-room-condition command={} value={}", command.toString(), sensorValue);
 
         if (sensorName.isEmpty()) {
-            response.put("result", HandlerResult.Outcome.FAIL.getValue());
+            response.put("result", Outcome.FAIL.getValue());
             response.put("error", "invalid sensor");
         } else {
-            response.put("result", HandlerResult.Outcome.OK.getValue());
+            response.put("result", Outcome.OK.getValue());
             response.put("sensor", sensorName);
             response.put("value", sensorValue);
             response.put("unit", sensorUnit);
