@@ -1,8 +1,7 @@
-package is.hello.speech.core.handlers.executors;
+package is.hello.speech.core.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -15,15 +14,6 @@ import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
-
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.util.Map;
-
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -35,8 +25,16 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.handlers.HueHandler;
 import is.hello.speech.core.handlers.NestHandler;
+import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import java.util.Map;
 
 import static is.hello.speech.core.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.speech.core.models.SpeechCommand.ALARM_SET;
@@ -148,7 +146,6 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
                 .register(HandlerType.ALARM, handlerFactory.alarmHandler())
-                .register(HandlerType.WEATHER, handlerFactory.weatherHandler())
                 .register(HandlerType.SLEEP_SOUNDS, handlerFactory.sleepSoundHandler())
                 .register(HandlerType.ROOM_CONDITIONS, handlerFactory.roomConditionsHandler())
                 .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
@@ -158,38 +155,43 @@ public class RegexAnnotationsHandlerExecutorTest {
                 .register(HandlerType.NEST, handlerFactory.nestHandler());
     }
 
+    private VoiceRequest newVoiceRequest(final String transcript) {
+        return new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, "127.0.0.1");
+    }
+
     @Test
     public void TestAlarmHandlers() {
         // test handler mapping
         final HandlerExecutor handlerExecutor = getExecutor();
-        HandlerResult result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "set my alarm for 7 am");
+        HandlerResult result = handlerExecutor.handle(newVoiceRequest("set my alarm for 7 am"));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.alarmResult.isPresent(), true);
         assertEquals(result.command, ALARM_SET.getValue());
 
-        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "wake me at 7 am");
+        result = handlerExecutor.handle(newVoiceRequest("wake me at 7 am"));
+
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.alarmResult.isPresent(), true);
         assertEquals(result.command, ALARM_SET.getValue());
 
-        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "wake her up at 7 am");
+        result = handlerExecutor.handle(newVoiceRequest("wake her up at 7 am"));
         assertEquals(result.handlerType, HandlerType.NONE);
 
-        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "alarm my dentist");
+        result = handlerExecutor.handle(newVoiceRequest("alarm my dentist"));
         assertEquals(result.handlerType, HandlerType.NONE);
 
         // cancel alarm
-        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "cancel my alarm");
+        result = handlerExecutor.handle(newVoiceRequest("cancel my alarm"));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.alarmResult.isPresent(), true);
         assertEquals(result.command, ALARM_DELETE.getValue());
 
-        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "delete tomorrow's alarm");
+        result = handlerExecutor.handle(newVoiceRequest("delete tomorrow's alarm"));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.alarmResult.isPresent(), true);
         assertEquals(result.command, ALARM_DELETE.getValue());
 
-        result = handlerExecutor.handle(SENSE_ID, ACCOUNT_ID, "cancel all my appointments");
+        result = handlerExecutor.handle(newVoiceRequest("cancel all my appointments"));
         assertEquals(result.handlerType, HandlerType.NONE);
         assertEquals(result.alarmResult.isPresent(), false);
     }
@@ -200,7 +202,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     public void TestHandleEmptyHandler() {
         final HandlerExecutor handlerExecutor = getExecutor();
 
-        final HandlerResult result = handlerExecutor.handle("123456789", 99L, "whatever");
+        final HandlerResult result = handlerExecutor.handle(new VoiceRequest("123456789", 99L, "whatever", ""));
         assertEquals(result.handlerType, HandlerType.NONE);
     }
 
@@ -208,10 +210,10 @@ public class RegexAnnotationsHandlerExecutorTest {
     public void TestHandleSingleHandler() {
         final HandlerExecutor executor = getExecutor();
 
-        final HandlerResult correctResult = executor.handle("123456789", 99L, "the president");
+        final HandlerResult correctResult = executor.handle(new VoiceRequest("123456789", 99L, "the president", ""));
         assertEquals(correctResult.handlerType, HandlerType.TRIVIA);
 
-        final HandlerResult result = executor.handle("123456789", 99L, "whatever");
+        final HandlerResult result = executor.handle(new VoiceRequest("123456789", 99L, "whatever", ""));
         assertEquals(result.handlerType, HandlerType.NONE);
     }
 
@@ -221,74 +223,74 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         final HandlerExecutor executor = getExecutor();
 
-        HandlerResult correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "turn off the light");
+        HandlerResult correctResult = executor.handle(newVoiceRequest("turn off the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("light_on"), "false");
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "turn the light off");
+        correctResult = executor.handle(newVoiceRequest("turn the light off"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("light_on"), "false");
 
         //test case insensitivity
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "turn the Light On");
+        correctResult = executor.handle(newVoiceRequest("turn the Light On"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("light_on"), "true");
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "turn the Light Off");
+        correctResult = executor.handle(newVoiceRequest("turn the Light Off"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("light_on"), "false");
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "turn off the light on");
+        correctResult = executor.handle(newVoiceRequest("turn off the light on"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("light_on"), "true");
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light brighter");
+        correctResult = executor.handle(newVoiceRequest("make the light brighter"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_INCREMENT.toString());
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "brighten the light");
+        correctResult = executor.handle(newVoiceRequest("brighten the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_INCREMENT.toString());
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light dimmer");
+        correctResult = executor.handle(newVoiceRequest("make the light dimmer"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_DECREMENT.toString());
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "dim the light");
+        correctResult = executor.handle(newVoiceRequest("dim the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_DECREMENT.toString());
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light warmer");
+        correctResult = executor.handle(newVoiceRequest("make the light warmer"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_INCREMENT.toString());
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light redder");
+        correctResult = executor.handle(newVoiceRequest("make the light redder"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_INCREMENT.toString());
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light cooler");
+        correctResult = executor.handle(newVoiceRequest("make the light cooler"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_DECREMENT.toString());
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "make the light bluer");
+        correctResult = executor.handle(newVoiceRequest("make the light bluer"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_DECREMENT.toString());
 
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "Do something random for me");
+        correctResult = executor.handle(newVoiceRequest("Do something random for me"));
         assertNotEquals(HandlerType.HUE, correctResult.handlerType);
     }
 
@@ -297,15 +299,15 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         final HandlerExecutor executor = getExecutor();
 
-        HandlerResult correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "set the temp to seventy seven degrees");
+        HandlerResult correctResult = executor.handle(newVoiceRequest("set the temp to seventy seven degrees"));
         assertEquals(HandlerType.NEST, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("temp_set"), "77");
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "set the temp to 77 degrees");
+        correctResult = executor.handle(newVoiceRequest("set the temp to 77 degrees"));
         assertEquals(HandlerType.NEST, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("temp_set"), "77");
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "Do something random for me");
+        correctResult = executor.handle(newVoiceRequest("Do something random for me"));
         assertNotEquals(HandlerType.NEST, correctResult.handlerType);
     }
 
@@ -318,12 +320,12 @@ public class RegexAnnotationsHandlerExecutorTest {
             .register(HandlerType.NEST, nestHandler)
             .register(HandlerType.HUE, hueHandler);
 
-        HandlerResult correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "turn off the light");
+        HandlerResult correctResult = executor.handle(newVoiceRequest("turn off the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "fail");
         assertEquals(correctResult.responseParameters.get("error"), "token-not-found");
 
-        correctResult = executor.handle(SENSE_ID, ACCOUNT_ID, "set the temp to seventy seven degrees");
+        correctResult = executor.handle(newVoiceRequest("set the temp to seventy seven degrees"));
         assertEquals(HandlerType.NEST, correctResult.handlerType);
         assertEquals(correctResult.responseParameters.get("result"), "fail");
         assertEquals(correctResult.responseParameters.get("error"), "token-not-found");

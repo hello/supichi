@@ -12,7 +12,8 @@ import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
 import is.hello.speech.core.api.Speech;
 import is.hello.speech.core.api.SpeechResultsKinesis;
-import is.hello.speech.core.handlers.executors.HandlerExecutor;
+import is.hello.speech.core.models.VoiceRequest;
+import is.hello.speech.core.executors.HandlerExecutor;
 import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -62,18 +63,18 @@ public class AudioRequestHandler {
         this.handlerMap = handlerMap;
     }
 
-    public WrappedResponse handle(final byte[] signedBody, final String senseId) {
-        LOGGER.debug("action=received-bytes size={}", signedBody.length);
+    public WrappedResponse handle(final RawRequest rawRequest) {
+        LOGGER.debug("action=received-bytes size={}", rawRequest.signedBody().length);
 
         // parse audio and protobuf
         final UploadData uploadData;
         try {
-            uploadData = signedBodyHandler.extractUploadData(senseId, signedBody);
+            uploadData = signedBodyHandler.extractUploadData(rawRequest.senseId(), rawRequest.signedBody());
         } catch (InvalidSignedBodyException e) {
-            LOGGER.error("error=invalid-signed-body sense_id={} msg={}", senseId, e.getMessage());
+            LOGGER.error("error=invalid-signed-body sense_id={} msg={}", rawRequest.senseId(), e.getMessage());
             return WrappedResponse.error(RequestError.INVALID_BODY);
         } catch(InvalidSignatureException e) {
-            LOGGER.error("error=invalid-signature sense_id={} msg={}", senseId, e.getMessage());
+            LOGGER.error("error=invalid-signature sense_id={} msg={}", rawRequest.senseId(), e.getMessage());
             return WrappedResponse.error(RequestError.INVALID_SIGNATURE);
         }
 
@@ -84,12 +85,12 @@ public class AudioRequestHandler {
             return WrappedResponse.error(RequestError.EMPTY_BODY);
         }
 
-        final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(senseId);
-        LOGGER.debug("info=sense-id id={}", senseId);
+        final ImmutableList<DeviceAccountPair> accounts = deviceDAO.getAccountIdsForDeviceId(rawRequest.senseId());
+        LOGGER.debug("info=sense-id id={}", rawRequest.senseId());
         HandlerResult executeResult = HandlerResult.emptyResult();
 
         if (accounts.isEmpty()) {
-            LOGGER.error("error=no-paired-sense-found sense_id={}", senseId);
+            LOGGER.error("error=no-paired-sense-found sense_id={}", rawRequest.senseId());
             final byte[] content = responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, executeResult, uploadData.request);
             return WrappedResponse.ok(content);
         }
@@ -102,7 +103,7 @@ public class AudioRequestHandler {
             }
         }
 
-        LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", senseId, accountId, uploadData.request.getResponse());
+        LOGGER.debug("action=get-speech-audio sense_id={} account_id={} response_type={}", rawRequest.senseId(), accountId, uploadData.request.getResponse());
 
         // save audio to Kinesis
         final String audioUUID = UUID.randomUUID().toString();
@@ -110,7 +111,7 @@ public class AudioRequestHandler {
 
         SpeechResult.Builder builder = new SpeechResult.Builder();
         builder.withAccountId(accountId)
-                .withSenseId(senseId)
+                .withSenseId(rawRequest.senseId())
                 .withAudioIndentifier(audioUUID)
                 .withDateTimeUTC(speechCreated);
         speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.TIMELINE, body);
@@ -141,7 +142,7 @@ public class AudioRequestHandler {
 
 
             if (!resp.getTranscript().isPresent()) {
-                LOGGER.warn("action=google-transcript-failed sense_id={}", senseId);
+                LOGGER.warn("action=google-transcript-failed sense_id={}", rawRequest.senseId());
                 return WrappedResponse.empty();
             }
 
@@ -152,7 +153,7 @@ public class AudioRequestHandler {
                     .withText(transcribedText);
 
             // try to execute text command
-            executeResult = handlerExecutor.handle(senseId, accountId, transcribedText);
+            executeResult = handlerExecutor.handle(new VoiceRequest(rawRequest.senseId(), accountId, transcribedText, rawRequest.ipAddress()));
 
             final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.S3);
             final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);

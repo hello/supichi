@@ -1,8 +1,5 @@
 package is.hello.speech;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -19,6 +16,8 @@ import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
@@ -48,17 +47,6 @@ import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
-
-import org.skife.jdbi.v2.DBI;
-
-import java.net.InetAddress;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -86,9 +74,9 @@ import is.hello.speech.core.configuration.KinesisStream;
 import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
+import is.hello.speech.core.executors.HandlerExecutor;
+import is.hello.speech.core.executors.RegexAnnotationsHandlerExecutor;
 import is.hello.speech.core.handlers.HandlerFactory;
-import is.hello.speech.core.handlers.executors.HandlerExecutor;
-import is.hello.speech.core.handlers.executors.RegexAnnotationsHandlerExecutor;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
@@ -103,6 +91,15 @@ import is.hello.speech.resources.demo.QueueMessageResource;
 import is.hello.speech.resources.v2.UploadResource;
 import is.hello.speech.utils.S3ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
+import org.skife.jdbi.v2.DBI;
+
+import java.net.InetAddress;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class SpeechApp extends Application<SpeechAppConfiguration> {
 

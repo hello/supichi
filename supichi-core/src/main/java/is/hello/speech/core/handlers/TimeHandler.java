@@ -10,6 +10,7 @@ import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
 import is.hello.speech.core.models.AnnotatedTranscript;
+import is.hello.speech.core.models.VoiceRequest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ public class TimeHandler extends BaseHandler {
 
 
     @Override
-    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
         final String text = annotatedTranscript.transcript;
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
@@ -54,12 +55,12 @@ public class TimeHandler extends BaseHandler {
 
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
-            final int offsetMillis = getTimeZoneOffsetMillis(accountId);
+            final int offsetMillis = getTimeZoneOffsetMillis(request.accountId);
             final DateTime now = DateTime.now(DateTimeZone.UTC);
             final DateTime localNow = now.plusMillis(offsetMillis);
 
             final String currentTime = localNow.toString("HH_mm");
-            LOGGER.debug("action=get-current-time now={} local_now={} string={} offset={} account_id={}", now.toString(), localNow.toString(), currentTime, offsetMillis, accountId);
+            LOGGER.debug("action=get-current-time now={} local_now={} string={} offset={} account_id={}", now.toString(), localNow.toString(), currentTime, offsetMillis, request.accountId);
             response.put("result", Outcome.OK.getValue());
             response.put("time", currentTime);
             response.put("text", String.format("The time is %s", currentTime));
