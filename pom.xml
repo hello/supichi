@@ -16,8 +16,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <suripu.version>0.8.5650</suripu.version>
-        <gaibu.version>0.1.12</gaibu.version>
+        <suripu.version>0.8.5656</suripu.version>
+        <gaibu.version>0.1.31</gaibu.version>
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <build-helper-maven-plugin.version>1.9.1</build-helper-maven-plugin.version>
     </properties>
@@ -45,6 +45,15 @@
     </distributionManagement>
 
     <repositories>
+        <repository>
+            <id>central</id>
+            <name>Maven Repository Switchboard</name>
+            <layout>default</layout>
+            <url>http://repo1.maven.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
         <repository>
             <id>project.local</id>
             <name>project</name>
@@ -82,12 +91,34 @@
         <dependency>
             <groupId>is.hello.gaibu</groupId>
             <artifactId>home-automation</artifactId>
+
+            <version>${gaibu.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jdbi</groupId>
+                    <artifactId>jdbi</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>is.hello.gaibu</groupId>
+            <artifactId>weather</artifactId>
             <version>${gaibu.version}</version>
         </dependency>
         <dependency>
             <groupId>is.hello.gaibu</groupId>
             <artifactId>gaibu-core</artifactId>
             <version>${gaibu.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.amazonaws</groupId>
+                    <artifactId>aws-java-sdk-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.amazonaws</groupId>
+                    <artifactId>aws-java-sdk-s3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
     <!--<distributionManagement>-->

@@ -56,11 +56,11 @@ import io.dropwizard.jdbi.OptionalContainerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
-import is.hello.gaibu.core.db.ExternalApplicationDataDAO;
-import is.hello.gaibu.core.db.ExternalApplicationsDAO;
+import is.hello.gaibu.core.db.ExpansionDataDAO;
+import is.hello.gaibu.core.db.ExpansionsDAO;
 import is.hello.gaibu.core.db.ExternalTokenDAO;
-import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
-import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
+import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.speech.cli.WatsonTextToSpeech;
 import is.hello.speech.clients.SpeechClient;
@@ -74,9 +74,9 @@ import is.hello.speech.core.configuration.KinesisStream;
 import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
 import is.hello.speech.core.db.SpeechCommandDynamoDB;
+import is.hello.speech.core.executors.HandlerExecutor;
+import is.hello.speech.core.executors.RegexAnnotationsHandlerExecutor;
 import is.hello.speech.core.handlers.HandlerFactory;
-import is.hello.speech.core.handlers.executors.HandlerExecutor;
-import is.hello.speech.core.handlers.executors.RegexAnnotationsHandlerExecutor;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
@@ -188,14 +188,14 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
         final FileInfoDAO fileInfoDAO = null; // TODO: remove for google compute engine
 
-        final ExternalApplicationsDAO externalApplicationsDAO = commonDB.onDemand(ExternalApplicationsDAO.class);
-        final PersistentExternalApplicationStore externalApplicationStore = new PersistentExternalApplicationStore(externalApplicationsDAO);
+        final ExpansionsDAO expansionsDAO = commonDB.onDemand(ExpansionsDAO.class);
+        final PersistentExpansionStore expansionStore = new PersistentExpansionStore(expansionsDAO);
 
         final ExternalTokenDAO externalTokenDAO = commonDB.onDemand(ExternalTokenDAO.class);
-        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, externalApplicationStore);
+        final PersistentExternalTokenStore externalTokenStore = new PersistentExternalTokenStore(externalTokenDAO, expansionStore);
 
-        final ExternalApplicationDataDAO externalApplicationDataDAO = commonDB.onDemand(ExternalApplicationDataDAO.class);
-        final PersistentExternalAppDataStore externalAppDataStore = new PersistentExternalAppDataStore(externalApplicationDataDAO);
+        final ExpansionDataDAO expansionsDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
+        final PersistentExpansionDataStore expansionsDataStore = new PersistentExpansionDataStore(expansionsDataDAO);
 
         final HandlerFactory handlerFactory = HandlerFactory.create(
                 speechCommandDAO,
@@ -209,8 +209,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 speechAppConfiguration.forecastio(),
                 accountLocationDAO,
                 externalTokenStore,
-                externalApplicationStore,
-                externalAppDataStore,
+                expansionStore,
+                expansionsDataStore,
                 tokenKMSVault,
                 alarmDAODynamoDB,
                 mergedUserInfoDynamoDB

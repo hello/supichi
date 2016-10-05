@@ -19,6 +19,7 @@ import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.VoiceRequest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -71,7 +72,7 @@ public class RoomConditionsHandler extends BaseHandler {
 
 
     @Override
-    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
         final String text = annotatedTranscript.transcript;
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
@@ -81,7 +82,7 @@ public class RoomConditionsHandler extends BaseHandler {
         if (optionalCommand.isPresent()) {
             // TODO: get units preference
             command = optionalCommand.get().getValue();
-            response.putAll(getCurrentRoomConditions(accountId, optionalCommand.get(), DEFAULT_SENSOR_UNIT));
+            response.putAll(getCurrentRoomConditions(request.accountId, optionalCommand.get(), DEFAULT_SENSOR_UNIT));
         }
 
         return new HandlerResult(HandlerType.ROOM_CONDITIONS, command, response, Optional.absent());

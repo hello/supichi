@@ -1,7 +1,8 @@
-package is.hello.speech.core.handlers.executors;
+package is.hello.speech.core.executors;
 
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.TriviaHandler;
+import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import org.junit.Test;
@@ -15,7 +16,7 @@ public class UnigramHandlerExecutorTest {
     public void TestHandleEmptyHandler() {
 
         final UnigramHandlerExecutor executor = new UnigramHandlerExecutor();
-        final HandlerResult result = executor.handle("123456789", 99L, "whatever");
+        final HandlerResult result = executor.handle(new VoiceRequest("123456789", 99L, "whatever", ""));
         assertEquals(result.handlerType, HandlerType.NONE);
     }
 
@@ -27,10 +28,10 @@ public class UnigramHandlerExecutorTest {
         final HandlerExecutor executor = new UnigramHandlerExecutor()
                 .register(HandlerType.TRIVIA, handler);
 
-        final HandlerResult correctResult = executor.handle("123456789", 99L, "the president");
+        final HandlerResult correctResult = executor.handle(new VoiceRequest("123456789", 99L, "the president", ""));
         assertEquals(correctResult.handlerType, HandlerType.TRIVIA);
 
-        final HandlerResult result = executor.handle("123456789", 99L, "whatever");
+        final HandlerResult result = executor.handle(new VoiceRequest("123456789", 99L, "whatever", ""));
         assertEquals(result.handlerType, HandlerType.NONE);
     }
 
