@@ -224,7 +224,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
                 .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
                 .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
-                .register(HandlerType.HUE, handlerFactory.hueHandler())
+                .register(HandlerType.HUE, handlerFactory.hueHandler(speechAppConfiguration.expansionConfiguration().hueAppName()))
                 .register(HandlerType.NEST, handlerFactory.nestHandler())
                 .register(HandlerType.ALEXA, handlerFactory.alexaHandler());
 

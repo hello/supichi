@@ -1,25 +1,12 @@
 package is.hello.speech.core.handlers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
-import is.hello.gaibu.core.models.Expansion;
-import is.hello.gaibu.core.models.ExpansionData;
-import is.hello.gaibu.core.models.ExternalToken;
-import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
-import is.hello.gaibu.core.stores.PersistentExpansionStore;
-import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
-import is.hello.gaibu.homeauto.models.HueExpansionDeviceData;
-import is.hello.gaibu.homeauto.services.HueLight;
-import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.handlers.results.Outcome;
-import is.hello.speech.core.models.AnnotatedTranscript;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.models.VoiceRequest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +15,22 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import is.hello.gaibu.core.models.Expansion;
+import is.hello.gaibu.core.models.ExpansionData;
+import is.hello.gaibu.core.models.ExternalToken;
+import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.core.stores.PersistentExpansionStore;
+import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
+import is.hello.gaibu.homeauto.clients.HueLight;
+import is.hello.gaibu.homeauto.models.HueExpansionDeviceData;
+import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.Outcome;
+import is.hello.speech.core.models.AnnotatedTranscript;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.VoiceRequest;
+
 
 /**
  * Created by ksg on 6/17/16
@@ -35,6 +38,7 @@ import java.util.regex.Pattern;
 public class HueHandler extends BaseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(HueHandler.class);
 
+    private final String hueAppName;
     private final SpeechCommandDAO speechCommandDAO;
     private final PersistentExternalTokenStore externalTokenStore;
     private final PersistentExpansionStore externalApplicationStore;
@@ -49,12 +53,14 @@ public class HueHandler extends BaseHandler {
     public static final Integer COLOR_TEMPERATURE_INCREMENT = 100;
     public static final Integer COLOR_TEMPERATURE_DECREMENT = -COLOR_TEMPERATURE_INCREMENT;
 
-    public HueHandler(final SpeechCommandDAO speechCommandDAO,
+    public HueHandler(final String hueAppName,
+                      final SpeechCommandDAO speechCommandDAO,
                       final PersistentExternalTokenStore externalTokenStore,
                       final PersistentExpansionStore externalApplicationStore,
                       final PersistentExpansionDataStore externalAppDataStore,
                       final Vault tokenKMSVault) {
         super("hue_light", speechCommandDAO, getAvailableActions());
+        this.hueAppName = hueAppName;
         this.speechCommandDAO = speechCommandDAO;
         this.externalTokenStore = externalTokenStore;
         this.externalApplicationStore = externalApplicationStore;
@@ -162,7 +168,7 @@ public class HueHandler extends BaseHandler {
         HueLight light;
         try {
             final HueExpansionDeviceData hueData = mapper.readValue(extData.data, HueExpansionDeviceData.class);
-            light = new HueLight(expansion.apiURI, decryptedToken, hueData.bridgeId, hueData.whitelistId, hueData.groupId);
+            light = HueLight.create(hueAppName, expansion.apiURI, decryptedToken, hueData.bridgeId, hueData.whitelistId, hueData.groupId);
 
         } catch (IOException io) {
             LOGGER.error("error=bad-app-data device_id={}", senseId);

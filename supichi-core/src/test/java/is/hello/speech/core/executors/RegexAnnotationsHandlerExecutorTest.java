@@ -2,6 +2,7 @@ package is.hello.speech.core.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
@@ -14,6 +15,15 @@ import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
+
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import java.util.Map;
+
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -25,16 +35,9 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.handlers.HueHandler;
 import is.hello.speech.core.handlers.NestHandler;
-import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.util.Map;
+import is.hello.speech.core.models.VoiceRequest;
 
 import static is.hello.speech.core.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.speech.core.models.SpeechCommand.ALARM_SET;
@@ -151,7 +154,7 @@ public class RegexAnnotationsHandlerExecutorTest {
                 .register(HandlerType.TIME_REPORT, handlerFactory.timeHandler())
                 .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
                 .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
-                .register(HandlerType.HUE, handlerFactory.hueHandler())
+                .register(HandlerType.HUE, handlerFactory.hueHandler("sense-dev"))
                 .register(HandlerType.NEST, handlerFactory.nestHandler());
     }
 
@@ -313,7 +316,7 @@ public class RegexAnnotationsHandlerExecutorTest {
 
     @Test
     public void TestBadToken() {
-        final HueHandler hueHandler = new HueHandler(speechCommandDAO, badTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
+        final HueHandler hueHandler = new HueHandler("sense_dev", speechCommandDAO, badTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
         final NestHandler nestHandler = new NestHandler(speechCommandDAO, badTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
 
         final HandlerExecutor executor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)

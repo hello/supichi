@@ -3,17 +3,19 @@ package is.hello.speech.configuration;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.coredropwizard.configuration.NewDynamoDBConfiguration;
+
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
+import is.hello.speech.core.configuration.ExpansionConfiguration;
 import is.hello.speech.core.configuration.KMSConfiguration;
 import is.hello.speech.core.configuration.KinesisConsumerConfiguration;
 import is.hello.speech.core.configuration.KinesisProducerConfiguration;
 import is.hello.speech.core.configuration.S3AudioConfiguration;
 import is.hello.speech.core.configuration.SQSConfiguration;
 import is.hello.speech.core.configuration.WatsonConfiguration;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 
 public class SpeechAppConfiguration extends Configuration {
 
@@ -109,4 +111,8 @@ public class SpeechAppConfiguration extends Configuration {
     @JsonProperty("s3_endpoint")
     private String s3Endpoint;
     public String s3Endpoint() { return s3Endpoint; }
+
+    @JsonProperty("expansions")
+    private ExpansionConfiguration expansionConfiguration;
+    public ExpansionConfiguration expansionConfiguration() { return this.expansionConfiguration; }
 }
