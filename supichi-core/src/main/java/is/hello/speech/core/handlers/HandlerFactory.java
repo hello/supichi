@@ -17,15 +17,16 @@ import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.maxmind.geoip2.DatabaseReader;
+
+import java.io.File;
+import java.io.IOException;
+
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.gaibu.weather.clients.DarkSky;
 import is.hello.gaibu.weather.interfaces.WeatherReport;
 import is.hello.speech.core.db.SpeechCommandDAO;
-
-import java.io.File;
-import java.io.IOException;
 
 /**
  * Created by ksg on 6/17/16
@@ -147,8 +148,8 @@ public class HandlerFactory {
         return new SleepSoundHandler(messejiClient, speechCommandDAO, sleepSoundsProcessor, 5);
     }
 
-    public HueHandler hueHandler() {
-        return new HueHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
+    public HueHandler hueHandler(final String appName) {
+        return new HueHandler(appName, speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
     }
 
     public TimelineHandler timelineHandler() {

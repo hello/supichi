@@ -164,3 +164,5 @@ keys_management_service:
 
 s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms
 
+expansions:
+  hue_app_name: sense-dev
