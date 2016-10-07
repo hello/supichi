@@ -175,9 +175,5 @@ keys_management_service:
 
 s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms
 
-geoip_db:
-    s3_bucket_name: hello-dev
-    s3_key_name: GeoLite2-City.mmdb
-
 expansions:
   hue_app_name: sense_staging
