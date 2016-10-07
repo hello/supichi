@@ -165,3 +165,6 @@ keys_management_service:
     token: arn:aws:kms:us-east-1:053216739513:key/2b67cc06-2780-4d11-9533-d98f6bc74033 # external app tokens prod
 
 s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms
+
+expansions:
+  hue_app_name: sense-prod

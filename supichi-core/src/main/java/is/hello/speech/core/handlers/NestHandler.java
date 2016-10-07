@@ -1,24 +1,11 @@
 package is.hello.speech.core.handlers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
-import is.hello.gaibu.core.models.Expansion;
-import is.hello.gaibu.core.models.ExpansionData;
-import is.hello.gaibu.core.models.ExternalToken;
-import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
-import is.hello.gaibu.core.stores.PersistentExpansionStore;
-import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
-import is.hello.gaibu.homeauto.models.NestExpansionDeviceData;
-import is.hello.gaibu.homeauto.services.NestThermostat;
-import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.handlers.results.Outcome;
-import is.hello.speech.core.models.AnnotatedTranscript;
-import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.HandlerType;
-import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.models.VoiceRequest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +13,22 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import is.hello.gaibu.core.models.Expansion;
+import is.hello.gaibu.core.models.ExpansionData;
+import is.hello.gaibu.core.models.ExternalToken;
+import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.core.stores.PersistentExpansionStore;
+import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
+import is.hello.gaibu.homeauto.clients.NestThermostat;
+import is.hello.gaibu.homeauto.models.NestExpansionDeviceData;
+import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.Outcome;
+import is.hello.speech.core.models.AnnotatedTranscript;
+import is.hello.speech.core.models.HandlerResult;
+import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.VoiceRequest;
 
 
 public class NestHandler extends BaseHandler {
@@ -173,7 +176,7 @@ public class NestHandler extends BaseHandler {
         NestThermostat nest;
         try {
             final NestExpansionDeviceData nestData = mapper.readValue(extData.data, NestExpansionDeviceData.class);
-            nest = new NestThermostat(nestData.thermostatId, expansion.apiURI, decryptedToken);
+            nest = NestThermostat.create(expansion.apiURI, decryptedToken, nestData.thermostatId);
 
         } catch (IOException io) {
             LOGGER.warn("error=bad-app-data app_name=nest device_id={}", senseId);
