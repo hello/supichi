@@ -92,7 +92,6 @@ import is.hello.speech.resources.demo.DemoResource;
 import is.hello.speech.resources.demo.PCMResource;
 import is.hello.speech.resources.demo.QueueMessageResource;
 import is.hello.speech.resources.v1.SignedBodyHandler;
-import is.hello.speech.resources.v1.UploadResource;
 import is.hello.speech.utils.S3ResponseBuilder;
 import is.hello.speech.utils.WatsonResponseBuilder;
 import org.skife.jdbi.v2.DBI;
@@ -144,35 +143,6 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final DeviceDAO deviceDAO = commonDB.onDemand(DeviceDAO.class);
         final SenseColorDAO senseColorDAO = commonDB.onDemand(SenseColorDAOSQLImpl.class);
         final AccountLocationDAO accountLocationDAO = commonDB.onDemand(AccountLocationDAO.class);
-
-        if (speechAppConfiguration.metricsEnabled()) {
-            final GraphiteConfiguration graphiteConfig = speechAppConfiguration.graphite();
-            final String graphiteHostName = graphiteConfig.getHost();
-            final String apiKey = graphiteConfig.getApiKey();
-            final Integer interval = graphiteConfig.getReportingIntervalInSeconds();
-
-            final String env = (speechAppConfiguration.debug()) ? "dev" : "prod";
-            final String prefix = String.format("%s.%s.supichi", apiKey, env);
-
-            final ImmutableList<String> metrics = ImmutableList.copyOf(graphiteConfig.getIncludeMetrics());
-            final RegexMetricFilter metricFilter = new RegexMetricFilter(metrics);
-
-            final Graphite graphite = new Graphite(new InetSocketAddress(graphiteHostName, 2003));
-
-            final GraphiteReporter reporter = GraphiteReporter.forRegistry(environment.metrics())
-                    .prefixedWith(prefix)
-                    .convertRatesTo(TimeUnit.SECONDS)
-                    .convertDurationsTo(TimeUnit.MILLISECONDS)
-                    .filter(metricFilter)
-                    .build(graphite);
-            reporter.start(interval, TimeUnit.SECONDS);
-
-            LOGGER.info("info=metrics-enabled.");
-        } else {
-            LOGGER.warn("warning=metrics-not-enabled.");
-        }
-
-        LOGGER.warn("DEBUG_MODE={}", speechAppConfiguration.debug());
 
         final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
         final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider, speechAppConfiguration.dynamoDBConfiguration());
@@ -260,6 +230,36 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
                 .register(HandlerType.HUE, handlerFactory.hueHandler())
                 .register(HandlerType.NEST, handlerFactory.nestHandler());
+
+        // metrics
+        if (speechAppConfiguration.metricsEnabled()) {
+            final GraphiteConfiguration graphiteConfig = speechAppConfiguration.graphite();
+            final String graphiteHostName = graphiteConfig.getHost();
+            final String apiKey = graphiteConfig.getApiKey();
+            final Integer interval = graphiteConfig.getReportingIntervalInSeconds();
+
+            final String env = (speechAppConfiguration.debug()) ? "dev" : "prod";
+            final String prefix = String.format("%s.%s.supichi", apiKey, env);
+
+            final ImmutableList<String> metrics = ImmutableList.copyOf(graphiteConfig.getIncludeMetrics());
+            final RegexMetricFilter metricFilter = new RegexMetricFilter(metrics);
+
+            final Graphite graphite = new Graphite(new InetSocketAddress(graphiteHostName, 2003));
+
+            final GraphiteReporter reporter = GraphiteReporter.forRegistry(environment.metrics())
+                    .prefixedWith(prefix)
+                    .convertRatesTo(TimeUnit.SECONDS)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .filter(metricFilter)
+                    .build(graphite);
+            reporter.start(interval, TimeUnit.SECONDS);
+
+            LOGGER.info("info=metrics-enabled.");
+        } else {
+            LOGGER.warn("warning=metrics-not-enabled.");
+        }
+
+        LOGGER.warn("DEBUG_MODE={}", speechAppConfiguration.debug());
 
 
         // setup SQS for QueueMessage API
@@ -404,7 +404,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final Map<HandlerType, SupichiResponseType> handlersToBuilders = handlerExecutor.responseBuilders();
 
         environment.jersey().register(new DemoResource(handlerExecutor, deviceDAO, s3ResponseBuilder, watsonResponseBuilder, speechAppConfiguration.debug()));
-        environment.jersey().register(new UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
+        environment.jersey().register(new is.hello.speech.resources.v1.UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders));
         environment.jersey().register(new is.hello.speech.resources.v2.UploadResource(client, signedBodyHandler, handlerExecutor, deviceDAO,
                 speechKinesisProducer, responseBuilders, handlersToBuilders, environment.metrics()));
         environment.jersey().register(new PCMResource(amazonS3, speechAppConfiguration.watsonAudioConfiguration().getBucketName()));

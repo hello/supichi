@@ -51,6 +51,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.codahale.metrics.MetricRegistry.name;
+
 
 @Path("/v2/upload")
 @Produces(MediaType.APPLICATION_JSON)
@@ -100,10 +102,10 @@ public class UploadResource {
         this.handlerMap = handlerMap;
 
         this.metrics = metricRegistry;
-        this.commandOK = metrics.meter("command_ok");
-        this.commandFail = metrics.meter("command_fail");
-        this.commandTryAgain = metrics.meter("command_try_again");
-        this.commandRejected = metrics.meter("command_rejected");
+        this.commandOK = metrics.meter(name(UploadResource.class, "command-ok"));
+        this.commandFail = metrics.meter(name(UploadResource.class, "command-fail"));
+        this.commandTryAgain = metrics.meter(name(UploadResource.class, "command-try-again"));
+        this.commandRejected = metrics.meter(name(UploadResource.class, "command-rejected"));
     }
 
     @Path("/audio")

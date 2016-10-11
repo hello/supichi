@@ -119,9 +119,13 @@ if __name__ == '__main__':
     pb = "false"
 
     if env != 'prod':
-        aes_key = "CD0C57B4B5C69D4C28F75AC4FBA5FF22".decode("hex"); # for 8AF6441AF72321F4
+        # aes_key = "CD0C57B4B5C69D4C28F75AC4FBA5FF22".decode("hex"); # for 8AF6441AF72321F4
+        # headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "8AF6441AF72321F4"}
+        aes_key = "74F27D72B7F801B2FEBB8187E830287F".decode("hex"); # for 721E040D184F2CAE
+        headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "721E040D184F2CAE"}
     else:
         aes_key = "729FD5B0ADCC7AFF2173D5406FC0AB5C".decode("hex"); # for 9ECA262C40A3E894
+        headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "9ECA262C40A3E894"}
 
     # read audio data
     fp = open(filename, 'rb')
@@ -158,9 +162,6 @@ if __name__ == '__main__':
     speech_data2.ParseFromString(pb_str)
     print "Parsed", speech_data2
 
-    headers = {"content-type": "application/octet-stream",
-            "X-Hello-Sense-Id": "8AF6441AF72321F4"}
-
     if env == 'localtext':
         text = sys.argv[5]
         su = json.dumps({'sense_id': '721E040D184F2CAE', 'transcript': text})
@@ -187,12 +188,13 @@ if __name__ == '__main__':
     # prod
     elif env == "prod":
         ENDPOINT = "https://speech.hello.is/v2/upload/audio"
-        headers = {"content-type": "application/octet-stream", "X-Hello-Sense-Id": "9ECA262C40A3E894"}
     else:
-        print "invalid env. choose from [local/dev/goog]"
+        print "invalid env. choose from:"
+        print "[localtext / local / localv2 / localdemo / dev / dev2 / devdemo]"
         sys.exit(1)
     
     print "Endpoint: %s" % ENDPOINT
+    print "header: %r" % headers
 
     t1 = time.time()
     r = requests.post(ENDPOINT, data=su, headers=headers)
