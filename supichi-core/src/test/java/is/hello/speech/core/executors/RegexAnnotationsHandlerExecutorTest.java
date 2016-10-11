@@ -228,68 +228,55 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         HandlerResult correctResult = executor.handle(newVoiceRequest("turn off the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("light_on"), "false");
 
         correctResult = executor.handle(newVoiceRequest("turn the light off"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("light_on"), "false");
 
         //test case insensitivity
         correctResult = executor.handle(newVoiceRequest("turn the Light On"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("light_on"), "true");
 
         correctResult = executor.handle(newVoiceRequest("turn the Light Off"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("light_on"), "false");
 
         correctResult = executor.handle(newVoiceRequest("turn off the light on"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("light_on"), "true");
 
         correctResult = executor.handle(newVoiceRequest("make the light brighter"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_INCREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("brighten the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_INCREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("make the light dimmer"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_DECREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("dim the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_DECREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("make the light warmer"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_INCREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("make the light redder"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_INCREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("make the light cooler"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_DECREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("make the light bluer"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "ok");
         assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_DECREMENT.toString());
 
 
