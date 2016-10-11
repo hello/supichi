@@ -8,6 +8,7 @@ graphite:
     - org.skife
     - xx-responses
     - is.hello
+    - jvm.gc
 
 common_db:
   driverClass: org.postgresql.Driver
