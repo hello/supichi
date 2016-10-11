@@ -197,9 +197,15 @@ public class NestHandler extends BaseHandler {
                 if(numberWords.containsKey(m.group(2))) {
                     temperatureSum += numberWords.get(m.group(2));
                 }
-                nest.setTargetTemperature(temperatureSum);
+                final Boolean isSuccessful = nest.setTargetTemperature(temperatureSum);
+                if(isSuccessful) {
+                    response.put("temp_set", temperatureSum.toString());
+                    response.put("result", Outcome.OK.getValue());
+                    return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.absent());
+                }
+
                 response.put("temp_set", temperatureSum.toString());
-                response.put("result", Outcome.OK.getValue());
+                response.put("result", Outcome.FAIL.getValue());
                 return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.absent());
             }
 
