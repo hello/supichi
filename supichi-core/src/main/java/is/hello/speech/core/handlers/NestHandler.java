@@ -39,11 +39,11 @@ public class NestHandler extends BaseHandler {
     private static final String TEMP_SET_PATTERN_NUMERIC = "(?i)^.*(?:nest|thermostat|temp)?\\sto\\s(\\d+)\\sdegrees";
     private static final String TOGGLE_ACTIVE_PATTERN = "(?i)^.*turn.*(?:nest|thermostat)?\\s(on|off).*(?:nest|thermostat)?";
 
-    public static final String SET_TEMP_OK_RESPONSE = "Okay, it is done.";
-    public static final String SET_TEMP_ERROR_RESPONSE = "Sorry, we're unable to adjust your thermostat. Please try again later";
-    public static final String SET_TEMP_ERROR_AUTH = "Sorry, we're unable to adjust your thermostat. Please configure Nest in the Sense app and try again.";
-    public static final String SET_TEMP_ERROR_CONFIG = "Sorry, we're unable to adjust your thermostat. Please select a Nest thermostat in the Sense app and try again.";
-    public static final String SET_TEMP_ERROR_APPLICATION = "Sorry, we're unable to adjust your thermostat. This expansion is currently unavailable.";
+    public static final String SET_TEMP_OK_RESPONSE = "Okay, done";
+    public static final String SET_TEMP_ERROR_RESPONSE = "Sorry, your thermostat could not be reached";
+    public static final String SET_TEMP_ERROR_AUTH = "Please connect your thermostat on the Sense app under Expansions";
+    public static final String SET_TEMP_ERROR_CONFIG = "Please connect your thermostat on the Sense app under Expansions";
+    public static final String SET_TEMP_ERROR_APPLICATION = "Sorry, your thermostat could not be reached";
 
     private final SpeechCommandDAO speechCommandDAO;
     private final PersistentExternalTokenStore externalTokenStore;

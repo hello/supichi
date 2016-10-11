@@ -70,11 +70,11 @@ public class HueHandler extends BaseHandler {
     public static final Integer BRIGHTNESS_DECREMENT = -BRIGHTNESS_INCREMENT;
     public static final Integer COLOR_TEMPERATURE_INCREMENT = 100;
     public static final Integer COLOR_TEMPERATURE_DECREMENT = -COLOR_TEMPERATURE_INCREMENT;
-    public static final String SET_LIGHT_OK_RESPONSE = "Okay, it is done.";
-    public static final String SET_LIGHT_ERROR_RESPONSE = "Sorry, we're unable to adjust your lights. Please try again later";
-    public static final String SET_LIGHT_ERROR_AUTH = "Sorry, we're unable to adjust your lights. Please configure Hue in the Sense app and try again.";
-    public static final String SET_LIGHT_ERROR_CONFIG = "Sorry, we're unable to adjust your lights. Please select a Hue light group in the Sense app and try again.";
-    public static final String SET_LIGHT_ERROR_APPLICATION = "Sorry, we're unable to adjust your lights. This expansion is currently unavailable.";
+    public static final String SET_LIGHT_OK_RESPONSE = "Okay, done";
+    public static final String SET_LIGHT_ERROR_RESPONSE = "Sorry, your lights could not be reached";
+    public static final String SET_LIGHT_ERROR_AUTH = "Please connect your lights on the Sense app under Expansions";
+    public static final String SET_LIGHT_ERROR_CONFIG = "Please connect your lights on the Sense app under Expansions";
+    public static final String SET_LIGHT_ERROR_APPLICATION = "Sorry, your lights could not be reached";
 
     public HueHandler(final String hueAppName,
                       final SpeechCommandDAO speechCommandDAO,
