@@ -1,5 +1,7 @@
 package is.hello.speech.handler;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.DeviceDAO;
@@ -12,12 +14,12 @@ import is.hello.speech.clients.SpeechClient;
 import is.hello.speech.core.api.Response;
 import is.hello.speech.core.api.Speech;
 import is.hello.speech.core.api.SpeechResultsKinesis;
-import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.executors.HandlerExecutor;
 import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechServiceResult;
+import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
@@ -30,6 +32,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.UUID;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 public class AudioRequestHandler {
 
@@ -46,6 +50,14 @@ public class AudioRequestHandler {
 
     private static final byte[] EMPTY_BYTE = new byte[0];
 
+    private final MetricRegistry metrics;
+    private Meter commandOK;
+    private Meter commandFail;
+    private Meter commandTryAgain;
+    private Meter commandRejected;
+    private Meter requestInvalidBody;
+    private Meter requestInvalidSignature;
+    private Meter transcriptFail;
 
     public AudioRequestHandler(final SpeechClient speechClient,
                                final SignedBodyHandler signedBodyHandler,
@@ -53,7 +65,9 @@ public class AudioRequestHandler {
                                final DeviceDAO deviceDAO,
                                final SpeechKinesisProducer speechKinesisProducer,
                                final Map<SupichiResponseType, SupichiResponseBuilder> responseBuilders,
-                               final Map<HandlerType, SupichiResponseType> handlerMap) {
+                               final Map<HandlerType, SupichiResponseType> handlerMap,
+                               final MetricRegistry metricRegistry
+                               ) {
         this.speechClient = speechClient;
         this.signedBodyHandler = signedBodyHandler;
         this.handlerExecutor = handlerExecutor;
@@ -61,6 +75,14 @@ public class AudioRequestHandler {
         this.speechKinesisProducer = speechKinesisProducer;
         this.responseBuilders = responseBuilders;
         this.handlerMap = handlerMap;
+        this.metrics = metricRegistry;
+        this.commandOK = metrics.meter(name(AudioRequestHandler.class, "command-ok"));
+        this.commandFail = metrics.meter(name(AudioRequestHandler.class, "command-fail"));
+        this.commandTryAgain = metrics.meter(name(AudioRequestHandler.class, "command-try-again"));
+        this.commandRejected = metrics.meter(name(AudioRequestHandler.class, "command-rejected"));
+        this.requestInvalidBody = metrics.meter(name(AudioRequestHandler.class, "invalid-body"));
+        this.requestInvalidSignature = metrics.meter(name(AudioRequestHandler.class, "invalid-signature"));
+        this.transcriptFail = metrics.meter(name(AudioRequestHandler.class, "transcript-fail"));
     }
 
     public WrappedResponse handle(final RawRequest rawRequest) {
@@ -72,9 +94,11 @@ public class AudioRequestHandler {
             uploadData = signedBodyHandler.extractUploadData(rawRequest.senseId(), rawRequest.signedBody());
         } catch (InvalidSignedBodyException e) {
             LOGGER.error("error=invalid-signed-body sense_id={} msg={}", rawRequest.senseId(), e.getMessage());
+            this.requestInvalidBody.mark(1);
             return WrappedResponse.error(RequestError.INVALID_BODY);
         } catch(InvalidSignatureException e) {
             LOGGER.error("error=invalid-signature sense_id={} msg={}", rawRequest.senseId(), e.getMessage());
+            this.requestInvalidSignature.mark(1);
             return WrappedResponse.error(RequestError.INVALID_SIGNATURE);
         }
 
@@ -143,6 +167,7 @@ public class AudioRequestHandler {
 
             if (!resp.getTranscript().isPresent()) {
                 LOGGER.warn("action=google-transcript-failed sense_id={}", rawRequest.senseId());
+                this.transcriptFail.mark(1);
                 return WrappedResponse.empty();
             }
 
@@ -165,6 +190,13 @@ public class AudioRequestHandler {
                 if (executeResult.responseParameters.containsKey("result")) {
                     commandResult = executeResult.responseParameters.get("result").equals(Outcome.OK.getValue()) ? Result.OK : Result.REJECTED;
                 }
+
+                if (commandResult.equals(Result.OK)) {
+                    this.commandOK.mark(1);
+                } else {
+                    this.commandFail.mark(1);
+                }
+
                 builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                         .withCommand(executeResult.command)
                         .withHandlerType(executeResult.handlerType.value)
@@ -177,6 +209,7 @@ public class AudioRequestHandler {
             }
 
             // save TRY_AGAIN speech result
+            this.commandTryAgain.mark(1);
             builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                     .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN))
                     .withResult(Result.TRY_AGAIN);
@@ -189,6 +222,7 @@ public class AudioRequestHandler {
         }
 
         // no text or command found, save REJECT result
+        this.commandRejected.mark(1);
         builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                 .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.REJECTED))
                 .withResult(Result.REJECTED);
