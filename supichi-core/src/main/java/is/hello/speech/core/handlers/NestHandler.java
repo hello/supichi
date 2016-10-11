@@ -147,7 +147,7 @@ public class NestHandler extends BaseHandler {
 
         final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, expansion.id);
         if(!externalTokenOptional.isPresent()) {
-            LOGGER.error("error=token-not-found device_id={}", senseId);
+            LOGGER.error("error=token-not-found sense_id={}", senseId);
             response.put("error", "token-not-found");
             response.put("result", Outcome.FAIL.getValue());
             nestResult = GenericResult.failWithResponse("command not found", SET_TEMP_ERROR_AUTH);
@@ -161,7 +161,7 @@ public class NestHandler extends BaseHandler {
         final Optional<String> decryptedTokenOptional = tokenKMSVault.decrypt(externalToken.accessToken, encryptionContext);
 
         if(!decryptedTokenOptional.isPresent()) {
-            LOGGER.error("error=token-decryption-failure device_id={}", senseId);
+            LOGGER.error("error=token-decryption-failure sense_id={}", senseId);
             response.put("error", "token-decryption-failure");
             response.put("result", Outcome.FAIL.getValue());
             nestResult = GenericResult.failWithResponse("token decrypt failed", SET_TEMP_ERROR_AUTH);
@@ -195,7 +195,7 @@ public class NestHandler extends BaseHandler {
             nest = NestThermostat.create(expansion.apiURI, decryptedToken, nestData.thermostatId);
 
         } catch (IOException io) {
-            LOGGER.warn("error=bad-app-data app_name=nest device_id={}", senseId);
+            LOGGER.warn("error=bad-app-data app_name=nest sense_id={}", senseId);
             response.put("error", "bad-app-data");
             response.put("result", Outcome.FAIL.getValue());
             nestResult = GenericResult.failWithResponse("bad expansion data", SET_TEMP_ERROR_CONFIG);
@@ -248,7 +248,7 @@ public class NestHandler extends BaseHandler {
                 isOn = m.group(1).startsWith("on");
 
             } else {
-                LOGGER.warn("error=no-pattern-match app_name=nest device_id={}", senseId);
+                LOGGER.warn("error=no-pattern-match app_name=nest sense_id={}", senseId);
                 response.put("error", "no-pattern-match");
                 response.put("result", Outcome.FAIL.getValue());
                 nestResult = GenericResult.failWithResponse("no pattern match", SET_TEMP_ERROR_RESPONSE);
@@ -256,7 +256,7 @@ public class NestHandler extends BaseHandler {
             }
         }
 
-        LOGGER.warn("error=no-pattern-match app_name=nest device_id={}", senseId);
+        LOGGER.warn("error=no-pattern-match app_name=nest sense_id={}", senseId);
         response.put("result", Outcome.FAIL.getValue());
         nestResult = GenericResult.failWithResponse("no command found", SET_TEMP_ERROR_RESPONSE);
         return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));

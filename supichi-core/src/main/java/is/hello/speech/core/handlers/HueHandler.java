@@ -154,7 +154,7 @@ public class HueHandler extends BaseHandler {
 
         final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, expansion.id);
         if(!externalTokenOptional.isPresent()) {
-            LOGGER.error("error=token-not-found device_id={}", senseId);
+            LOGGER.error("error=token-not-found sense_id={}", senseId);
             response.put("error", "token-not-found");
             response.put("result", Outcome.FAIL.getValue());
             hueResult = GenericResult.failWithResponse("token not found", SET_LIGHT_ERROR_AUTH);
@@ -165,11 +165,11 @@ public class HueHandler extends BaseHandler {
 
         //check for expired token and attempt refresh
         if(externalToken.hasExpired(DateTime.now(DateTimeZone.UTC))) {
-            LOGGER.error("error=token-expired device_id={}", senseId);
+            LOGGER.error("error=token-expired sense_id={}", senseId);
 
             final Optional<ExternalToken> refreshedTokenOptional = refreshToken(senseId, expansion, externalToken);
             if(!refreshedTokenOptional.isPresent()){
-                LOGGER.error("error=token-refresh-failed device_id={}", senseId);
+                LOGGER.error("error=token-refresh-failed sense_id={}", senseId);
                 response.put("error", "token-refresh-failed");
                 response.put("result", Outcome.FAIL.getValue());
                 hueResult = GenericResult.failWithResponse("token refresh failed", SET_LIGHT_ERROR_AUTH);
@@ -185,7 +185,7 @@ public class HueHandler extends BaseHandler {
 
 
         if(!decryptedTokenOptional.isPresent()) {
-            LOGGER.error("error=token-decryption-failure device_id={}", senseId);
+            LOGGER.error("error=token-decryption-failure sense_id={}", senseId);
             response.put("error", "token-decryption-failure");
             response.put("result", Outcome.FAIL.getValue());
             hueResult = GenericResult.failWithResponse("token decrypt failed", SET_LIGHT_ERROR_AUTH);
@@ -218,7 +218,7 @@ public class HueHandler extends BaseHandler {
             light = HueLight.create(hueAppName, expansion.apiURI, decryptedToken, hueData.bridgeId, hueData.whitelistId, hueData.groupId);
 
         } catch (IOException io) {
-            LOGGER.error("error=bad-app-data device_id={}", senseId);
+            LOGGER.error("error=bad-app-data sense_id={}", senseId);
             response.put("error", "bad-app-data");
             response.put("result", Outcome.FAIL.getValue());
             hueResult = GenericResult.failWithResponse("bad expansion data", SET_LIGHT_ERROR_CONFIG);
@@ -305,7 +305,7 @@ public class HueHandler extends BaseHandler {
 
         final Optional<String> decryptedRefreshTokenOptional = tokenKMSVault.decrypt(externalToken.refreshToken, encryptionContext);
         if(!decryptedRefreshTokenOptional.isPresent()) {
-            LOGGER.error("error=refresh-decrypt-failed device_id={}", deviceId);
+            LOGGER.error("error=refresh-decrypt-failed sense_id={}", deviceId);
             return Optional.absent();
         }
         final String decryptedRefreshToken = decryptedRefreshTokenOptional.get();
