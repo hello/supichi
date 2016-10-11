@@ -30,6 +30,7 @@ import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
 import is.hello.speech.core.models.VoiceRequest;
+import is.hello.speech.core.response.SupichiResponseType;
 
 
 public class NestHandler extends BaseHandler {
@@ -120,7 +121,7 @@ public class NestHandler extends BaseHandler {
             response.put("error", "no-application");
             response.put("result", Outcome.FAIL.getValue());
             nestResult = GenericResult.failWithResponse("expansion not found", SET_TEMP_ERROR_APPLICATION);
-            return new HandlerResult(HandlerType.NEST, HandlerResult.EMPTY_COMMAND, response, Optional.of(nestResult));
+            return new HandlerResult(HandlerType.NEST, HandlerResult.EMPTY_COMMAND, updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         final Expansion expansion = expansionOptional.get();
@@ -132,7 +133,7 @@ public class NestHandler extends BaseHandler {
             response.put("error", "no-command");
             response.put("result", Outcome.FAIL.getValue());
             nestResult = GenericResult.failWithResponse("command not found", SET_TEMP_ERROR_RESPONSE);
-            return new HandlerResult(HandlerType.NEST, HandlerResult.EMPTY_COMMAND, response, Optional.of(nestResult));
+            return new HandlerResult(HandlerType.NEST, HandlerResult.EMPTY_COMMAND, updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         final SpeechCommand command = optionalCommand.get();
@@ -142,7 +143,7 @@ public class NestHandler extends BaseHandler {
             response.put("error", "null-sense-id");
             response.put("result", Outcome.FAIL.getValue());
             nestResult = GenericResult.failWithResponse("sense_id not found", SET_TEMP_ERROR_RESPONSE);
-            return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, expansion.id);
@@ -150,8 +151,8 @@ public class NestHandler extends BaseHandler {
             LOGGER.error("error=token-not-found sense_id={}", senseId);
             response.put("error", "token-not-found");
             response.put("result", Outcome.FAIL.getValue());
-            nestResult = GenericResult.failWithResponse("command not found", SET_TEMP_ERROR_AUTH);
-            return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+            nestResult = GenericResult.failWithResponse("token-not-found", SET_TEMP_ERROR_AUTH);
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         final ExternalToken externalToken = externalTokenOptional.get();
@@ -165,7 +166,7 @@ public class NestHandler extends BaseHandler {
             response.put("error", "token-decryption-failure");
             response.put("result", Outcome.FAIL.getValue());
             nestResult = GenericResult.failWithResponse("token decrypt failed", SET_TEMP_ERROR_AUTH);
-            return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         final String decryptedToken = decryptedTokenOptional.get();
@@ -176,7 +177,7 @@ public class NestHandler extends BaseHandler {
             response.put("error", "no-ext-app-data");
             response.put("result", Outcome.FAIL.getValue());
             nestResult = GenericResult.failWithResponse("no expansion data", SET_TEMP_ERROR_CONFIG);
-            return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         final ExpansionData extData = extAppDataOptional.get();
@@ -186,7 +187,7 @@ public class NestHandler extends BaseHandler {
             response.put("error", "no-ext-app-data");
             response.put("result", Outcome.FAIL.getValue());
             nestResult = GenericResult.failWithResponse("no expansion data", SET_TEMP_ERROR_CONFIG);
-            return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         NestThermostat nest;
@@ -199,7 +200,7 @@ public class NestHandler extends BaseHandler {
             response.put("error", "bad-app-data");
             response.put("result", Outcome.FAIL.getValue());
             nestResult = GenericResult.failWithResponse("bad expansion data", SET_TEMP_ERROR_CONFIG);
-            return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         if (command.equals(SpeechCommand.THERMOSTAT_SET)) {
@@ -219,13 +220,13 @@ public class NestHandler extends BaseHandler {
                     response.put("temp_set", temperatureSum.toString());
                     response.put("result", Outcome.OK.getValue());
                     nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
-                    return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+                    return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
                 }
 
                 response.put("temp_set", temperatureSum.toString());
                 response.put("result", Outcome.FAIL.getValue());
                 nestResult = GenericResult.failWithResponse("command failed", SET_TEMP_ERROR_RESPONSE);
-                return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+                return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
             }
 
             final Pattern numeric = Pattern.compile(TEMP_SET_PATTERN_NUMERIC);
@@ -236,7 +237,7 @@ public class NestHandler extends BaseHandler {
                 response.put("temp_set", temperatureSum.toString());
                 response.put("result", Outcome.OK.getValue());
                 nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
-                return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+                return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
             }
         }
 
@@ -252,14 +253,14 @@ public class NestHandler extends BaseHandler {
                 response.put("error", "no-pattern-match");
                 response.put("result", Outcome.FAIL.getValue());
                 nestResult = GenericResult.failWithResponse("no pattern match", SET_TEMP_ERROR_RESPONSE);
-                return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+                return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
             }
         }
 
         LOGGER.warn("error=no-pattern-match app_name=nest sense_id={}", senseId);
         response.put("result", Outcome.FAIL.getValue());
         nestResult = GenericResult.failWithResponse("no command found", SET_TEMP_ERROR_RESPONSE);
-        return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.of(nestResult));
+        return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
 
     }
 
@@ -269,4 +270,21 @@ public class NestHandler extends BaseHandler {
         return NO_ANNOTATION_SCORE;
     }
 
+    @Override
+    public SupichiResponseType responseType() {
+        return SupichiResponseType.WATSON;
+    }
+
+    public Map<String, String> updateResponse(final Map<String, String> response, final GenericResult result) {
+        response.put("result", result.outcome.getValue());
+        if (result.errorText.isPresent()) {
+            response.put("error", result.errorText.get());
+            if (result.responseText.isPresent()) {
+                response.put("text", result.responseText());
+            }
+        } else {
+            response.put("text", result.responseText());
+        }
+        return response;
+    }
 }
