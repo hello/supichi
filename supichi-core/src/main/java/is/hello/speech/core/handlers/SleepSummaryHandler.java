@@ -4,8 +4,11 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.models.AggregateSleepStats;
+import com.hello.suripu.core.models.TimelineFeedback;
+import com.hello.suripu.core.models.TimelineResult;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.TimelineUtils;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.results.GenericResult;
 import is.hello.speech.core.handlers.results.Outcome;
@@ -36,10 +39,12 @@ public class SleepSummaryHandler extends BaseHandler {
     public static final String ERROR_NO_TIMEZONE = "Sorry, we're unable to retrieve your sleep score. Please set your timezone in the app.";
 
     private final SleepStatsDAODynamoDB sleepStatsDAO;
+    private final InstrumentedTimelineProcessor timelineProcessor;
 
-    public SleepSummaryHandler(final SpeechCommandDAO speechCommandDAO, final SleepStatsDAODynamoDB sleepStatsDAO) {
+    public SleepSummaryHandler(final SpeechCommandDAO speechCommandDAO, final SleepStatsDAODynamoDB sleepStatsDAO, final InstrumentedTimelineProcessor timelineProcessor) {
         super("sleep-summary", speechCommandDAO, getAvailableActions());
         this.sleepStatsDAO = sleepStatsDAO;
+        this.timelineProcessor = timelineProcessor;
     }
 
 
@@ -137,6 +142,9 @@ public class SleepSummaryHandler extends BaseHandler {
         final Optional<AggregateSleepStats> optionalSleepStat = sleepStatsDAO.getSingleStat(accountId, lastNightDate);
         if (!optionalSleepStat.isPresent()) {
             // TODO: compute timeline
+            final InstrumentedTimelineProcessor newTimelineProcessor = timelineProcessor.copyMeWithNewUUID(UUID.randomUUID());
+            final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, localToday.minusDays(1), Optional.<TimelineFeedback>absent());
+
             return Optional.absent();
         }
 

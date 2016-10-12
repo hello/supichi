@@ -17,6 +17,7 @@ import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.maxmind.geoip2.DatabaseReader;
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
@@ -51,7 +52,7 @@ public class HandlerFactory {
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
     private final SleepStatsDAODynamoDB sleepStatsDAO;
 
-
+    private final InstrumentedTimelineProcessor timelineProcessor;
 
 
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
@@ -70,7 +71,8 @@ public class HandlerFactory {
                            final Vault tokenKMSVault,
                            final AlarmDAODynamoDB alarmDAODynamoDB,
                            final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
-                           final SleepStatsDAODynamoDB sleepStatsDAO) {
+                           final SleepStatsDAODynamoDB sleepStatsDAO,
+                           final InstrumentedTimelineProcessor timelineProcessor) {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
@@ -88,6 +90,7 @@ public class HandlerFactory {
         this.alarmDAODynamoDB = alarmDAODynamoDB;
         this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
         this.sleepStatsDAO = sleepStatsDAO;
+        this.timelineProcessor = timelineProcessor;
     }
 
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
@@ -106,13 +109,14 @@ public class HandlerFactory {
                                         final Vault tokenKMSVault,
                                         final AlarmDAODynamoDB alarmDAODynamoDB,
                                         final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
-                                        final SleepStatsDAODynamoDB sleepStatsDAO
+                                        final SleepStatsDAODynamoDB sleepStatsDAO,
+                                        final InstrumentedTimelineProcessor timelineProcessor
     ) {
 
         return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor, deviceDataDAODynamoDB,
                 deviceDAO, senseColorDAO, calibrationDAO,timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
             externalTokenStore, expansionStore, expansionDataStore, tokenKMSVault,
-                alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO);
+                alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO, timelineProcessor);
     }
 
     public WeatherHandler weatherHandler() {
@@ -169,6 +173,6 @@ public class HandlerFactory {
     }
 
     public SleepSummaryHandler sleepSummaryHandler() {
-        return new SleepSummaryHandler(speechCommandDAO, sleepStatsDAO);
+        return new SleepSummaryHandler(speechCommandDAO, sleepStatsDAO, timelineProcessor);
     }
 }

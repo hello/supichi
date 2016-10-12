@@ -103,6 +103,7 @@ dynamodb:
     calibration: prod_calibration
     device_data: prod_sense_data
     file_manifest: prod_file_manifest
+    pill_data: prod_pill_data
     sense_key_store: key_store
     sleep_stats: prod_sleep_stats
     speech_commands: prod_speech_commands
@@ -116,6 +117,7 @@ dynamodb:
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
+    pill_data: http://dynamodb.us-east-1.amazonaws.com
     sense_key_store: http://dynamodb.us-east-1.amazonaws.com
     sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     speech_commands: http://dynamodb.us-east-1.amazonaws.com

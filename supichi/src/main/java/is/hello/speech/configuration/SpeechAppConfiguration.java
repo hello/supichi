@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hello.suripu.coredropwizard.configuration.GraphiteConfiguration;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
 import com.hello.suripu.coredropwizard.configuration.NewDynamoDBConfiguration;
+import com.hello.suripu.coredropwizard.configuration.S3BucketConfiguration;
+import com.hello.suripu.coredropwizard.configuration.TaimurainHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 import is.hello.speech.core.configuration.ExpansionConfiguration;
@@ -133,5 +136,27 @@ public class SpeechAppConfiguration extends Configuration {
     @JsonProperty("sleep_stats_version")
     private String sleepStatsVersion;
     public String sleepStatsVersion() { return this.sleepStatsVersion; }
+
+    @Valid
+    @NotNull
+    @JsonProperty("timeline_model_ensembles")
+    private S3BucketConfiguration timelineModelEnsemblesConfiguration;
+    public S3BucketConfiguration timelineModelEnsembles() { return timelineModelEnsemblesConfiguration; }
+
+    @Valid
+    @NotNull
+    @JsonProperty("timeline_seed_model")
+    private S3BucketConfiguration timelineSeedModelConfiguration;
+    public S3BucketConfiguration timelineSeedModel() { return timelineSeedModelConfiguration; }
+
+    @NotNull
+    @JsonProperty("taimurain_http_client")
+    private TaimurainHttpClientConfiguration taimurainHttpClientConfiguration;
+    public TaimurainHttpClientConfiguration taimurainClient() { return taimurainHttpClientConfiguration; }
+
+    @Valid
+    @JsonProperty("timeline_algorithm_configuration")
+    private TimelineAlgorithmConfiguration timelineAlgorithmConfiguration = new TimelineAlgorithmConfiguration();
+    public TimelineAlgorithmConfiguration timelineAlgorithm() {return timelineAlgorithmConfiguration;}
 
 }
