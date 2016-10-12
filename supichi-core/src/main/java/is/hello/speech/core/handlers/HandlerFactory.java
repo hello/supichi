@@ -11,22 +11,22 @@ import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
+import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.maxmind.geoip2.DatabaseReader;
-
-import java.io.File;
-import java.io.IOException;
-
 import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
 import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.gaibu.weather.clients.DarkSky;
 import is.hello.gaibu.weather.interfaces.WeatherReport;
 import is.hello.speech.core.db.SpeechCommandDAO;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Created by ksg on 6/17/16
@@ -49,6 +49,7 @@ public class HandlerFactory {
     private final PersistentExpansionDataStore externalAppDataStore;
     private final AlarmDAODynamoDB alarmDAODynamoDB;
     private final MergedUserInfoDynamoDB mergedUserInfoDynamoDB;
+    private final SleepStatsDAODynamoDB sleepStatsDAO;
 
 
 
@@ -68,7 +69,8 @@ public class HandlerFactory {
                            final PersistentExpansionDataStore expansionDataStore,
                            final Vault tokenKMSVault,
                            final AlarmDAODynamoDB alarmDAODynamoDB,
-                           final MergedUserInfoDynamoDB mergedUserInfoDynamoDB) {
+                           final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
+                           final SleepStatsDAODynamoDB sleepStatsDAO) {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
@@ -85,6 +87,7 @@ public class HandlerFactory {
         this.tokenKMSVault = tokenKMSVault;
         this.alarmDAODynamoDB = alarmDAODynamoDB;
         this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
+        this.sleepStatsDAO = sleepStatsDAO;
     }
 
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
@@ -102,13 +105,14 @@ public class HandlerFactory {
                                         final PersistentExpansionDataStore expansionDataStore,
                                         final Vault tokenKMSVault,
                                         final AlarmDAODynamoDB alarmDAODynamoDB,
-                                        final MergedUserInfoDynamoDB mergedUserInfoDynamoDB
+                                        final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
+                                        final SleepStatsDAODynamoDB sleepStatsDAO
     ) {
 
         return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor, deviceDataDAODynamoDB,
                 deviceDAO, senseColorDAO, calibrationDAO,timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
             externalTokenStore, expansionStore, expansionDataStore, tokenKMSVault,
-                alarmDAODynamoDB, mergedUserInfoDynamoDB);
+                alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO);
     }
 
     public WeatherHandler weatherHandler() {
@@ -140,6 +144,10 @@ public class HandlerFactory {
         return new TriviaHandler(speechCommandDAO);
     }
 
+    public TimelineHandler timelineHandler() {
+        return new TimelineHandler(speechCommandDAO);
+    }
+
     public RoomConditionsHandler roomConditionsHandler() {
         return new RoomConditionsHandler(speechCommandDAO, deviceDataDAODynamoDB,deviceDAO,senseColorDAO,calibrationDAO);
     }
@@ -152,17 +160,15 @@ public class HandlerFactory {
         return new HueHandler(appName, speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
     }
 
-    public TimelineHandler timelineHandler() {
-        return new TimelineHandler(speechCommandDAO);
-    }
-
     public NestHandler nestHandler() {
         return new NestHandler(speechCommandDAO, externalTokenStore, externalApplicationStore, externalAppDataStore, tokenKMSVault);
-
     }
 
     public AlexaHandler alexaHandler() {
         return new AlexaHandler(speechCommandDAO);
+    }
 
+    public SleepSummaryHandler sleepSummaryHandler() {
+        return new SleepSummaryHandler(speechCommandDAO, sleepStatsDAO);
     }
 }

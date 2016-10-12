@@ -104,6 +104,7 @@ dynamodb:
     device_data: prod_sense_data
     file_manifest: prod_file_manifest
     sense_key_store: key_store
+    sleep_stats: prod_sleep_stats
     speech_commands: prod_speech_commands
     speech_results: prod_speech_results
     speech_timeline: prod_speech_timeline
@@ -116,6 +117,7 @@ dynamodb:
     device_data: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
     sense_key_store: http://dynamodb.us-east-1.amazonaws.com
+    sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     speech_commands: http://dynamodb.us-east-1.amazonaws.com
     speech_results: http://dynamodb.us-east-1.amazonaws.com
     speech_timeline: http://dynamodb.us-east-1.amazonaws.com
@@ -178,3 +180,5 @@ s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms
 
 expansions:
   hue_app_name: sense-prod
+
+sleep_stats_version: v_0_2

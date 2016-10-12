@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static is.hello.speech.core.handlers.ErrorText.NO_TIMEZONE;
 import static is.hello.speech.core.models.HandlerResult.EMPTY_COMMAND;
 
 /**
@@ -65,7 +66,6 @@ public class AlarmHandler extends BaseHandler {
 
     // error text
     public static final String NO_TIME_ERROR = "no time given";
-    public static final String NO_TIMEZONE = "no timezone";
     public static final String NO_USER_INFO = "no user info";
     public static final String TOO_SOON_ERROR = "alarm time too soon";
     public static final String DUPLICATE_ERROR = "duplicate alarm";

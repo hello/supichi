@@ -40,7 +40,7 @@ public class TriviaHandler extends BaseHandler {
         tempMap.put("hello co", SpeechCommand.TRIVIA);
         tempMap.put("next president", SpeechCommand.TRIVIA);
         tempMap.put("best basketball", SpeechCommand.TRIVIA);
-        tempMap.put("how was", SpeechCommand.TRIVIA);
+//        tempMap.put("how was", SpeechCommand.TRIVIA);
         tempMap.put("favorite retailer", SpeechCommand.TRIVIA);
         return tempMap;
     }

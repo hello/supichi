@@ -127,4 +127,11 @@ public class SpeechAppConfiguration extends Configuration {
     @JsonProperty("expansions")
     private ExpansionConfiguration expansionConfiguration;
     public ExpansionConfiguration expansionConfiguration() { return this.expansionConfiguration; }
+
+    @Valid
+    @NotNull
+    @JsonProperty("sleep_stats_version")
+    private String sleepStatsVersion;
+    public String sleepStatsVersion() { return this.sleepStatsVersion; }
+
 }

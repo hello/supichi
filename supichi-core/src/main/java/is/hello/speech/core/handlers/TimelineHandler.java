@@ -25,9 +25,8 @@ public class TimelineHandler extends BaseHandler {
     private static Map<String, SpeechCommand> getAvailableActions() {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
-        tempMap.put("sleep last", SpeechCommand.TIMELINE);
-        tempMap.put("last night", SpeechCommand.TIMELINE);
-        tempMap.put("sleep score", SpeechCommand.TIMELINE);
+//        tempMap.put("sleep last", SpeechCommand.TIMELINE);
+        tempMap.put("my timeline", SpeechCommand.TIMELINE);
         return tempMap;
     }
 
@@ -44,7 +43,7 @@ public class TimelineHandler extends BaseHandler {
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
             response.put("result", Outcome.OK.getValue());
-            response.put("text", "Your sleep score was 75");
+            response.put("text", "Your sleep timeline is being computed");
         }
 
         return new HandlerResult(HandlerType.ALARM, command, response, Optional.absent());

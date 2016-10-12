@@ -33,6 +33,7 @@ import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
 import com.hello.suripu.core.db.KeyStoreDynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
+import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
@@ -181,6 +182,9 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final AmazonDynamoDB mergeInfoClient= dynamoDBClientFactory.getForTable(DynamoDBTableName.ALARM_INFO);
         final MergedUserInfoDynamoDB mergedUserInfoDynamoDB = new MergedUserInfoDynamoDB(mergeInfoClient, tableNames.get(DynamoDBTableName.ALARM_INFO));
 
+        final AmazonDynamoDB dynamoDBSleepStatsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_STATS);
+        final SleepStatsDAODynamoDB sleepStatsDAO = new SleepStatsDAODynamoDB(dynamoDBSleepStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), speechAppConfiguration.sleepStatsVersion());
+
         // for sleep sound handler
         final MessejiHttpClientConfiguration messejiHttpClientConfiguration = speechAppConfiguration.messejiHttpClientConfiguration();
         final MessejiClient messejiClient = MessejiHttpClient.create(
@@ -223,7 +227,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 expansionsDataStore,
                 tokenKMSVault,
                 alarmDAODynamoDB,
-                mergedUserInfoDynamoDB
+                mergedUserInfoDynamoDB,
+                sleepStatsDAO
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
@@ -236,7 +241,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
                 .register(HandlerType.HUE, handlerFactory.hueHandler(speechAppConfiguration.expansionConfiguration().hueAppName()))
                 .register(HandlerType.NEST, handlerFactory.nestHandler())
-                .register(HandlerType.ALEXA, handlerFactory.alexaHandler());
+                .register(HandlerType.ALEXA, handlerFactory.alexaHandler())
+                .register(HandlerType.SLEEP_SUMMARY, handlerFactory.sleepSummaryHandler());
 
         // metrics
         if (speechAppConfiguration.metricsEnabled()) {
