@@ -4,7 +4,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.models.AggregateSleepStats;
-import com.hello.suripu.core.models.TimelineFeedback;
 import com.hello.suripu.core.models.TimelineResult;
 import com.hello.suripu.core.util.DateTimeUtil;
 import com.hello.suripu.core.util.TimelineUtils;
@@ -143,8 +142,14 @@ public class SleepSummaryHandler extends BaseHandler {
         if (!optionalSleepStat.isPresent()) {
             // TODO: compute timeline
             final InstrumentedTimelineProcessor newTimelineProcessor = timelineProcessor.copyMeWithNewUUID(UUID.randomUUID());
-            final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, localToday.minusDays(1), Optional.<TimelineFeedback>absent());
+            final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, localToday.minusDays(1), Optional.absent());
 
+            if (!result.timelines.isEmpty() && result.timelines.get(0).score > 0 && result.timelines.get(0).statistics.isPresent()) {
+                final AggregateSleepStats aggStats = new AggregateSleepStats.Builder()
+                        .withSleepStats(result.timelines.get(0).statistics.get())
+                        .withSleepScore(result.timelines.get(0).score).build();
+                return Optional.of(aggStats);
+            }
             return Optional.absent();
         }
 
