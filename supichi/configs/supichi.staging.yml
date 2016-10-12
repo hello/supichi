@@ -110,9 +110,15 @@ dynamodb:
     alarm_info: alarm_info
     calibration: calibration
     device_data: sense_data
+    features: features
+    feature_extraction_models: feature_extraction_models
     file_manifest: file_manifest
+    online_hmm_models: online_hmm_models
     pill_data: pill_data
+    ring_time_history: ring_history_by_account
     sense_key_store: key_store
+    sleep_hmm: sleephmm
+    sleep_score_parameters: sleep_score_parameters
     sleep_stats: sleep_stats
     speech_commands: speech_commands
     speech_results: speech_results
@@ -124,9 +130,15 @@ dynamodb:
     alarm_info: http://dynamodb.us-east-1.amazonaws.com
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
+    features: http://dynamodb.us-east-1.amazonaws.com
+    feature_extraction_models: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
-    pill_data:
+    online_hmm_models: http://dynamodb.us-east-1.amazonaws.com
+    pill_data: http://dynamodb.us-east-1.amazonaws.com
+    ring_time_history: http://dynamodb.us-east-1.amazonaws.com
     sense_key_store: http://dynamodb.us-east-1.amazonaws.com
+    sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
+    sleep_score_parameters: http://dynamodb.us-east-1.amazonaws.com
     sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     speech_commands: http://dynamodb.us-east-1.amazonaws.com
     speech_results: http://dynamodb.us-east-1.amazonaws.com
@@ -193,3 +205,18 @@ expansions:
   hue_app_name: sense_staging
 
 sleep_stats_version: v_0_2
+
+timeline_model_ensembles:
+  bucket: hello-timeline-models
+  key: normal4ensemble.base64
+
+timeline_seed_model:
+  bucket: hello-timeline-models
+  key: normal4.base64
+
+taimurain_http_client:
+  endpoint: http://internal-taimurain-prod-1606459001.us-east-1.elb.amazonaws.com:80
+  http_client_config:
+    keepAlive: 0s
+    timeout: 10000ms
+

@@ -21,6 +21,7 @@ import com.codahale.metrics.graphite.GraphiteReporter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
 import com.hello.suripu.core.db.AccountDAO;
 import com.hello.suripu.core.db.AccountDAOImpl;
@@ -34,6 +35,7 @@ import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.FeatureExtractionModelsDAO;
 import com.hello.suripu.core.db.FeatureExtractionModelsDAODynamoDB;
+import com.hello.suripu.core.db.FeatureStore;
 import com.hello.suripu.core.db.FeedbackDAO;
 import com.hello.suripu.core.db.FileInfoDAO;
 import com.hello.suripu.core.db.FileManifestDAO;
@@ -117,6 +119,7 @@ import is.hello.speech.handler.SignedBodyHandler;
 import is.hello.speech.kinesis.KinesisData;
 import is.hello.speech.kinesis.SpeechKinesisConsumer;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.modules.RolloutSupichiModule;
 import is.hello.speech.resources.demo.DemoUploadResource;
 import is.hello.speech.resources.demo.QueueMessageResource;
 import is.hello.speech.resources.v2.UploadResource;
@@ -219,6 +222,12 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final AmazonDynamoDB dynamoDBSleepStatsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_STATS);
         final SleepStatsDAODynamoDB sleepStatsDAO = new SleepStatsDAODynamoDB(dynamoDBSleepStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), speechAppConfiguration.sleepStatsVersion());
 
+        final AmazonDynamoDB featuresDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.FEATURES);
+        final FeatureStore featureStore = new FeatureStore(featuresDynamoDBClient, tableNames.get(DynamoDBTableName.FEATURES), "prod");
+
+        final RolloutSupichiModule module = new RolloutSupichiModule(featureStore, 30);
+        ObjectGraphRoot.getInstance().init(module);
+
         // for sleep sound handler
         final MessejiHttpClientConfiguration messejiHttpClientConfiguration = speechAppConfiguration.messejiHttpClientConfiguration();
         final MessejiClient messejiClient = MessejiHttpClient.create(
@@ -227,7 +236,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
 
         // TODO: add additional handler resources here
-      // set up KMS for timeline encryption
+        // set up KMS for timeline encryption
         final KMSConfiguration kmsConfig = speechAppConfiguration.kmsConfiguration();
         final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
         awskmsClient.setEndpoint(kmsConfig.endpoint());
