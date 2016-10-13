@@ -92,7 +92,7 @@ public class SleepSummaryHandler extends BaseHandler {
                 response.put("text", genericResult.responseText());
             }
 
-            return new HandlerResult(HandlerType.ALARM, command.getValue(), response, Optional.of(genericResult));
+            return new HandlerResult(HandlerType.SLEEP_SUMMARY, command.getValue(), response, Optional.of(genericResult));
         }
 
         response.put("result", Outcome.FAIL.getValue());
@@ -103,7 +103,7 @@ public class SleepSummaryHandler extends BaseHandler {
 
     private GenericResult getSleepSummary(final Long accountId, final AnnotatedTranscript annotatedTranscript) {
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
-            LOGGER.error("error=no-alarm-set reason=no-timezone account_id={}", accountId);
+            LOGGER.error("error=no-sleep-summary reason=no-timezone account_id={}", accountId);
             return GenericResult.failWithResponse(NO_TIMEZONE, ERROR_NO_TIMEZONE);
         }
 
@@ -120,7 +120,7 @@ public class SleepSummaryHandler extends BaseHandler {
 
     private GenericResult getSleepScore(final Long accountId, final AnnotatedTranscript annotatedTranscript) {
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
-            LOGGER.error("error=no-alarm-set reason=no-timezone account_id={}", accountId);
+            LOGGER.error("error=no-sleep-score reason=no-timezone account_id={}", accountId);
             return GenericResult.failWithResponse(NO_TIMEZONE, ERROR_NO_TIMEZONE);
         }
 
@@ -139,21 +139,22 @@ public class SleepSummaryHandler extends BaseHandler {
         final String lastNightDate = DateTimeUtil.dateToYmdString(localToday.minusDays(1));
 
         final Optional<AggregateSleepStats> optionalSleepStat = sleepStatsDAO.getSingleStat(accountId, lastNightDate);
-        if (!optionalSleepStat.isPresent()) {
-            // TODO: compute timeline
-            final InstrumentedTimelineProcessor newTimelineProcessor = timelineProcessor.copyMeWithNewUUID(UUID.randomUUID());
-            final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, localToday.minusDays(1), Optional.absent());
 
-            if (!result.timelines.isEmpty() && result.timelines.get(0).score > 0 && result.timelines.get(0).statistics.isPresent()) {
-                final AggregateSleepStats aggStats = new AggregateSleepStats.Builder()
-                        .withSleepStats(result.timelines.get(0).statistics.get())
-                        .withSleepScore(result.timelines.get(0).score).build();
-                return Optional.of(aggStats);
-            }
-            return Optional.absent();
+        if (optionalSleepStat.isPresent()) {
+            return optionalSleepStat;
         }
 
-        return optionalSleepStat;
+        final InstrumentedTimelineProcessor newTimelineProcessor = timelineProcessor.copyMeWithNewUUID(UUID.randomUUID());
+        final TimelineResult result = newTimelineProcessor.retrieveTimelinesFast(accountId, localToday.minusDays(1), Optional.absent());
+
+        if (!result.timelines.isEmpty() && result.timelines.get(0).score > 0 && result.timelines.get(0).statistics.isPresent()) {
+            final AggregateSleepStats aggStats = new AggregateSleepStats.Builder()
+                    .withSleepStats(result.timelines.get(0).statistics.get())
+                    .withSleepScore(result.timelines.get(0).score).build();
+            return Optional.of(aggStats);
+        }
+
+        return Optional.absent();
     }
 
     @Override
