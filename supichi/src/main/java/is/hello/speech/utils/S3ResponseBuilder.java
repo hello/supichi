@@ -3,9 +3,8 @@ package is.hello.speech.utils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.google.api.client.util.Maps;
 import is.hello.speech.core.api.Response;
+import is.hello.speech.core.api.Speech;
 import is.hello.speech.core.models.HandlerResult;
-import is.hello.speech.core.models.UploadResponseParam;
-import is.hello.speech.core.models.UploadResponseType;
 import is.hello.speech.core.models.responsebuilder.BuilderResponse;
 import is.hello.speech.core.models.responsebuilder.CurrentTimeResponseBuilder;
 import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
@@ -19,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.AudioFormat;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
@@ -30,14 +28,14 @@ public class S3ResponseBuilder implements SupichiResponseBuilder {
     private final static Logger LOGGER = LoggerFactory.getLogger(S3ResponseBuilder.class);
 
     private final AmazonS3 s3;
-    private final String bucketName;
     private final String voiceService;
     private final String voiceName;
     private final Map<String, byte []> audioCache = Maps.newHashMap();
+    private final Map<Speech.Equalizer, String> equalizerToS3Path = Maps.newHashMap();
 
-    public S3ResponseBuilder(final AmazonS3 s3, final String bucketName, final String voiceService, final String voiceName) {
+    public S3ResponseBuilder(final AmazonS3 s3, final Map<Speech.Equalizer, String> equalizerToS3Path, final String voiceService, final String voiceName) {
         this.s3 = s3;
-        this.bucketName = bucketName;
+        this.equalizerToS3Path.putAll(equalizerToS3Path);
         this.voiceService = voiceService;
         this.voiceName = voiceName.equals("en-US_MichaelVoice") ? "MICHAEL" : "ALLISON";
     }
@@ -51,9 +49,8 @@ public class S3ResponseBuilder implements SupichiResponseBuilder {
      */
     @Override
     public byte[] response(final Response.SpeechResponse.Result result,
-                           final boolean includeProtobuf,
                            final HandlerResult handlerResult,
-                           final UploadResponseParam responseParam) {
+                           final Speech.SpeechRequest request) {
 
         LOGGER.debug("action=create-response result={} handler={}", result.toString(), handlerResult.handlerType.toString());
 
@@ -75,77 +72,50 @@ public class S3ResponseBuilder implements SupichiResponseBuilder {
                 builderResponse = DefaultResponseBuilder.response(result);
         }
 
+        LOGGER.info("response-type={} eq={}", request.getResponse().name(), request.getEq().name());
         // get raw audio bytes from S3
-        byte [] audioBytes = getAudio(builderResponse.s3Bucket, builderResponse.s3Filename);
+        byte [] audioBytes = getAudio(builderResponse.s3Bucket, builderResponse.s3Filename, request.getEq());
 
         if (audioBytes.length == 0) {
             LOGGER.error("error=fail-to-audio-bytes action=return-UNKNOWN-error-response");
             builderResponse = DefaultResponseBuilder.response(Response.SpeechResponse.Result.UNKNOWN);
-            audioBytes = getAudio(builderResponse.s3Bucket, builderResponse.s3Filename);
+            audioBytes = getAudio(builderResponse.s3Bucket, builderResponse.s3Filename, request.getEq());
         }
 
-        // return audio only
-        if (!includeProtobuf) {
-            try {
-                LOGGER.debug("action=return-audio-only-response size={}", audioBytes.length);
-                if (responseParam.type().equals(UploadResponseType.MP3)) {
-                    LOGGER.debug("action=convert-pcm-to-mp3 size={}", audioBytes.length);
-                    final AudioFormat audioFormat = AudioUtils.DEFAULT_AUDIO_FORMAT;
-                    final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(new AudioUtils.AudioBytes(audioBytes, audioBytes.length, audioFormat));
-                    outputStream.write(mp3Bytes);
-                } else {
-                    outputStream.write(audioBytes);
-                }
-            } catch (IOException exception) {
-                LOGGER.error("action=response-builder-error_msg={}", exception.getMessage());
-            }
-            return outputStream.toByteArray();
-        }
-
-        // create response protobuf
-        final String url = "http://s3.amazonaws.com/" + builderResponse.s3Bucket + "/" + builderResponse.s3Filename;
-        final Response.SpeechResponse speechResponse = Response.SpeechResponse.newBuilder()
-                .setUrl(url)
-                .setResult(result)
-                .setText(builderResponse.responseText)
-                .setAudioStreamSize(audioBytes.length)
-                .build();
-
-        final Integer responsePBSize = speechResponse.getSerializedSize();
-        LOGGER.info("action=create-response response_size={}", responsePBSize);
 
         try {
-            final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
-            dataOutputStream.writeInt(responsePBSize);
-            speechResponse.writeTo(dataOutputStream);
-
-            LOGGER.info("action=create-response audio_size={}", audioBytes.length);
-            dataOutputStream.write(audioBytes);
-
-            LOGGER.info("action=get-output-stream-size size={}", outputStream.size());
-            return outputStream.toByteArray();
+            LOGGER.debug("action=return-audio-only-response size={}", audioBytes.length);
+            if (request.getResponse().equals(Speech.AudioFormat.MP3)) {
+                LOGGER.debug("action=convert-pcm-to-mp3 size={}", audioBytes.length);
+                final AudioFormat audioFormat = AudioUtils.DEFAULT_AUDIO_FORMAT;
+                final byte[] mp3Bytes = AudioUtils.encodePcmToMp3(new AudioUtils.AudioBytes(audioBytes, audioBytes.length, audioFormat));
+                outputStream.write(mp3Bytes);
+            } else {
+                outputStream.write(audioBytes);
+            }
         } catch (IOException exception) {
             LOGGER.error("action=response-builder-error_msg={}", exception.getMessage());
-            return new byte[]{};
         }
+        return outputStream.toByteArray();
     }
 
 
-    private byte [] getAudio(final String s3Bucket, final String filename) {
+    private byte [] getAudio(final String s3Bucket, final String filename, final Speech.Equalizer eq) {
+        final String cacheKey = String.format("%s_%s", eq.name(), filename);
 
-        if (audioCache.containsKey(filename)) {
+        if (audioCache.containsKey(cacheKey)) {
             LOGGER.debug("action=found-audio-in-cache");
-            return audioCache.get(filename);
+            return audioCache.get(cacheKey);
         }
 
-        String finalS3Bucket = bucketName;
+        String finalS3Bucket = equalizerToS3Path.get(eq);
         if (!s3Bucket.isEmpty()) {
             finalS3Bucket += "/" + s3Bucket;
         }
 
         final byte [] audioBytes = ResponseUtils.getAudioFromS3(s3, finalS3Bucket, filename);
         if (audioBytes.length > 0) {
-            audioCache.put(filename, audioBytes);   // add to cache
+            audioCache.put(cacheKey, audioBytes);   // add to cache
         }
 
         return audioBytes;

@@ -23,6 +23,7 @@ import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.Annotator;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
+import is.hello.speech.core.models.VoiceRequest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.After;
@@ -39,11 +40,11 @@ import static is.hello.speech.core.handlers.AlarmHandler.DEFAULT_ALARM_SOUND;
 import static is.hello.speech.core.handlers.AlarmHandler.DUPLICATE_ALARM_RESPONSE;
 import static is.hello.speech.core.handlers.AlarmHandler.DUPLICATE_ERROR;
 import static is.hello.speech.core.handlers.AlarmHandler.NO_ALARM_RESPONSE;
-import static is.hello.speech.core.handlers.AlarmHandler.NO_TIMEZONE;
 import static is.hello.speech.core.handlers.AlarmHandler.NO_TIME_ERROR;
 import static is.hello.speech.core.handlers.AlarmHandler.SET_ALARM_ERROR_RESPONSE;
 import static is.hello.speech.core.handlers.AlarmHandler.SET_ALARM_OK_RESPONSE;
 import static is.hello.speech.core.handlers.AlarmHandler.TOO_SOON_ERROR;
+import static is.hello.speech.core.handlers.ErrorText.NO_TIMEZONE;
 import static is.hello.speech.core.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.speech.core.models.SpeechCommand.ALARM_SET;
 import static org.junit.Assert.assertEquals;
@@ -142,7 +143,7 @@ public class AlarmHandlerTestIT {
         final String transcript = "set my alarm for 7 am";
         final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
-        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, SENSE_ID, ACCOUNT_ID);
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.command, ALARM_SET.getValue());
 
@@ -174,7 +175,7 @@ public class AlarmHandlerTestIT {
         final String transcript = String.format("wake me up in %d minutes", minutes);
         final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
-        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, SENSE_ID, ACCOUNT_ID);
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.command, ALARM_SET.getValue());
 
@@ -205,7 +206,7 @@ public class AlarmHandlerTestIT {
         final String transcript = "set the alarm for 9 am";
         final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
-        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, SENSE_ID, ACCOUNT_ID);
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.command, ALARM_SET.getValue());
 
@@ -238,7 +239,7 @@ public class AlarmHandlerTestIT {
         final String transcript = "wake me up at 8 am";
         final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
-        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, SENSE_ID, ACCOUNT_ID);
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.command, ALARM_SET.getValue());
 
@@ -260,7 +261,7 @@ public class AlarmHandlerTestIT {
         final String transcript = "set an alarm for 8 am";
         final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
-        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, FAIL_SENSE_ID, FAIL_ACCOUNT_ID);
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(FAIL_SENSE_ID, FAIL_ACCOUNT_ID, transcript, ""));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.command, ALARM_SET.getValue());
 
@@ -281,7 +282,7 @@ public class AlarmHandlerTestIT {
         final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
         // apparently, only setting pill color is not enough
-        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, FAIL_SENSE_ID, FAIL_ACCOUNT_ID);
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(FAIL_SENSE_ID, FAIL_ACCOUNT_ID, transcript, ""));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.command, ALARM_SET.getValue());
 
@@ -304,7 +305,7 @@ public class AlarmHandlerTestIT {
         final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
         // apparently, only setting pill color is not enough
-        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, SENSE_ID, ACCOUNT_ID);
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.command, ALARM_SET.getValue());
 
@@ -326,7 +327,7 @@ public class AlarmHandlerTestIT {
         final AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
         // apparently, only setting pill color is not enough
-        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, SENSE_ID, ACCOUNT_ID);
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.command, ALARM_SET.getValue());
 
@@ -347,7 +348,7 @@ public class AlarmHandlerTestIT {
         String transcript = "set my alarm for 7 am";
         AnnotatedTranscript annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
-        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, SENSE_ID, ACCOUNT_ID);
+        final HandlerResult result = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
         assertEquals(result.handlerType, HandlerType.ALARM);
         assertEquals(result.command, ALARM_SET.getValue());
 
@@ -365,7 +366,7 @@ public class AlarmHandlerTestIT {
         transcript = "cancel my alarm";
         annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
-        final HandlerResult cancelResult = alarmHandler.executeCommand(annotatedTranscript, SENSE_ID, ACCOUNT_ID);
+        final HandlerResult cancelResult = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
         assertEquals(cancelResult.handlerType, HandlerType.ALARM);
         assertEquals(cancelResult.command, ALARM_DELETE.getValue());
 
@@ -381,7 +382,7 @@ public class AlarmHandlerTestIT {
         transcript = "cancel tomorrow's alarm";
         annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
-        final HandlerResult cancelResult2 = alarmHandler.executeCommand(annotatedTranscript, SENSE_ID, ACCOUNT_ID);
+        final HandlerResult cancelResult2 = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
         assertEquals(cancelResult2.handlerType, HandlerType.ALARM);
         assertEquals(cancelResult2.command, ALARM_DELETE.getValue());
         if (result.alarmResult.isPresent()) {
@@ -392,7 +393,7 @@ public class AlarmHandlerTestIT {
         transcript = "delete my alarm";
         annotatedTranscript = Annotator.get(transcript, Optional.of(TIME_ZONE.toTimeZone()));
 
-        final HandlerResult cancelResult3 = alarmHandler.executeCommand(annotatedTranscript, SENSE_ID, ACCOUNT_ID);
+        final HandlerResult cancelResult3 = alarmHandler.executeCommand(annotatedTranscript, new VoiceRequest(SENSE_ID, ACCOUNT_ID, transcript, ""));
         assertEquals(cancelResult3.handlerType, HandlerType.ALARM);
         assertEquals(cancelResult3.command, ALARM_DELETE.getValue());
         if (result.alarmResult.isPresent()) {

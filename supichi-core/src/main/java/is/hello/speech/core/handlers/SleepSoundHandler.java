@@ -11,6 +11,7 @@ import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.response.SupichiResponseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,7 +112,7 @@ public class SleepSoundHandler extends BaseHandler {
     }
 
     @Override
-    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
         final String text = annotatedTranscript.transcript;
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text);
@@ -122,9 +123,9 @@ public class SleepSoundHandler extends BaseHandler {
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
             if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_PLAY)) {
-                result = playSleepSound(senseId, accountId);
+                result = playSleepSound(request.senseId, request.accountId);
             } else if (optionalCommand.get().equals(SpeechCommand.SLEEP_SOUND_STOP)) {
-                result = stopSleepSound(senseId, accountId);
+                result = stopSleepSound(request.senseId, request.accountId);
             }
         }
 

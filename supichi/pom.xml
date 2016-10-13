@@ -17,7 +17,6 @@
         <aws.sdk.version>1.10.34</aws.sdk.version>
         <java.version>1.8</java.version>
         <dropwizard.version>1.0.0</dropwizard.version>
-        <!--<tcnative.classifier>linux-x86_64</tcnative.classifier>-->
         <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
         <build-helper-maven-plugin.version>1.9.1</build-helper-maven-plugin.version>
         <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
@@ -231,6 +230,11 @@
             <groupId>com.ibm.watson.developer_cloud</groupId>
             <artifactId>java-sdk</artifactId>
             <version>3.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-jdbi</artifactId>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.hello.suripu</groupId>

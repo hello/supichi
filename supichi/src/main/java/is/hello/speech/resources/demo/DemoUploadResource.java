@@ -1,4 +1,4 @@
-package is.hello.speech.resources.v2;
+package is.hello.speech.resources.demo;
 
 import com.codahale.metrics.annotation.Timed;
 import com.hello.suripu.core.util.HelloHttpHeader;
@@ -20,18 +20,17 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 
-@Path("/v2/upload")
+@Path("/demo/upload")
 @Produces(MediaType.APPLICATION_JSON)
-public class UploadResource {
+public class DemoUploadResource {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(UploadResource.class);
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(DemoUploadResource.class);
     private final AudioRequestHandler audioRequestHandler;
 
     @Context
     HttpServletRequest request;
 
-    public UploadResource(final AudioRequestHandler audioRequestHandler) {
+    public DemoUploadResource(final AudioRequestHandler audioRequestHandler) {
         this.audioRequestHandler = audioRequestHandler;
     }
 
@@ -41,7 +40,6 @@ public class UploadResource {
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] streaming(final byte[] signedBody) {
-
         final String senseId = this.request.getHeader(HelloHttpHeader.SENSE_ID);
         if(senseId == null) {
             LOGGER.error("error=missing-sense-id-header");
@@ -53,10 +51,6 @@ public class UploadResource {
         if(response.hasError()) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
-
         return response.content();
     }
-
-
-
 }

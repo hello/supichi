@@ -1,4 +1,4 @@
-package is.hello.speech.resources.v1;
+package is.hello.speech.handler;
 
 /**
  * Created by ksg on 9/8/16

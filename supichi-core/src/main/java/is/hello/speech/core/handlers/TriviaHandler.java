@@ -8,6 +8,7 @@ import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.VoiceRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,14 +40,14 @@ public class TriviaHandler extends BaseHandler {
         tempMap.put("hello co", SpeechCommand.TRIVIA);
         tempMap.put("next president", SpeechCommand.TRIVIA);
         tempMap.put("best basketball", SpeechCommand.TRIVIA);
-        tempMap.put("how was", SpeechCommand.TRIVIA);
+//        tempMap.put("how was", SpeechCommand.TRIVIA);
         tempMap.put("favorite retailer", SpeechCommand.TRIVIA);
         return tempMap;
     }
 
 
     @Override
-    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
         final String text = annotatedTranscript.transcript;
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned

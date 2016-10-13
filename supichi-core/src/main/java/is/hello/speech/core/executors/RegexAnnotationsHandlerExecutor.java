@@ -1,4 +1,4 @@
-package is.hello.speech.core.handlers.executors;
+package is.hello.speech.core.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import is.hello.speech.core.handlers.BaseHandler;
+import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.models.Annotator;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -37,8 +38,12 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
 
 
     @Override
-    public HandlerResult handle(final String senseId, final Long accountId, final String transcript) {
+    public HandlerResult handle(final VoiceRequest request) {
         // TODO: command-parser
+
+        final String senseId = request.senseId;
+        final Long accountId = request.accountId;
+        final String transcript = request.transcript;
 
         // TODO: get user timezone
         final Optional<TimeZoneHistory> timeZoneHistoryOptional = timeZoneHistoryDAODynamoDB.getCurrentTimeZone(accountId);
@@ -58,7 +63,7 @@ public class RegexAnnotationsHandlerExecutor implements HandlerExecutor {
             final BaseHandler handler = optionalHandler.get();
             LOGGER.debug("action=find-handler result=success handler={}", handler.getClass().toString());
 
-            final HandlerResult executeResult = handler.executeCommand(annotatedTranscript, senseId, accountId);
+            final HandlerResult executeResult = handler.executeCommand(annotatedTranscript, request);
             LOGGER.debug("action=execute-command result={}", executeResult.responseParameters.toString());
             return executeResult;
         }

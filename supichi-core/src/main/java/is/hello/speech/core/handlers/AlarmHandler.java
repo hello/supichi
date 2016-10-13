@@ -17,6 +17,7 @@ import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.models.annotations.TimeAnnotation;
 import is.hello.speech.core.response.SupichiResponseType;
 import jersey.repackaged.com.google.common.collect.Sets;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static is.hello.speech.core.handlers.ErrorText.NO_TIMEZONE;
 import static is.hello.speech.core.models.HandlerResult.EMPTY_COMMAND;
 
 /**
@@ -64,7 +66,6 @@ public class AlarmHandler extends BaseHandler {
 
     // error text
     public static final String NO_TIME_ERROR = "no time given";
-    public static final String NO_TIMEZONE = "no timezone";
     public static final String NO_USER_INFO = "no user info";
     public static final String TOO_SOON_ERROR = "alarm time too soon";
     public static final String DUPLICATE_ERROR = "duplicate alarm";
@@ -114,11 +115,13 @@ public class AlarmHandler extends BaseHandler {
     }
 
     @Override
-    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
         // TODO
         final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.transcript);
         final Map<String, String> response = Maps.newHashMap();
 
+        final Long accountId = request.accountId;
+        final String senseId = request.senseId;
 
         if (!optionalCommand.isPresent()) {
             response.put("result", Outcome.FAIL.getValue());

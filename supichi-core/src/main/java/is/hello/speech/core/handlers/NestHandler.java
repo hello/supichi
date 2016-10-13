@@ -14,20 +14,23 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import is.hello.gaibu.core.models.ExternalApplication;
-import is.hello.gaibu.core.models.ExternalApplicationData;
+import is.hello.gaibu.core.models.Expansion;
+import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
-import is.hello.gaibu.core.models.NestApplicationData;
-import is.hello.gaibu.core.stores.PersistentExternalAppDataStore;
-import is.hello.gaibu.core.stores.PersistentExternalApplicationStore;
+import is.hello.gaibu.core.stores.PersistentExpansionDataStore;
+import is.hello.gaibu.core.stores.PersistentExpansionStore;
 import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
-import is.hello.gaibu.homeauto.services.NestThermostat;
+import is.hello.gaibu.homeauto.clients.NestThermostat;
+import is.hello.gaibu.homeauto.models.NestExpansionDeviceData;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.GenericResult;
 import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
+import is.hello.speech.core.models.VoiceRequest;
+import is.hello.speech.core.response.SupichiResponseType;
 
 
 public class NestHandler extends BaseHandler {
@@ -37,19 +40,25 @@ public class NestHandler extends BaseHandler {
     private static final String TEMP_SET_PATTERN_NUMERIC = "(?i)^.*(?:nest|thermostat|temp)?\\sto\\s(\\d+)\\sdegrees";
     private static final String TOGGLE_ACTIVE_PATTERN = "(?i)^.*turn.*(?:nest|thermostat)?\\s(on|off).*(?:nest|thermostat)?";
 
+    public static final String SET_TEMP_OK_RESPONSE = "Okay, done";
+    public static final String SET_TEMP_ERROR_RESPONSE = "Sorry, your thermostat could not be reached";
+    public static final String SET_TEMP_ERROR_AUTH = "Please connect your thermostat on the Sense app under Expansions";
+    public static final String SET_TEMP_ERROR_CONFIG = "Please connect your thermostat on the Sense app under Expansions";
+    public static final String SET_TEMP_ERROR_APPLICATION = "Sorry, your thermostat could not be reached";
+
     private final SpeechCommandDAO speechCommandDAO;
     private final PersistentExternalTokenStore externalTokenStore;
-    private final PersistentExternalApplicationStore externalApplicationStore;
+    private final PersistentExpansionStore externalApplicationStore;
     private final Vault tokenKMSVault;
-    private ExternalApplication externalApp;
-    private final PersistentExternalAppDataStore externalAppDataStore;
+    private Optional<Expansion> expansionOptional;
+    private final PersistentExpansionDataStore externalAppDataStore;
     private ObjectMapper mapper = new ObjectMapper();
     private final Map<String, Integer> numberWords;
 
     public NestHandler(final SpeechCommandDAO speechCommandDAO,
                        final PersistentExternalTokenStore externalTokenStore,
-                       final PersistentExternalApplicationStore externalApplicationStore,
-                       final PersistentExternalAppDataStore externalAppDataStore,
+                       final PersistentExpansionStore externalApplicationStore,
+                       final PersistentExpansionDataStore externalAppDataStore,
                        final Vault tokenKMSVault) {
         super("nest_thermostat", speechCommandDAO, getAvailableActions());
         this.speechCommandDAO = speechCommandDAO;
@@ -62,11 +71,11 @@ public class NestHandler extends BaseHandler {
     }
 
     private void init() {
-        final Optional<ExternalApplication> externalApplicationOptional = externalApplicationStore.getApplicationByName("Nest");
+        final Optional<Expansion> externalApplicationOptional = externalApplicationStore.getApplicationByName("Nest");
         if(!externalApplicationOptional.isPresent()) {
             LOGGER.error("error=application-not-found app_name=Nest");
         }
-        externalApp = externalApplicationOptional.get();
+        expansionOptional = externalApplicationOptional;
 
         numberWords.put("one", 1);
         numberWords.put("two", 2);
@@ -98,17 +107,33 @@ public class NestHandler extends BaseHandler {
 
 
     @Override
-    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final String senseId, final Long accountId) {
-        final String text = annotatedTranscript.transcript;
+    public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
 
-        final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
+        final String senseId = request.senseId;
+        final Long accountId = request.accountId;
+
         final Map<String, String> response = Maps.newHashMap();
+
+        GenericResult nestResult;
+
+        if(!expansionOptional.isPresent()) {
+            LOGGER.error("error=application-not-found app_name=Nest");
+            response.put("error", "no-application");
+            response.put("result", Outcome.FAIL.getValue());
+            nestResult = GenericResult.failWithResponse("expansion not found", SET_TEMP_ERROR_APPLICATION);
+            return new HandlerResult(HandlerType.NEST, HandlerResult.EMPTY_COMMAND, updateResponse(response, nestResult), Optional.of(nestResult));
+        }
+
+        final Expansion expansion = expansionOptional.get();
+        final String text = annotatedTranscript.transcript;
+        final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
 
         if (!optionalCommand.isPresent()) {
             LOGGER.error("error=no-command app_name=nest text={}", text);
             response.put("error", "no-command");
             response.put("result", Outcome.FAIL.getValue());
-            return new HandlerResult(HandlerType.NEST, HandlerResult.EMPTY_COMMAND, response, Optional.absent());
+            nestResult = GenericResult.failWithResponse("command not found", SET_TEMP_ERROR_RESPONSE);
+            return new HandlerResult(HandlerType.NEST, HandlerResult.EMPTY_COMMAND, updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         final SpeechCommand command = optionalCommand.get();
@@ -117,15 +142,17 @@ public class NestHandler extends BaseHandler {
             LOGGER.error("error=null-sense-id app_name=nest");
             response.put("error", "null-sense-id");
             response.put("result", Outcome.FAIL.getValue());
-            return new HandlerResult(HandlerType.NEST, HandlerResult.EMPTY_COMMAND, response, Optional.absent());
+            nestResult = GenericResult.failWithResponse("sense_id not found", SET_TEMP_ERROR_RESPONSE);
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
-        final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, externalApp.id);
+        final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, expansion.id);
         if(!externalTokenOptional.isPresent()) {
-            LOGGER.error("error=token-not-found device_id={}", senseId);
+            LOGGER.error("error=token-not-found sense_id={}", senseId);
             response.put("error", "token-not-found");
             response.put("result", Outcome.FAIL.getValue());
-            return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.absent());
+            nestResult = GenericResult.failWithResponse("token-not-found", SET_TEMP_ERROR_AUTH);
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         final ExternalToken externalToken = externalTokenOptional.get();
@@ -135,34 +162,45 @@ public class NestHandler extends BaseHandler {
         final Optional<String> decryptedTokenOptional = tokenKMSVault.decrypt(externalToken.accessToken, encryptionContext);
 
         if(!decryptedTokenOptional.isPresent()) {
-            LOGGER.error("error=token-decryption-failure device_id={}", senseId);
+            LOGGER.error("error=token-decryption-failure sense_id={}", senseId);
             response.put("error", "token-decryption-failure");
             response.put("result", Outcome.FAIL.getValue());
-            return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.absent());
+            nestResult = GenericResult.failWithResponse("token decrypt failed", SET_TEMP_ERROR_AUTH);
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         final String decryptedToken = decryptedTokenOptional.get();
 
-        final Optional<ExternalApplicationData> extAppDataOptional = externalAppDataStore.getAppData(externalApp.id, senseId);
+        final Optional<ExpansionData> extAppDataOptional = externalAppDataStore.getAppData(expansion.id, senseId);
         if(!extAppDataOptional.isPresent()) {
             LOGGER.error("error=no-ext-app-data account_id={}", accountId);
             response.put("error", "no-ext-app-data");
             response.put("result", Outcome.FAIL.getValue());
-            return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.absent());
+            nestResult = GenericResult.failWithResponse("no expansion data", SET_TEMP_ERROR_CONFIG);
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
-        final ExternalApplicationData extData = extAppDataOptional.get();
+        final ExpansionData extData = extAppDataOptional.get();
+
+        if(extData.data.isEmpty()) {
+            LOGGER.error("error=no-ext-app-data account_id={}", accountId);
+            response.put("error", "no-ext-app-data");
+            response.put("result", Outcome.FAIL.getValue());
+            nestResult = GenericResult.failWithResponse("no expansion data", SET_TEMP_ERROR_CONFIG);
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
+        }
 
         NestThermostat nest;
         try {
-            final NestApplicationData nestData = mapper.readValue(extData.data, NestApplicationData.class);
-            nest = new NestThermostat(nestData.thermostatId, externalApp.apiURI, decryptedToken);
+            final NestExpansionDeviceData nestData = mapper.readValue(extData.data, NestExpansionDeviceData.class);
+            nest = NestThermostat.create(expansion.apiURI, decryptedToken, nestData.thermostatId);
 
         } catch (IOException io) {
-            LOGGER.warn("error=bad-app-data app_name=nest device_id={}", senseId);
+            LOGGER.warn("error=bad-app-data app_name=nest sense_id={}", senseId);
             response.put("error", "bad-app-data");
             response.put("result", Outcome.FAIL.getValue());
-            return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.absent());
+            nestResult = GenericResult.failWithResponse("bad expansion data", SET_TEMP_ERROR_CONFIG);
+            return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
         }
 
         if (command.equals(SpeechCommand.THERMOSTAT_SET)) {
@@ -177,10 +215,18 @@ public class NestHandler extends BaseHandler {
                 if(numberWords.containsKey(m.group(2))) {
                     temperatureSum += numberWords.get(m.group(2));
                 }
-                nest.setTargetTemperature(temperatureSum);
+                final Boolean isSuccessful = nest.setTargetTemperature(temperatureSum);
+                if(isSuccessful) {
+                    response.put("temp_set", temperatureSum.toString());
+                    response.put("result", Outcome.OK.getValue());
+                    nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
+                    return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
+                }
+
                 response.put("temp_set", temperatureSum.toString());
-                response.put("result", Outcome.OK.getValue());
-                return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.absent());
+                response.put("result", Outcome.FAIL.getValue());
+                nestResult = GenericResult.failWithResponse("command failed", SET_TEMP_ERROR_RESPONSE);
+                return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
             }
 
             final Pattern numeric = Pattern.compile(TEMP_SET_PATTERN_NUMERIC);
@@ -190,7 +236,8 @@ public class NestHandler extends BaseHandler {
                 nest.setTargetTemperature(temperatureSum);
                 response.put("temp_set", temperatureSum.toString());
                 response.put("result", Outcome.OK.getValue());
-                return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.absent());
+                nestResult = GenericResult.ok(SET_TEMP_OK_RESPONSE);
+                return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
             }
         }
 
@@ -202,16 +249,18 @@ public class NestHandler extends BaseHandler {
                 isOn = m.group(1).startsWith("on");
 
             } else {
-                LOGGER.warn("error=no-pattern-match app_name=nest device_id={}", senseId);
+                LOGGER.warn("error=no-pattern-match app_name=nest sense_id={}", senseId);
                 response.put("error", "no-pattern-match");
                 response.put("result", Outcome.FAIL.getValue());
-                return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.absent());
+                nestResult = GenericResult.failWithResponse("no pattern match", SET_TEMP_ERROR_RESPONSE);
+                return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
             }
         }
 
-        LOGGER.warn("error=no-pattern-match app_name=nest device_id={}", senseId);
+        LOGGER.warn("error=no-pattern-match app_name=nest sense_id={}", senseId);
         response.put("result", Outcome.FAIL.getValue());
-        return new HandlerResult(HandlerType.NEST, command.getValue(), response, Optional.absent());
+        nestResult = GenericResult.failWithResponse("no command found", SET_TEMP_ERROR_RESPONSE);
+        return new HandlerResult(HandlerType.NEST, command.getValue(), updateResponse(response, nestResult), Optional.of(nestResult));
 
     }
 
@@ -221,4 +270,21 @@ public class NestHandler extends BaseHandler {
         return NO_ANNOTATION_SCORE;
     }
 
+    @Override
+    public SupichiResponseType responseType() {
+        return SupichiResponseType.WATSON;
+    }
+
+    public Map<String, String> updateResponse(final Map<String, String> response, final GenericResult result) {
+        response.put("result", result.outcome.getValue());
+        if (result.errorText.isPresent()) {
+            response.put("error", result.errorText.get());
+            if (result.responseText.isPresent()) {
+                response.put("text", result.responseText());
+            }
+        } else {
+            response.put("text", result.responseText());
+        }
+        return response;
+    }
 }
