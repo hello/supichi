@@ -21,19 +21,41 @@ import com.codahale.metrics.graphite.GraphiteReporter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.hello.suripu.core.ObjectGraphRoot;
 import com.hello.suripu.core.configuration.DynamoDBTableName;
+import com.hello.suripu.core.db.AccountDAO;
+import com.hello.suripu.core.db.AccountDAOImpl;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.CalibrationDynamoDB;
+import com.hello.suripu.core.db.DefaultModelEnsembleDAO;
+import com.hello.suripu.core.db.DefaultModelEnsembleFromS3;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
+import com.hello.suripu.core.db.FeatureExtractionModelsDAO;
+import com.hello.suripu.core.db.FeatureExtractionModelsDAODynamoDB;
+import com.hello.suripu.core.db.FeatureStore;
+import com.hello.suripu.core.db.FeedbackDAO;
 import com.hello.suripu.core.db.FileInfoDAO;
 import com.hello.suripu.core.db.FileManifestDAO;
 import com.hello.suripu.core.db.FileManifestDynamoDB;
+import com.hello.suripu.core.db.HistoricalPairingDAO;
 import com.hello.suripu.core.db.KeyStoreDynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
+import com.hello.suripu.core.db.OnlineHmmModelsDAO;
+import com.hello.suripu.core.db.OnlineHmmModelsDAODynamoDB;
+import com.hello.suripu.core.db.PairingDAO;
+import com.hello.suripu.core.db.PillDataDAODynamoDB;
+import com.hello.suripu.core.db.RingTimeHistoryDAODynamoDB;
+import com.hello.suripu.core.db.SenseDataDAO;
+import com.hello.suripu.core.db.SenseDataDAODynamoDB;
+import com.hello.suripu.core.db.SleepScoreParametersDAO;
+import com.hello.suripu.core.db.SleepScoreParametersDynamoDB;
+import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
+import com.hello.suripu.core.db.UserTimelineTestGroupDAO;
+import com.hello.suripu.core.db.UserTimelineTestGroupDAOImpl;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.db.colors.SenseColorDAOSQLImpl;
 import com.hello.suripu.core.db.util.JodaArgumentFactory;
@@ -48,9 +70,15 @@ import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import com.hello.suripu.coredropwizard.clients.MessejiHttpClient;
+import com.hello.suripu.coredropwizard.clients.TaimurainHttpClient;
 import com.hello.suripu.coredropwizard.configuration.GraphiteConfiguration;
 import com.hello.suripu.coredropwizard.configuration.MessejiHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.configuration.S3BucketConfiguration;
+import com.hello.suripu.coredropwizard.configuration.TaimurainHttpClientConfiguration;
+import com.hello.suripu.coredropwizard.configuration.TimelineAlgorithmConfiguration;
+import com.hello.suripu.coredropwizard.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredropwizard.metrics.RegexMetricFilter;
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
@@ -91,6 +119,7 @@ import is.hello.speech.handler.SignedBodyHandler;
 import is.hello.speech.kinesis.KinesisData;
 import is.hello.speech.kinesis.SpeechKinesisConsumer;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
+import is.hello.speech.modules.RolloutSupichiModule;
 import is.hello.speech.resources.demo.DemoUploadResource;
 import is.hello.speech.resources.demo.QueueMessageResource;
 import is.hello.speech.resources.v2.UploadResource;
@@ -150,6 +179,15 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
 
         final AWSCredentialsProvider awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
+
+        // set up S3
+        final ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.withConnectionTimeout(200); // in ms
+        clientConfiguration.withMaxErrorRetry(1);
+        final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
+        amazonS3.setRegion(Region.getRegion(Regions.US_EAST_1));
+        amazonS3.setEndpoint(speechAppConfiguration.s3Endpoint());
+
         final AmazonDynamoDBClientFactory dynamoDBClientFactory = AmazonDynamoDBClientFactory.create(awsCredentialsProvider, speechAppConfiguration.dynamoDBConfiguration());
 
         final ImmutableMap<DynamoDBTableName, String> tableNames = speechAppConfiguration.dynamoDBConfiguration().tables();
@@ -181,6 +219,15 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final AmazonDynamoDB mergeInfoClient= dynamoDBClientFactory.getForTable(DynamoDBTableName.ALARM_INFO);
         final MergedUserInfoDynamoDB mergedUserInfoDynamoDB = new MergedUserInfoDynamoDB(mergeInfoClient, tableNames.get(DynamoDBTableName.ALARM_INFO));
 
+        final AmazonDynamoDB dynamoDBSleepStatsClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_STATS);
+        final SleepStatsDAODynamoDB sleepStatsDAO = new SleepStatsDAODynamoDB(dynamoDBSleepStatsClient, tableNames.get(DynamoDBTableName.SLEEP_STATS), speechAppConfiguration.sleepStatsVersion());
+
+        final AmazonDynamoDB featuresDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.FEATURES);
+        final FeatureStore featureStore = new FeatureStore(featuresDynamoDBClient, tableNames.get(DynamoDBTableName.FEATURES), "prod");
+
+        final RolloutSupichiModule module = new RolloutSupichiModule(featureStore, 30);
+        ObjectGraphRoot.getInstance().init(module);
+
         // for sleep sound handler
         final MessejiHttpClientConfiguration messejiHttpClientConfiguration = speechAppConfiguration.messejiHttpClientConfiguration();
         final MessejiClient messejiClient = MessejiHttpClient.create(
@@ -189,7 +236,7 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
 
         // TODO: add additional handler resources here
-      // set up KMS for timeline encryption
+        // set up KMS for timeline encryption
         final KMSConfiguration kmsConfig = speechAppConfiguration.kmsConfiguration();
         final AWSKMSClient awskmsClient = new AWSKMSClient(awsCredentialsProvider);
         awskmsClient.setEndpoint(kmsConfig.endpoint());
@@ -207,6 +254,17 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final ExpansionDataDAO expansionsDataDAO = commonDB.onDemand(ExpansionDataDAO.class);
         final PersistentExpansionDataStore expansionsDataStore = new PersistentExpansionDataStore(expansionsDataDAO);
 
+        final InstrumentedTimelineProcessor timelineProcessor = timelineProcessor(environment,
+                speechAppConfiguration,
+                dynamoDBClientFactory,
+                commonDB,
+                amazonS3,
+                deviceDataDAODynamoDB,
+                calibrationDAO,
+                senseColorDAO,
+                deviceDAO,
+                sleepStatsDAO);
+
         final HandlerFactory handlerFactory = HandlerFactory.create(
                 speechCommandDAO,
                 messejiClient,
@@ -223,7 +281,9 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 expansionsDataStore,
                 tokenKMSVault,
                 alarmDAODynamoDB,
-                mergedUserInfoDynamoDB
+                mergedUserInfoDynamoDB,
+                sleepStatsDAO,
+                timelineProcessor
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()
@@ -236,7 +296,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
                 .register(HandlerType.HUE, handlerFactory.hueHandler(speechAppConfiguration.expansionConfiguration().hueAppName()))
                 .register(HandlerType.NEST, handlerFactory.nestHandler())
-                .register(HandlerType.ALEXA, handlerFactory.alexaHandler());
+                .register(HandlerType.ALEXA, handlerFactory.alexaHandler())
+                .register(HandlerType.SLEEP_SUMMARY, handlerFactory.sleepSummaryHandler());
 
         // metrics
         if (speechAppConfiguration.metricsEnabled()) {
@@ -291,14 +352,6 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         watson.setUsernameAndPassword(watsonConfiguration.getUsername(), watsonConfiguration.getPassword());
         final Map<String, String> headers = ImmutableMap.of("X-Watson-Learning-Opt-Out", "true");
         watson.setDefaultHeaders(headers);
-
-        // set up S3
-        final ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.withConnectionTimeout(200); // in ms
-        clientConfiguration.withMaxErrorRetry(1);
-        final AmazonS3 amazonS3 = new AmazonS3Client(awsCredentialsProvider, clientConfiguration);
-        amazonS3.setRegion(Region.getRegion(Regions.US_EAST_1));
-        amazonS3.setEndpoint(speechAppConfiguration.s3Endpoint());
 
         // set up Text2speech Consumer
         final ExecutorService queueConsumerExecutor = environment.lifecycle().executorService("text2speech_queue_consumer")
@@ -420,5 +473,87 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         environment.jersey().register(new DemoUploadResource(audioRequestHandler));
         environment.jersey().register(new UploadResource(audioRequestHandler));
 
+    }
+
+    private InstrumentedTimelineProcessor timelineProcessor(final Environment environment,
+                                                            final SpeechAppConfiguration speechAppConfiguration,
+                                                            final AmazonDynamoDBClientFactory dynamoDBClientFactory,
+                                                            final DBI commonDB,
+                                                            final AmazonS3 amazonS3,
+                                                            final DeviceDataDAODynamoDB deviceDataDAODynamoDB,
+                                                            final CalibrationDAO calibrationDAO,
+                                                            final SenseColorDAO senseColorDAO,
+                                                            final DeviceDAO deviceDAO,
+                                                            final SleepStatsDAODynamoDB sleepStatsDAO) {
+
+        final ImmutableMap<DynamoDBTableName, String> tableNames = speechAppConfiguration.dynamoDBConfiguration().tables();
+
+        // ALL THE THINGS NEEDED BY TimelineProcessor
+        final AmazonDynamoDB pillDataDAODynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.PILL_DATA);
+        final PillDataDAODynamoDB pillDataDAODynamoDB = new PillDataDAODynamoDB(pillDataDAODynamoDBClient, tableNames.get(DynamoDBTableName.PILL_DATA));
+
+        final AmazonDynamoDB ringTimeHistoryDynamoDBClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.RING_TIME_HISTORY);
+        final RingTimeHistoryDAODynamoDB ringTimeHistoryDAODynamoDB = new RingTimeHistoryDAODynamoDB(ringTimeHistoryDynamoDBClient, tableNames.get(DynamoDBTableName.RING_TIME_HISTORY));
+
+        final AmazonDynamoDB sleepHmmDynamoDbClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_HMM);
+        final SleepHmmDAODynamoDB sleepHmmDAODynamoDB = new SleepHmmDAODynamoDB(sleepHmmDynamoDbClient, tableNames.get(DynamoDBTableName.SLEEP_HMM));
+
+        /* Individual models for users  */
+        final AmazonDynamoDB onlineHmmModelsDb = dynamoDBClientFactory.getForTable(DynamoDBTableName.ONLINE_HMM_MODELS);
+        final OnlineHmmModelsDAO onlineHmmModelsDAO = OnlineHmmModelsDAODynamoDB.create(onlineHmmModelsDb, tableNames.get(DynamoDBTableName.ONLINE_HMM_MODELS));
+
+        /* Models for feature extraction layer */
+        final AmazonDynamoDB featureExtractionModelsDb = dynamoDBClientFactory.getForTable(DynamoDBTableName.FEATURE_EXTRACTION_MODELS);
+        final FeatureExtractionModelsDAO featureExtractionDAO = new FeatureExtractionModelsDAODynamoDB(featureExtractionModelsDb, tableNames.get(DynamoDBTableName.FEATURE_EXTRACTION_MODELS));
+
+        final AmazonDynamoDB sleepScoreParametersClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SLEEP_SCORE_PARAMETERS);
+        final SleepScoreParametersDAO sleepScoreParametersDAO = new SleepScoreParametersDynamoDB(sleepScoreParametersClient, tableNames.get(DynamoDBTableName.SLEEP_SCORE_PARAMETERS));
+
+
+        final FeedbackDAO feedbackDAO = commonDB.onDemand(FeedbackDAO.class);
+        final AccountDAO accountDAO = commonDB.onDemand(AccountDAOImpl.class);
+        final PairingDAO pairingDAO = new HistoricalPairingDAO(deviceDAO,deviceDataDAODynamoDB);
+        final UserTimelineTestGroupDAO userTimelineTestGroupDAO = commonDB.onDemand(UserTimelineTestGroupDAOImpl.class);
+
+        final SenseDataDAO senseDataDAO = new SenseDataDAODynamoDB(pairingDAO, deviceDataDAODynamoDB, senseColorDAO, calibrationDAO);
+
+        /* Default model ensemble for all users  */
+        final S3BucketConfiguration timelineModelEnsemblesConfig = speechAppConfiguration.timelineModelEnsembles();
+        final S3BucketConfiguration seedModelConfig = speechAppConfiguration.timelineSeedModel();
+
+        final DefaultModelEnsembleDAO defaultModelEnsembleDAO = DefaultModelEnsembleFromS3.create(
+                amazonS3,
+                timelineModelEnsemblesConfig.getBucket(),
+                timelineModelEnsemblesConfig.getKey(),
+                seedModelConfig.getBucket(),
+                seedModelConfig.getKey()
+        );
+
+        final TaimurainHttpClientConfiguration taimurainHttpClientConfiguration = speechAppConfiguration.taimurainClient();
+        final TaimurainHttpClient taimurainHttpClient = TaimurainHttpClient.create(
+                new HttpClientBuilder(environment).using(taimurainHttpClientConfiguration.getHttpClientConfiguration()).build("taimurain"),
+                taimurainHttpClientConfiguration.getEndpoint());
+
+
+        final TimelineAlgorithmConfiguration timelineAlgorithmConfiguration = speechAppConfiguration.timelineAlgorithm();
+
+        return InstrumentedTimelineProcessor.createTimelineProcessor(
+                pillDataDAODynamoDB,
+                deviceDAO,
+                deviceDataDAODynamoDB,
+                ringTimeHistoryDAODynamoDB,
+                feedbackDAO,
+                sleepHmmDAODynamoDB,
+                accountDAO,
+                sleepStatsDAO,
+                senseDataDAO,
+                onlineHmmModelsDAO,
+                featureExtractionDAO,
+                defaultModelEnsembleDAO,
+                userTimelineTestGroupDAO,
+                sleepScoreParametersDAO,
+                taimurainHttpClient,
+                timelineAlgorithmConfiguration,
+                environment.metrics());
     }
 }

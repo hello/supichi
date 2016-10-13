@@ -177,7 +177,7 @@ if __name__ == '__main__':
             "X-Hello-Sense-Id": "8AF6441AF72321F4"}
 
     if env == 'localtext':
-        text = sys.argv[5]
+        text = sys.argv[6]
         su = json.dumps({'sense_id': '721E040D184F2CAE', 'transcript': text})
         headers = {"content-type": "application/json", "X-Hello-Sense-Id": "721E040D184F2CAE"}
         ENDPOINT = "http://localhost:8181/upload/text?response=%s" % (audio_type)

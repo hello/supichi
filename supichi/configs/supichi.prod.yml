@@ -102,8 +102,16 @@ dynamodb:
     alarm_info: prod_alarm_info
     calibration: prod_calibration
     device_data: prod_sense_data
+    features: features
+    feature_extraction_models: prod_feature_extraction_models
     file_manifest: prod_file_manifest
+    online_hmm_models: prod_online_hmm_models
+    pill_data: prod_pill_data
+    ring_time_history: prod_ring_history_by_account
     sense_key_store: key_store
+    sleep_stats: prod_sleep_stats
+    sleep_hmm: prod_sleephmm
+    sleep_score_parameters: prod_sleep_score_parameters
     speech_commands: prod_speech_commands
     speech_results: prod_speech_results
     speech_timeline: prod_speech_timeline
@@ -114,8 +122,16 @@ dynamodb:
     alarm_info: http://dynamodb.us-east-1.amazonaws.com
     calibration: http://dynamodb.us-east-1.amazonaws.com
     device_data: http://dynamodb.us-east-1.amazonaws.com
+    features: http://dynamodb.us-east-1.amazonaws.com
+    feature_extraction_models: http://dynamodb.us-east-1.amazonaws.com
     file_manifest: http://dynamodb.us-east-1.amazonaws.com
+    online_hmm_models: http://dynamodb.us-east-1.amazonaws.com
+    pill_data: http://dynamodb.us-east-1.amazonaws.com
+    ring_time_history: http://dynamodb.us-east-1.amazonaws.com
     sense_key_store: http://dynamodb.us-east-1.amazonaws.com
+    sleep_hmm: http://dynamodb.us-east-1.amazonaws.com
+    sleep_score_parameters: http://dynamodb.us-east-1.amazonaws.com
+    sleep_stats: http://dynamodb.us-east-1.amazonaws.com
     speech_commands: http://dynamodb.us-east-1.amazonaws.com
     speech_results: http://dynamodb.us-east-1.amazonaws.com
     speech_timeline: http://dynamodb.us-east-1.amazonaws.com
@@ -178,3 +194,23 @@ s3_endpoint: https://s3.dualstack.us-east-1.amazonaws.com  # for kms
 
 expansions:
   hue_app_name: sense-prod
+
+sleep_stats_version: v_0_2
+
+timeline_model_ensembles:
+  bucket: hello-timeline-models
+  key: normal4ensemble.base64
+
+timeline_seed_model:
+  bucket: hello-timeline-models
+  key: normal4.base64
+
+taimurain_http_client:
+  endpoint: http://internal-taimurain-prod-1606459001.us-east-1.elb.amazonaws.com:80
+  http_client_config:
+    keepAlive: 0s
+    timeout: 10000ms
+
+timeline_algorithm_configuration:
+  artificial_light_start_time: "21:30"
+  artificial_light_stop_time: "05:00"

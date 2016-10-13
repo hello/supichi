@@ -14,7 +14,8 @@ public enum HandlerType {
     TIMELINE("timeline"),
     TRIVIA("trivia"),
     WEATHER("weather"),
-    ALEXA("alexa");
+    ALEXA("alexa"),
+    SLEEP_SUMMARY("sleep_summary");
 
     public String value;
 

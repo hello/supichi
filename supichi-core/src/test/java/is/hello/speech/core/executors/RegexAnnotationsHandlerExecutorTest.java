@@ -2,28 +2,20 @@ package is.hello.speech.core.executors;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
 import com.hello.suripu.core.db.CalibrationDAO;
 import com.hello.suripu.core.db.DeviceDAO;
 import com.hello.suripu.core.db.DeviceDataDAODynamoDB;
 import com.hello.suripu.core.db.MergedUserInfoDynamoDB;
+import com.hello.suripu.core.db.SleepStatsDAODynamoDB;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.db.colors.SenseColorDAO;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
-
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.util.Map;
-
+import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
 import is.hello.gaibu.core.models.ExternalToken;
@@ -38,6 +30,13 @@ import is.hello.speech.core.handlers.NestHandler;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.VoiceRequest;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import java.util.Map;
 
 import static is.hello.speech.core.models.SpeechCommand.ALARM_DELETE;
 import static is.hello.speech.core.models.SpeechCommand.ALARM_SET;
@@ -55,6 +54,8 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final Vault tokenKMSVault = mock(Vault.class);
     private final AlarmDAODynamoDB alarmDAO = mock(AlarmDAODynamoDB.class);
     private final MergedUserInfoDynamoDB mergedUserDAO = mock(MergedUserInfoDynamoDB.class);
+    private final SleepStatsDAODynamoDB sleepStatsDAODynamoDB = mock(SleepStatsDAODynamoDB.class);
+    private final InstrumentedTimelineProcessor timelineProcessor = mock(InstrumentedTimelineProcessor.class);
 
     private final MessejiClient messejiClient = mock(MessejiClient.class);
     private final SleepSoundsProcessor sleepSoundsProcessor = mock(SleepSoundsProcessor.class);
@@ -63,6 +64,7 @@ public class RegexAnnotationsHandlerExecutorTest {
     private final SenseColorDAO senseColorDAO = mock(SenseColorDAO.class);
     private final CalibrationDAO calibrationDAO = mock(CalibrationDAO.class);
     private final AccountLocationDAO accountLocationDAO = mock(AccountLocationDAO.class);
+
 
     private final String SENSE_ID = "123456789";
     private final Long ACCOUNT_ID = 99L;
@@ -144,7 +146,9 @@ public class RegexAnnotationsHandlerExecutorTest {
                 externalAppDataStore,
                 tokenKMSVault,
                 alarmDAO,
-                mergedUserDAO
+                mergedUserDAO,
+                sleepStatsDAODynamoDB,
+                timelineProcessor
         );
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
@@ -155,7 +159,8 @@ public class RegexAnnotationsHandlerExecutorTest {
                 .register(HandlerType.TRIVIA, handlerFactory.triviaHandler())
                 .register(HandlerType.TIMELINE, handlerFactory.timelineHandler())
                 .register(HandlerType.HUE, handlerFactory.hueHandler("sense-dev"))
-                .register(HandlerType.NEST, handlerFactory.nestHandler());
+                .register(HandlerType.NEST, handlerFactory.nestHandler())
+                .register(HandlerType.SLEEP_SUMMARY, handlerFactory.sleepSummaryHandler());
     }
 
     private VoiceRequest newVoiceRequest(final String transcript) {
