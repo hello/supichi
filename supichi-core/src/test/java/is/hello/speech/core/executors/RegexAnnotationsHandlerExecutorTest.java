@@ -173,13 +173,13 @@ public class RegexAnnotationsHandlerExecutorTest {
         final HandlerExecutor handlerExecutor = getExecutor();
         HandlerResult result = handlerExecutor.handle(newVoiceRequest("set my alarm for 7 am"));
         assertEquals(result.handlerType, HandlerType.ALARM);
-        assertEquals(result.alarmResult.isPresent(), true);
+        assertEquals(result.optionalResult.isPresent(), true);
         assertEquals(result.command, ALARM_SET.getValue());
 
         result = handlerExecutor.handle(newVoiceRequest("wake me at 7 am"));
 
         assertEquals(result.handlerType, HandlerType.ALARM);
-        assertEquals(result.alarmResult.isPresent(), true);
+        assertEquals(result.optionalResult.isPresent(), true);
         assertEquals(result.command, ALARM_SET.getValue());
 
         result = handlerExecutor.handle(newVoiceRequest("wake her up at 7 am"));
@@ -191,17 +191,17 @@ public class RegexAnnotationsHandlerExecutorTest {
         // cancel alarm
         result = handlerExecutor.handle(newVoiceRequest("cancel my alarm"));
         assertEquals(result.handlerType, HandlerType.ALARM);
-        assertEquals(result.alarmResult.isPresent(), true);
+        assertEquals(result.optionalResult.isPresent(), true);
         assertEquals(result.command, ALARM_DELETE.getValue());
 
         result = handlerExecutor.handle(newVoiceRequest("delete tomorrow's alarm"));
         assertEquals(result.handlerType, HandlerType.ALARM);
-        assertEquals(result.alarmResult.isPresent(), true);
+        assertEquals(result.optionalResult.isPresent(), true);
         assertEquals(result.command, ALARM_DELETE.getValue());
 
         result = handlerExecutor.handle(newVoiceRequest("cancel all my appointments"));
         assertEquals(result.handlerType, HandlerType.NONE);
-        assertEquals(result.alarmResult.isPresent(), false);
+        assertEquals(result.optionalResult.isPresent(), false);
     }
 
 

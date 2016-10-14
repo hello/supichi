@@ -3,6 +3,7 @@ package is.hello.speech.core.models;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import is.hello.speech.core.handlers.results.GenericResult;
+import is.hello.speech.core.handlers.results.Outcome;
 
 import java.util.Collections;
 import java.util.Map;
@@ -13,29 +14,54 @@ import java.util.Map;
 public class HandlerResult {
     public static final String EMPTY_COMMAND = "NONE";
     private static final String TEXT_RESPONSE_FIELD = "text";
+    private static final String EMPTY_STRING = "";
 
     public final HandlerType handlerType;
     public final String command;
     public Map<String, String> responseParameters;
 
     // all the handler results
-    public final Optional<GenericResult> alarmResult;
+    public final Optional<GenericResult> optionalResult;
 
 
     public HandlerResult(final HandlerType handlerType, final String command, final Map<String, String> responseParameters,
-                         final Optional<GenericResult> alarmResult) {
+                         final Optional<GenericResult> optionalResult) {
         this.handlerType = handlerType;
         this.command = command;
         this.responseParameters = responseParameters;
-        this.alarmResult = alarmResult;
+        this.optionalResult = optionalResult;
     }
 
     public String getResponseText() {
+        if (optionalResult.isPresent()) {
+            return optionalResult.get().responseText();
+        }
+
         if (responseParameters.containsKey(TEXT_RESPONSE_FIELD)) {
             return responseParameters.get(TEXT_RESPONSE_FIELD);
-        } else {
-            return "";
         }
+
+        return EMPTY_STRING;
+    }
+
+    public Outcome getOutcome() {
+        if (optionalResult.isPresent()) {
+            return optionalResult.get().outcome;
+        }
+
+        if (this.responseParameters.containsKey("result")) {
+            final String outcomeString = this.responseParameters.get("result");
+            return Outcome.fromString(outcomeString);
+        }
+        return Outcome.FAIL;
+    }
+
+    public Optional<String> getErrorText() {
+        if (optionalResult.isPresent() && optionalResult.get().errorText.isPresent()) {
+            return optionalResult.get().errorText;
+        }
+
+        return Optional.absent();
     }
 
     public static HandlerResult emptyResult() {
