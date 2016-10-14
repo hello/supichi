@@ -16,9 +16,9 @@ import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.Map;
 
+import static is.hello.speech.core.handlers.ErrorText.COMMAND_NOT_FOUND;
 import static is.hello.speech.core.handlers.ErrorText.NO_TIMEZONE;
 
 
@@ -53,28 +53,27 @@ public class TimeHandler extends BaseHandler {
         final String text = annotatedTranscript.transcript;
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
-        String command = HandlerResult.EMPTY_COMMAND;
 
-        Optional<GenericResult> result = Optional.absent();
         if (optionalCommand.isPresent()) {
-            command = optionalCommand.get().getValue();
+            final String command = optionalCommand.get().getValue();
             final Optional<String> optionalTimeZoneId = getTimeZoneOffsetMillis(request.accountId);
+
+            // TODO: use geoip
             if (!optionalTimeZoneId.isPresent()) {
-                result = Optional.of(GenericResult.fail(NO_TIMEZONE));
-            } else {
-
-                final DateTimeZone userTimeZone = DateTimeZone.forID(optionalTimeZoneId.get());
-                final DateTime localNow = DateTime.now(DateTimeZone.UTC).withZone(userTimeZone);
-
-                final String currentTime = localNow.toString("HH_mm");
-                LOGGER.debug("action=get-current-time local_now={} string={} time_zone={} account_id={}",
-                        localNow.toString(), currentTime, userTimeZone.toString(), request.accountId);
-
-                result = Optional.of(GenericResult.ok(currentTime));
+                return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.fail(NO_TIMEZONE));
             }
+
+            final DateTimeZone userTimeZone = DateTimeZone.forID(optionalTimeZoneId.get());
+            final DateTime localNow = DateTime.now(DateTimeZone.UTC).withZone(userTimeZone);
+
+            final String currentTime = localNow.toString("HH_mm");
+            LOGGER.debug("action=get-current-time local_now={} string={} time_zone={} account_id={}",
+                    localNow.toString(), currentTime, userTimeZone.toString(), request.accountId);
+
+            return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.ok(currentTime));
         }
 
-        return new HandlerResult(HandlerType.TIME_REPORT, command, Collections.EMPTY_MAP, result);
+        return new HandlerResult(HandlerType.TIME_REPORT, HandlerResult.EMPTY_COMMAND, GenericResult.fail(COMMAND_NOT_FOUND));
     }
 
     @Override

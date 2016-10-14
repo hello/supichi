@@ -200,7 +200,7 @@ public class AudioRequestHandler {
                 builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                         .withCommand(executeResult.command)
                         .withHandlerType(executeResult.handlerType.value)
-                        .withResponseText(executeResult.getResponseText())
+                        .withResponseText(executeResult.responseText())
                         .withResult(commandResult);
                 speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
 

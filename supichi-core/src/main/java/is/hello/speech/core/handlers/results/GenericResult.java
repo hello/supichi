@@ -11,6 +11,7 @@ public class GenericResult implements ResultInterface {
     public final Optional<String> errorText;
     public final Optional<String> responseText;
 
+
     private GenericResult(final Outcome outcome, final Optional<String> errorText, final Optional<String> responseText) {
         this.outcome = outcome;
         this.errorText = errorText;

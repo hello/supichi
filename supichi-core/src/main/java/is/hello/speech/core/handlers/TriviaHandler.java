@@ -79,7 +79,7 @@ public class TriviaHandler extends BaseHandler {
                 response.put("text", "Hello's favorite retailer is best buy.");
             }
         }
-        return new HandlerResult(HandlerType.TRIVIA, command, response, Optional.absent());
+        return new HandlerResult(HandlerType.TRIVIA, command, response, Optional.absent(), Optional.absent());
     }
 
 }

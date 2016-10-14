@@ -34,14 +34,16 @@ public class CurrentTimeResponseBuilder implements ResponseBuilderInterface{
         String filename = FILENAME_PREFIX;
         final String responseText;
 
-        final Outcome outcome = handlerResult.getOutcome();
+        final Outcome outcome = handlerResult.outcome();
         if (outcome.equals(Outcome.OK)) {
-            final String timeString = handlerResult.getResponseText();
+            final String timeString = handlerResult.responseText();
             filename += String.format("-%s-%s-%s-16k.wav", timeString, voiceService, voiceName);
             responseText = String.format(RESPONSE_TEXT_FORMATTER, timeString);
+
         } else {
+
             // error
-            final Optional<String> optionalErrorText = handlerResult.getErrorText();
+            final Optional<String> optionalErrorText = handlerResult.optionalErrorText();
             if (optionalErrorText.isPresent() && optionalErrorText.get().equals(NO_TIMEZONE)) {
                 responseText = TIMEZONE_ERROR_TEXT;
                 filename += String.format(TIMEZONE_ERROR_FILENAME_TEMPLATE, voiceService, voiceName);

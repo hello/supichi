@@ -10,7 +10,6 @@ import com.hello.suripu.core.util.TimelineUtils;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.results.GenericResult;
-import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -25,8 +24,11 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.UUID;
 
+import static is.hello.speech.core.handlers.ErrorText.NO_SLEEP_DATA;
+import static is.hello.speech.core.handlers.ErrorText.NO_SLEEP_SUMMARY;
 import static is.hello.speech.core.handlers.ErrorText.NO_TIMEZONE;
-import static is.hello.speech.core.models.HandlerResult.EMPTY_COMMAND;
+import static is.hello.speech.core.models.SpeechCommand.SLEEP_SCORE;
+import static is.hello.speech.core.models.SpeechCommand.SLEEP_SUMMARY;
 
 /**
  * Created by ksg on 6/17/16
@@ -51,8 +53,8 @@ public class SleepSummaryHandler extends BaseHandler {
         // TODO read from DynamoDB
         final Map<String, SpeechCommand> tempMap = Maps.newHashMap();
         tempMap.put("sleep score", SpeechCommand.SLEEP_SCORE);
-        tempMap.put("sleep summary", SpeechCommand.SLEEP_SUMMARY);
-        tempMap.put("how was my sleep", SpeechCommand.SLEEP_SUMMARY);
+        tempMap.put("sleep summary", SLEEP_SUMMARY);
+        tempMap.put("how was my sleep", SLEEP_SUMMARY);
         return tempMap;
     }
 
@@ -65,73 +67,51 @@ public class SleepSummaryHandler extends BaseHandler {
         final Long accountId = request.accountId;
 
         if (optionalCommand.isPresent()) {
-            final GenericResult genericResult;
             final SpeechCommand command = optionalCommand.get();
-
             switch (command) {
                 case SLEEP_SCORE:
-                    genericResult = getSleepScore(accountId, annotatedTranscript);
-                    break;
+                    return getSleepScore(accountId, annotatedTranscript);
                 case SLEEP_SUMMARY:
-                    genericResult = getSleepSummary(accountId, annotatedTranscript);
-                    break;
-                default:
-                    response.put("result", Outcome.FAIL.getValue());
-                    response.put("error", "no sleep data");
-                    return new HandlerResult(HandlerType.SLEEP_SUMMARY, EMPTY_COMMAND, response, Optional.absent());
+                    return getSleepSummary(accountId, annotatedTranscript);
             }
-
-            response.put("result", genericResult.outcome.getValue());
-
-            if (genericResult.errorText.isPresent()) {
-                response.put("error", genericResult.errorText.get());
-                if (genericResult.responseText.isPresent()) {
-                    response.put("text", genericResult.responseText());
-                }
-            } else {
-                response.put("text", genericResult.responseText());
-            }
-
-            return new HandlerResult(HandlerType.SLEEP_SUMMARY, command.getValue(), response, Optional.of(genericResult));
         }
 
-        response.put("result", Outcome.FAIL.getValue());
-        response.put("error", "no sleep data");
-        return new HandlerResult(HandlerType.SLEEP_SUMMARY, EMPTY_COMMAND, response, Optional.absent());
-
+        return new HandlerResult(HandlerType.SLEEP_SUMMARY, HandlerResult.EMPTY_COMMAND, GenericResult.failWithResponse(NO_SLEEP_DATA, ERROR_NO_SLEEP_STATS));
     }
 
-    private GenericResult getSleepSummary(final Long accountId, final AnnotatedTranscript annotatedTranscript) {
+    private HandlerResult getSleepSummary(final Long accountId, final AnnotatedTranscript annotatedTranscript) {
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
             LOGGER.error("error=no-sleep-summary reason=no-timezone account_id={}", accountId);
-            return GenericResult.failWithResponse(NO_TIMEZONE, ERROR_NO_TIMEZONE);
+            return new HandlerResult(HandlerType.SLEEP_SUMMARY, SLEEP_SUMMARY.getValue(), GenericResult.failWithResponse(NO_TIMEZONE, ERROR_NO_TIMEZONE));
         }
 
         final DateTimeZone timezoneId = DateTimeZone.forTimeZone(annotatedTranscript.timeZoneOptional.get());
         final Optional<AggregateSleepStats> optionalSleepStat = getSleepStat(accountId, timezoneId);
         if (!optionalSleepStat.isPresent()) {
-            return GenericResult.failWithResponse("no sleep summary", ERROR_NO_SLEEP_STATS);
+            return new HandlerResult(HandlerType.SLEEP_SUMMARY, SLEEP_SUMMARY.getValue(), GenericResult.failWithResponse(NO_SLEEP_SUMMARY, ERROR_NO_SLEEP_STATS));
         }
 
         final TimelineUtils timelineUtils = new TimelineUtils(UUID.randomUUID());
         final String summary = timelineUtils.generateMessage(optionalSleepStat.get().sleepStats, 0, 0);
-        return GenericResult.ok(summary.replace("**", ""));
+        return new HandlerResult(HandlerType.SLEEP_SUMMARY, SLEEP_SUMMARY.getValue(), GenericResult.ok(summary.replace("**", "")));
     }
 
-    private GenericResult getSleepScore(final Long accountId, final AnnotatedTranscript annotatedTranscript) {
+
+    private HandlerResult getSleepScore(final Long accountId, final AnnotatedTranscript annotatedTranscript) {
         if (!annotatedTranscript.timeZoneOptional.isPresent()) {
             LOGGER.error("error=no-sleep-score reason=no-timezone account_id={}", accountId);
-            return GenericResult.failWithResponse(NO_TIMEZONE, ERROR_NO_TIMEZONE);
+
+            return new HandlerResult(HandlerType.SLEEP_SUMMARY, SLEEP_SCORE.getValue(), GenericResult.failWithResponse(NO_TIMEZONE, ERROR_NO_TIMEZONE));
         }
 
         final DateTimeZone timezoneId = DateTimeZone.forTimeZone(annotatedTranscript.timeZoneOptional.get());
         final Optional<AggregateSleepStats> optionalSleepStat = getSleepStat(accountId, timezoneId);
         if (!optionalSleepStat.isPresent()) {
-            return GenericResult.failWithResponse("no sleep data", ERROR_NO_SLEEP_STATS);
+            return new HandlerResult(HandlerType.SLEEP_SUMMARY, SLEEP_SCORE.getValue(), GenericResult.failWithResponse(NO_SLEEP_DATA, ERROR_NO_SLEEP_STATS));
         }
 
         final String response = String.format("Your sleep score was %d last night", optionalSleepStat.get().sleepScore);
-        return GenericResult.ok(response);
+        return new HandlerResult(HandlerType.SLEEP_SUMMARY, SLEEP_SCORE.getValue(), GenericResult.ok(response));
     }
 
     private Optional<AggregateSleepStats> getSleepStat(final Long accountId, final DateTimeZone timezoneId) {
