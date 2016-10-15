@@ -187,8 +187,8 @@ public class AudioRequestHandler {
             if (!executeResult.handlerType.equals(HandlerType.NONE)) {
                 // save OK speech result
                 Result commandResult = Result.OK;
-                if (executeResult.responseParameters.containsKey("result")) {
-                    commandResult = executeResult.responseParameters.get("result").equals(Outcome.OK.getValue()) ? Result.OK : Result.REJECTED;
+                if (!executeResult.responseText().isEmpty()) {
+                    commandResult = executeResult.outcome().equals(Outcome.OK) ? Result.OK : Result.REJECTED;
                 }
 
                 if (commandResult.equals(Result.OK)) {

@@ -27,6 +27,7 @@ import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.HandlerFactory;
 import is.hello.speech.core.handlers.HueHandler;
 import is.hello.speech.core.handlers.NestHandler;
+import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.VoiceRequest;
@@ -233,57 +234,69 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         HandlerResult correctResult = executor.handle(newVoiceRequest("turn off the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("light_on"), "false");
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().lightOn, "false");
 
         correctResult = executor.handle(newVoiceRequest("turn the light off"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("light_on"), "false");
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().lightOn, "false");
 
         //test case insensitivity
         correctResult = executor.handle(newVoiceRequest("turn the Light On"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("light_on"), "true");
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().lightOn, "true");
 
         correctResult = executor.handle(newVoiceRequest("turn the Light Off"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("light_on"), "false");
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().lightOn, "false");
 
         correctResult = executor.handle(newVoiceRequest("turn off the light on"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("light_on"), "true");
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().lightOn, "true");
 
         correctResult = executor.handle(newVoiceRequest("make the light brighter"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_INCREMENT.toString());
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().brightnessAdjust, HueHandler.BRIGHTNESS_INCREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("brighten the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_INCREMENT.toString());
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().brightnessAdjust, HueHandler.BRIGHTNESS_INCREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("make the light dimmer"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_DECREMENT.toString());
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().brightnessAdjust, HueHandler.BRIGHTNESS_DECREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("dim the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("brightness_adjust"), HueHandler.BRIGHTNESS_DECREMENT.toString());
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().brightnessAdjust, HueHandler.BRIGHTNESS_DECREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("make the light warmer"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_INCREMENT.toString());
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().colorTempAdjust, HueHandler.COLOR_TEMPERATURE_INCREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("make the light redder"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_INCREMENT.toString());
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().colorTempAdjust, HueHandler.COLOR_TEMPERATURE_INCREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("make the light cooler"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_DECREMENT.toString());
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().colorTempAdjust, HueHandler.COLOR_TEMPERATURE_DECREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("make the light bluer"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("color_temp_adjust"), HueHandler.COLOR_TEMPERATURE_DECREMENT.toString());
-
+        assertEquals(correctResult.optionalHueResult.isPresent(), true);
+        assertEquals(correctResult.optionalHueResult.get().colorTempAdjust, HueHandler.COLOR_TEMPERATURE_DECREMENT.toString());
 
         correctResult = executor.handle(newVoiceRequest("Do something random for me"));
         assertNotEquals(HandlerType.HUE, correctResult.handlerType);
@@ -296,11 +309,13 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         HandlerResult correctResult = executor.handle(newVoiceRequest("set the temp to seventy seven degrees"));
         assertEquals(HandlerType.NEST, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("temp_set"), "77");
+        assertEquals(correctResult.optionalNestResult.isPresent(), true);
+        assertEquals(correctResult.optionalNestResult.get().temperatureSet, "77");
 
         correctResult = executor.handle(newVoiceRequest("set the temp to 77 degrees"));
         assertEquals(HandlerType.NEST, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("temp_set"), "77");
+        assertEquals(correctResult.optionalNestResult.isPresent(), true);
+        assertEquals(correctResult.optionalNestResult.get().temperatureSet, "77");
 
         correctResult = executor.handle(newVoiceRequest("Do something random for me"));
         assertNotEquals(HandlerType.NEST, correctResult.handlerType);
@@ -317,12 +332,14 @@ public class RegexAnnotationsHandlerExecutorTest {
 
         HandlerResult correctResult = executor.handle(newVoiceRequest("turn off the light"));
         assertEquals(HandlerType.HUE, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "fail");
-        assertEquals(correctResult.responseParameters.get("error"), "token-not-found");
+        assertEquals(correctResult.outcome(), Outcome.FAIL);
+        assertEquals(correctResult.optionalErrorText().isPresent(), true);
+        assertEquals(correctResult.optionalErrorText().get(), "token-not-found");
 
         correctResult = executor.handle(newVoiceRequest("set the temp to seventy seven degrees"));
         assertEquals(HandlerType.NEST, correctResult.handlerType);
-        assertEquals(correctResult.responseParameters.get("result"), "fail");
-        assertEquals(correctResult.responseParameters.get("error"), "token-not-found");
+        assertEquals(correctResult.outcome(), Outcome.FAIL);
+        assertEquals(correctResult.optionalErrorText().isPresent(), true);
+        assertEquals(correctResult.optionalErrorText().get(), "token-not-found");
     }
 }

@@ -4,6 +4,10 @@ package is.hello.speech.core.handlers;
  * Created by ksg on 10/11/16
  */
 public class ErrorText {
+
+    public static final String ERROR_NO_DATA = "no data";
+    public static final String ERROR_DATA_TOO_OLD = "data too old";
+
     public static final String NO_TIMEZONE = "no timezone";
     public static final String NO_SLEEP_DATA = "no sleep data";
     public static final String NO_SLEEP_SUMMARY = "no sleep summary";

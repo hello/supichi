@@ -206,6 +206,8 @@ public class AlarmHandler extends BaseHandler {
             }
         }
 
+        // TODO: remove voice alarms in the past to avoid filling up DDB item buffer
+
         // okay to set alarm
         try {
             alarms.add(newAlarm);

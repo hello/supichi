@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 import static is.hello.speech.core.handlers.ErrorText.COMMAND_NOT_FOUND;
+import static is.hello.speech.core.handlers.ErrorText.ERROR_DATA_TOO_OLD;
+import static is.hello.speech.core.handlers.ErrorText.ERROR_NO_DATA;
 
 
 /**
@@ -115,7 +117,7 @@ public class RoomConditionsHandler extends BaseHandler {
 
         final Optional<DeviceData> optionalData = deviceDataDAODynamoDB.getMostRecent(accountId, senseId, maxDT, minDT);
         if (!optionalData.isPresent()) {
-            return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail("no data"));
+            return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_NO_DATA));
         }
 
         final String sensorName = getSensorName(command);
@@ -131,7 +133,7 @@ public class RoomConditionsHandler extends BaseHandler {
 
         final CurrentRoomState roomState = CurrentRoomState.fromDeviceData(deviceData, DateTime.now(), thresholdInMinutes, unit, calibrationOptional, NO_SOUND_FILL_VALUE_DB);
         if (roomState.temperature().condition().equals(Condition.UNKNOWN)) {
-            return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail("data too old"));
+            return new HandlerResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.fail(ERROR_DATA_TOO_OLD));
         }
 
         final String sensorValue;
@@ -173,9 +175,8 @@ public class RoomConditionsHandler extends BaseHandler {
 
         final RoomConditionResult roomResult = new RoomConditionResult(sensorName, sensorValue, sensorUnit);
         final String responseText = String.format("The %s in your room is %s %s", sensorName, sensorValue, sensorUnit);
-        return HandlerResult.withRoomConditionResult(HandlerType.ROOM_CONDITIONS, command.getValue(),
-                GenericResult.ok(responseText), roomResult);
 
+        return HandlerResult.withRoomResult(HandlerType.ROOM_CONDITIONS, command.getValue(), GenericResult.ok(responseText), roomResult);
     }
 
     private static int celsiusToFahrenheit(final double value) {
