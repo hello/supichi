@@ -1,75 +1,98 @@
 package is.hello.speech.core.models;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.Maps;
 import is.hello.speech.core.handlers.results.GenericResult;
-
-import java.util.Collections;
-import java.util.Map;
+import is.hello.speech.core.handlers.results.HueResult;
+import is.hello.speech.core.handlers.results.NestResult;
+import is.hello.speech.core.handlers.results.Outcome;
+import is.hello.speech.core.handlers.results.RoomConditionResult;
 
 /**
  * Created by ksg on 7/25/16
  */
 public class HandlerResult {
     public static final String EMPTY_COMMAND = "NONE";
-    private static final String TEXT_RESPONSE_FIELD = "text";
+    public static final String EMPTY_STRING = "";
 
     public final HandlerType handlerType;
     public final String command;
-    public Map<String, String> responseParameters;
 
     // all the handler results
-    public final Optional<GenericResult> alarmResult;
+    public final Optional<GenericResult> optionalResult;
+    public final Optional <RoomConditionResult> optionalRoomResult;
+    public final Optional<HueResult> optionalHueResult;
+    public final Optional<NestResult> optionalNestResult;
 
+    // for trivia s3 file marker
+    public final Optional<String> fileMarker;
 
-    public HandlerResult(final HandlerType handlerType, final String command, final Map<String, String> responseParameters,
-                         final Optional<GenericResult> alarmResult) {
+    public HandlerResult(final HandlerType handlerType, final String command,
+                         final Optional<GenericResult> optionalResult,
+                         final Optional<RoomConditionResult> optionalRoomResult,
+                         final Optional<HueResult> optionalHueResult,
+                         final Optional<NestResult> optionalNestResult,
+                         final Optional<String> fileMarker
+    ) {
         this.handlerType = handlerType;
         this.command = command;
-        this.responseParameters = responseParameters;
-        this.alarmResult = alarmResult;
+        this.optionalResult = optionalResult;
+        this.optionalRoomResult = optionalRoomResult;
+        this.optionalHueResult = optionalHueResult;
+        this.optionalNestResult = optionalNestResult;
+        this.fileMarker = fileMarker;
+
     }
 
-    public String getResponseText() {
-        if (responseParameters.containsKey(TEXT_RESPONSE_FIELD)) {
-            return responseParameters.get(TEXT_RESPONSE_FIELD);
-        } else {
-            return "";
+    public HandlerResult(final HandlerType handlerType, final String command, final GenericResult result) {
+        this.handlerType = handlerType;
+        this.command = command;
+        this.optionalResult = Optional.of(result);
+        this.optionalRoomResult = Optional.absent();
+        this.optionalHueResult = Optional.absent();
+        this.optionalNestResult = Optional.absent();
+        this.fileMarker = Optional.absent();
+    }
+
+
+    public Outcome outcome() {
+        if (optionalResult.isPresent()) {
+            return optionalResult.get().outcome;
         }
+        return Outcome.FAIL;
+    }
+
+    public String responseText() {
+        if (optionalResult.isPresent()) {
+            return optionalResult.get().responseText();
+        }
+        return EMPTY_STRING;
+    }
+
+    public Optional<String> optionalErrorText() {
+        if (optionalResult.isPresent() && optionalResult.get().errorText.isPresent()) {
+            return optionalResult.get().errorText;
+        }
+        return Optional.absent();
     }
 
     public static HandlerResult emptyResult() {
-        return new HandlerResult(HandlerType.NONE, EMPTY_COMMAND, Maps.newHashMap(), Optional.absent());
+        return new HandlerResult(HandlerType.NONE, EMPTY_COMMAND, Optional.absent(), Optional.absent(), Optional.absent(), Optional.absent(), Optional.absent());
     }
 
-    public static class Builder {
-        private HandlerType handlerType = HandlerType.NONE;
-        private String command = EMPTY_COMMAND;
-        private Map<String, String> parameters = Collections.emptyMap();
-        private Optional<GenericResult> alarmResult = Optional.absent();
-
-        public Builder withHandlerType(final HandlerType handlerType) {
-            this.handlerType = handlerType;
-            return this;
-        }
-
-        public Builder withCommand(final String command) {
-            this.command = command;
-            return this;
-        }
-
-        public Builder withResponseParameters(final Map<String, String> parameters) {
-            this.parameters = parameters;
-            return this;
-        }
-
-        public Builder withAlarmResult(final GenericResult result) {
-            this.alarmResult = Optional.of(result);
-            return this;
-        }
-
-        public HandlerResult build() {
-            return new HandlerResult(handlerType, command, parameters, alarmResult);
-        }
+    public static HandlerResult withRoomResult(final HandlerType handlerType, final String command, final GenericResult result, final RoomConditionResult roomResult) {
+        return new HandlerResult(handlerType, command, Optional.of(result), Optional.of(roomResult), Optional.absent(), Optional.absent(), Optional.absent());
     }
+
+    public static HandlerResult withFileMarker(final HandlerType handlerType, final String command, final GenericResult result, final String marker) {
+        return new HandlerResult(handlerType, command, Optional.of(result), Optional.absent(), Optional.absent(), Optional.absent(), Optional.of(marker));
+    }
+
+    public static HandlerResult withHueResult(final HandlerType handlerType, final String command, final GenericResult result, final HueResult hueResult) {
+        return new HandlerResult(handlerType, command, Optional.of(result), Optional.absent(), Optional.of(hueResult), Optional.absent(), Optional.absent());
+    }
+
+    public static HandlerResult withNestResult(final HandlerType handlerType, final String command, final GenericResult result, final NestResult nestResult) {
+        return new HandlerResult(handlerType, command, Optional.of(result), Optional.absent(), Optional.absent(), Optional.of(nestResult), Optional.absent());
+    }
+
 }

@@ -5,11 +5,11 @@ import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.TimeZoneHistoryDAODynamoDB;
 import com.hello.suripu.core.models.TimeZoneHistory;
 import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.handlers.results.Outcome;
+import is.hello.speech.core.handlers.results.GenericResult;
+import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
-import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.VoiceRequest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -17,6 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+
+import static is.hello.speech.core.handlers.ErrorText.COMMAND_NOT_FOUND;
+import static is.hello.speech.core.handlers.ErrorText.NO_TIMEZONE;
 
 
 /**
@@ -50,23 +53,27 @@ public class TimeHandler extends BaseHandler {
         final String text = annotatedTranscript.transcript;
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
-        final Map<String, String> response = Maps.newHashMap();
-        String command = HandlerResult.EMPTY_COMMAND;
 
         if (optionalCommand.isPresent()) {
-            command = optionalCommand.get().getValue();
-            final int offsetMillis = getTimeZoneOffsetMillis(request.accountId);
-            final DateTime now = DateTime.now(DateTimeZone.UTC);
-            final DateTime localNow = now.plusMillis(offsetMillis);
+            final String command = optionalCommand.get().getValue();
+            final Optional<String> optionalTimeZoneId = getTimeZoneOffsetMillis(request.accountId);
+
+            // TODO: use geoip
+            if (!optionalTimeZoneId.isPresent()) {
+                return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.fail(NO_TIMEZONE));
+            }
+
+            final DateTimeZone userTimeZone = DateTimeZone.forID(optionalTimeZoneId.get());
+            final DateTime localNow = DateTime.now(DateTimeZone.UTC).withZone(userTimeZone);
 
             final String currentTime = localNow.toString("HH_mm");
-            LOGGER.debug("action=get-current-time now={} local_now={} string={} offset={} account_id={}", now.toString(), localNow.toString(), currentTime, offsetMillis, request.accountId);
-            response.put("result", Outcome.OK.getValue());
-            response.put("time", currentTime);
-            response.put("text", String.format("The time is %s", currentTime));
+            LOGGER.debug("action=get-current-time local_now={} string={} time_zone={} account_id={}",
+                    localNow.toString(), currentTime, userTimeZone.toString(), request.accountId);
+
+            return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.ok(currentTime));
         }
 
-        return new HandlerResult(HandlerType.TIME_REPORT, command, response, Optional.absent());
+        return new HandlerResult(HandlerType.TIME_REPORT, HandlerResult.EMPTY_COMMAND, GenericResult.fail(COMMAND_NOT_FOUND));
     }
 
     @Override
@@ -75,12 +82,12 @@ public class TimeHandler extends BaseHandler {
         return NO_ANNOTATION_SCORE;
     }
 
-    private int getTimeZoneOffsetMillis(final Long accountId) {
+    private Optional<String> getTimeZoneOffsetMillis(final Long accountId) {
         final Optional<TimeZoneHistory> tzHistory = this.timeZoneHistoryDAODynamoDB.getCurrentTimeZone(accountId);
         if (tzHistory.isPresent()) {
-            return tzHistory.get().offsetMillis;
+            return Optional.of(tzHistory.get().timeZoneId);
         }
 
-        return -25200000; // PDT
+        return Optional.absent();
     }
 }

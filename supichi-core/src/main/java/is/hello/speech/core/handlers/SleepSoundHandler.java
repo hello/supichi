@@ -7,6 +7,7 @@ import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.GenericResult;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -19,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static is.hello.speech.core.handlers.ErrorText.COMMAND_NOT_FOUND;
 
 
 /**
@@ -116,8 +119,7 @@ public class SleepSoundHandler extends BaseHandler {
         final String text = annotatedTranscript.transcript;
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text);
-        final Map<String, String> response = Maps.newHashMap();
-        boolean result = false;
+        GenericResult result = GenericResult.fail(COMMAND_NOT_FOUND);
         String command = HandlerResult.EMPTY_COMMAND;
 
         if (optionalCommand.isPresent()) {
@@ -129,9 +131,7 @@ public class SleepSoundHandler extends BaseHandler {
             }
         }
 
-        response.put("result", String.valueOf(result));
-        response.put("text", "Goodnight");
-        return new HandlerResult(HandlerType.SLEEP_SOUNDS, command, response, Optional.absent());
+        return new HandlerResult(HandlerType.SLEEP_SOUNDS, command, result);
 
     }
 
@@ -142,14 +142,14 @@ public class SleepSoundHandler extends BaseHandler {
     }
 
 
-    private Boolean playSleepSound(final String senseId, final Long accountId) {
+    private GenericResult playSleepSound(final String senseId, final Long accountId) {
 
         // TODO: get most recently played sleep_sound_id, order, volume, etc...
         // final Optional<Sound> soundOptional = sleepSoundsProcessor.getSound(senseId, DEFAULT_SLEEP_SOUND_ID);
         final Optional<Sound> soundOptional = Optional.of(DEFAULT_SOUND);
         if (!soundOptional.isPresent()) {
             LOGGER.error("error=invalid-sound-id id={} sense_id={}", DEFAULT_SLEEP_SOUND_ID, senseId);
-            return false;
+            return GenericResult.fail("invalid sound id");
         }
 
         final Integer volumeScalingFactor = convertToSenseVolumePercent(SENSE_MAX_DECIBELS, DEFAULT_SLEEP_SOUND_VOLUME_PERCENT);
@@ -174,12 +174,10 @@ public class SleepSoundHandler extends BaseHandler {
         }, 2, TimeUnit.SECONDS);
 
         // returns true regardless of whether message was properly delivered
-        return true;
-
-
+        return GenericResult.ok("Goodnight");
     }
 
-    private Boolean stopSleepSound(final String senseId, final Long accountId) {
+    private GenericResult stopSleepSound(final String senseId, final Long accountId) {
         final Optional<Long> messageId = messejiClient.stopAudio(
                 senseId,
                 MessejiClient.Sender.fromAccountId(accountId),
@@ -187,10 +185,10 @@ public class SleepSoundHandler extends BaseHandler {
                 FADE_OUT);
 
         if (messageId.isPresent()) {
-            return true;
+            return GenericResult.ok("");
         } else {
             LOGGER.error("error=messeji-request-stop-audio-fail sense_id={}, account_id={}", senseId, accountId);
-            return false;
+            return GenericResult.fail("stop sound fail");
         }
     }
 

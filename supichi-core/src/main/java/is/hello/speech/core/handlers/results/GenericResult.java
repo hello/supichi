@@ -1,6 +1,7 @@
 package is.hello.speech.core.handlers.results;
 
 import com.google.common.base.Optional;
+import is.hello.speech.core.models.HandlerResult;
 
 /**
  * Created by ksg on 9/21/16
@@ -10,6 +11,7 @@ public class GenericResult implements ResultInterface {
     public final Outcome outcome;
     public final Optional<String> errorText;
     public final Optional<String> responseText;
+
 
     private GenericResult(final Outcome outcome, final Optional<String> errorText, final Optional<String> responseText) {
         this.outcome = outcome;
@@ -34,7 +36,7 @@ public class GenericResult implements ResultInterface {
         if (responseText.isPresent()) {
             return responseText.get();
         }
-        return "";
+        return HandlerResult.EMPTY_STRING;
     }
 
     @Override

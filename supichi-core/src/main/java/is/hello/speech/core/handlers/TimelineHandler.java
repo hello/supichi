@@ -3,7 +3,7 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.handlers.results.Outcome;
+import is.hello.speech.core.handlers.results.GenericResult;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -12,6 +12,8 @@ import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.response.SupichiResponseType;
 
 import java.util.Map;
+
+import static is.hello.speech.core.handlers.ErrorText.COMMAND_NOT_FOUND;
 
 /**
  * Created by ksg on 6/17/16
@@ -35,18 +37,16 @@ public class TimelineHandler extends BaseHandler {
         // TODO
         final String text = annotatedTranscript.transcript;
 
-        final Optional<SpeechCommand> optionalCommand = getCommand(text);
-
-        final Map<String, String> response = Maps.newHashMap();
-
         String command = HandlerResult.EMPTY_COMMAND;
+        GenericResult result = GenericResult.fail(COMMAND_NOT_FOUND);
+
+        final Optional<SpeechCommand> optionalCommand = getCommand(text);
         if (optionalCommand.isPresent()) {
             command = optionalCommand.get().getValue();
-            response.put("result", Outcome.OK.getValue());
-            response.put("text", "Your sleep timeline is being computed");
+            result = GenericResult.ok("Your sleep timeline is being computed");
         }
 
-        return new HandlerResult(HandlerType.ALARM, command, response, Optional.absent());
+        return new HandlerResult(HandlerType.ALARM, command, result);
     }
 
     @Override

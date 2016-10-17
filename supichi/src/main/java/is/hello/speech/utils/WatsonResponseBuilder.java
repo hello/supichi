@@ -38,8 +38,7 @@ public class WatsonResponseBuilder implements SupichiResponseBuilder {
 
 
 
-        final String text = (handlerResult.responseParameters.containsKey("text")) ?
-                handlerResult.responseParameters.get("text") :
+        final String text = (!handlerResult.responseText().isEmpty()) ? handlerResult.responseText() :
                 DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.UNKNOWN);
 
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
