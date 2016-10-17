@@ -1,36 +1,12 @@
 package is.hello.speech.core.handlers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hello.suripu.core.speech.interfaces.Vault;
-
-import org.apache.commons.codec.binary.Base64;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-
 import is.hello.gaibu.core.exceptions.InvalidExternalTokenException;
 import is.hello.gaibu.core.models.Expansion;
 import is.hello.gaibu.core.models.ExpansionData;
@@ -42,13 +18,39 @@ import is.hello.gaibu.homeauto.clients.HueLight;
 import is.hello.gaibu.homeauto.models.HueExpansionDeviceData;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.results.GenericResult;
-import is.hello.speech.core.handlers.results.Outcome;
+import is.hello.speech.core.handlers.results.HueResult;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.models.SpeechCommand;
 import is.hello.speech.core.models.VoiceRequest;
 import is.hello.speech.core.response.SupichiResponseType;
+import org.apache.commons.codec.binary.Base64;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Form;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static is.hello.speech.core.handlers.ErrorText.BAD_EXPANSION_DATA;
+import static is.hello.speech.core.handlers.ErrorText.COMMAND_NOT_FOUND;
+import static is.hello.speech.core.handlers.ErrorText.EXPANSION_NOT_FOUND;
+import static is.hello.speech.core.handlers.ErrorText.NO_EXPANSION_DATA;
+import static is.hello.speech.core.handlers.ErrorText.TOKEN_NOT_FOUND;
 
 
 /**
@@ -130,10 +132,8 @@ public class HueHandler extends BaseHandler {
 
         if(!expansionOptional.isPresent()) {
             LOGGER.error("error=application-not-found app_name=Hue");
-            response.put("error", "no-application");
-            response.put("result", Outcome.FAIL.getValue());
-            hueResult = GenericResult.failWithResponse("expansion not found", SET_LIGHT_ERROR_APPLICATION);
-            return new HandlerResult(HandlerType.HUE, HandlerResult.EMPTY_COMMAND, updateResponse(response, hueResult), Optional.of(hueResult));
+            hueResult = GenericResult.failWithResponse(EXPANSION_NOT_FOUND, SET_LIGHT_ERROR_APPLICATION);
+            return new HandlerResult(HandlerType.HUE, HandlerResult.EMPTY_COMMAND, hueResult);
         }
 
         final Expansion expansion = expansionOptional.get();
@@ -144,10 +144,8 @@ public class HueHandler extends BaseHandler {
 
         if (!optionalCommand.isPresent()) {
             LOGGER.error("error=no-command app_name=hue text={}", text);
-            response.put("error", "no-command");
-            response.put("result", Outcome.FAIL.getValue());
-            hueResult = GenericResult.failWithResponse("command not found", SET_LIGHT_ERROR_RESPONSE);
-            return new HandlerResult(HandlerType.HUE, HandlerResult.EMPTY_COMMAND, updateResponse(response, hueResult), Optional.of(hueResult));
+            hueResult = GenericResult.failWithResponse(COMMAND_NOT_FOUND, SET_LIGHT_ERROR_RESPONSE);
+            return new HandlerResult(HandlerType.HUE, HandlerResult.EMPTY_COMMAND, hueResult);
         }
 
         final SpeechCommand command = optionalCommand.get();
@@ -156,10 +154,8 @@ public class HueHandler extends BaseHandler {
         final Optional<ExternalToken> externalTokenOptional = externalTokenStore.getTokenByDeviceId(senseId, expansion.id);
         if(!externalTokenOptional.isPresent()) {
             LOGGER.error("error=token-not-found sense_id={}", senseId);
-            response.put("error", "token-not-found");
-            response.put("result", Outcome.FAIL.getValue());
-            hueResult = GenericResult.failWithResponse("token-not-found", SET_LIGHT_ERROR_AUTH);
-            return new HandlerResult(HandlerType.HUE, command.getValue(), updateResponse(response, hueResult), Optional.of(hueResult));
+            hueResult = GenericResult.failWithResponse(TOKEN_NOT_FOUND, SET_LIGHT_ERROR_AUTH);
+            return new HandlerResult(HandlerType.HUE, command.getValue(), hueResult);
         }
 
         ExternalToken externalToken = externalTokenOptional.get();
@@ -171,10 +167,8 @@ public class HueHandler extends BaseHandler {
             final Optional<ExternalToken> refreshedTokenOptional = refreshToken(senseId, expansion, externalToken);
             if(!refreshedTokenOptional.isPresent()){
                 LOGGER.error("error=token-refresh-failed sense_id={}", senseId);
-                response.put("error", "token-refresh-failed");
-                response.put("result", Outcome.FAIL.getValue());
                 hueResult = GenericResult.failWithResponse("token refresh failed", SET_LIGHT_ERROR_AUTH);
-                return new HandlerResult(HandlerType.HUE, command.getValue(), updateResponse(response, hueResult), Optional.of(hueResult));
+                return new HandlerResult(HandlerType.HUE, command.getValue(), hueResult);
             }
 
             externalToken = refreshedTokenOptional.get();
@@ -187,10 +181,8 @@ public class HueHandler extends BaseHandler {
 
         if(!decryptedTokenOptional.isPresent()) {
             LOGGER.error("error=token-decryption-failure sense_id={}", senseId);
-            response.put("error", "token-decryption-failure");
-            response.put("result", Outcome.FAIL.getValue());
             hueResult = GenericResult.failWithResponse("token decrypt failed", SET_LIGHT_ERROR_AUTH);
-            return new HandlerResult(HandlerType.HUE, command.getValue(), updateResponse(response, hueResult), Optional.of(hueResult));
+            return new HandlerResult(HandlerType.HUE, command.getValue(), hueResult);
         }
 
         final String decryptedToken = decryptedTokenOptional.get();
@@ -198,19 +190,15 @@ public class HueHandler extends BaseHandler {
         final Optional<ExpansionData> extAppDataOptional = externalAppDataStore.getAppData(expansion.id, senseId);
         if(!extAppDataOptional.isPresent()) {
             LOGGER.error("error=no-ext-app-data account_id={}", accountId);
-            response.put("error", "no-ext-app-data");
-            response.put("result", Outcome.FAIL.getValue());
-            hueResult = GenericResult.failWithResponse("no expansion data", SET_LIGHT_ERROR_CONFIG);
-            return new HandlerResult(HandlerType.HUE, command.getValue(), updateResponse(response, hueResult), Optional.of(hueResult));
+            hueResult = GenericResult.failWithResponse(NO_EXPANSION_DATA, SET_LIGHT_ERROR_CONFIG);
+            return new HandlerResult(HandlerType.HUE, command.getValue(), hueResult);
         }
 
         final ExpansionData extData = extAppDataOptional.get();
         if(extData.data.isEmpty()) {
             LOGGER.error("error=no-ext-app-data account_id={}", accountId);
-            response.put("error", "no-ext-app-data");
-            response.put("result", Outcome.FAIL.getValue());
-            hueResult = GenericResult.failWithResponse("no expansion data", SET_LIGHT_ERROR_CONFIG);
-            return new HandlerResult(HandlerType.HUE, command.getValue(), updateResponse(response, hueResult), Optional.of(hueResult));
+            hueResult = GenericResult.failWithResponse(NO_EXPANSION_DATA, SET_LIGHT_ERROR_CONFIG);
+            return new HandlerResult(HandlerType.HUE, command.getValue(), hueResult);
         }
 
         HueLight light;
@@ -220,11 +208,13 @@ public class HueHandler extends BaseHandler {
 
         } catch (IOException io) {
             LOGGER.error("error=bad-app-data sense_id={}", senseId);
-            response.put("error", "bad-app-data");
-            response.put("result", Outcome.FAIL.getValue());
-            hueResult = GenericResult.failWithResponse("bad expansion data", SET_LIGHT_ERROR_CONFIG);
-            return new HandlerResult(HandlerType.HUE, command.getValue(), updateResponse(response, hueResult), Optional.of(hueResult));
+            hueResult = GenericResult.failWithResponse(BAD_EXPANSION_DATA, SET_LIGHT_ERROR_CONFIG);
+            return new HandlerResult(HandlerType.HUE, command.getValue(), hueResult);
         }
+
+        String lightOn = "false";
+        String brightnessAdjust = "";
+        String colorTempAdjust = "";
 
         if (command.equals(SpeechCommand.LIGHT_TOGGLE)) {
             final Pattern r = Pattern.compile(TOGGLE_ACTIVE_PATTERN);
@@ -233,13 +223,13 @@ public class HueHandler extends BaseHandler {
                 final Boolean isOn = (matcher.group(1).equalsIgnoreCase("on"));
                 final Boolean isSuccessful = light.setLightState(isOn);
 
-                response.put("light_on", isOn.toString());
+                lightOn = isOn.toString();
 
                 if(isSuccessful) {
                     GenericResult.ok(SET_LIGHT_OK_RESPONSE);
-                    response.put("result", Outcome.OK.getValue());
+                    final HueResult actualHueResult = new HueResult(lightOn, brightnessAdjust, colorTempAdjust);
                     hueResult = GenericResult.ok(SET_LIGHT_OK_RESPONSE);
-                    return new HandlerResult(HandlerType.HUE, command.getValue(), updateResponse(response, hueResult), Optional.of(hueResult));
+                    return HandlerResult.withHueResult(HandlerType.HUE, command.getValue(), hueResult, actualHueResult);
                 }
             }
         }
@@ -257,12 +247,13 @@ public class HueHandler extends BaseHandler {
             for(final Map.Entry<String, Integer> adjustment : adjustments.entrySet()) {
                 if(text.toLowerCase().contains(adjustment.getKey())){
                     final Boolean isSuccessful = light.adjustBrightness(adjustment.getValue());
-                    response.put("brightness_adjust", adjustment.getValue().toString());
+
+                    brightnessAdjust =  adjustment.getValue().toString();
 
                     if(isSuccessful) {
-                        response.put("result", Outcome.OK.getValue());
+                        final HueResult actualHueResult = new HueResult(lightOn, brightnessAdjust, colorTempAdjust);
                         hueResult = GenericResult.ok(SET_LIGHT_OK_RESPONSE);
-                        return new HandlerResult(HandlerType.HUE, command.getValue(), updateResponse(response, hueResult), Optional.of(hueResult));
+                        return HandlerResult.withHueResult(HandlerType.HUE, command.getValue(), hueResult, actualHueResult);
                     }
                 }
             }
@@ -279,21 +270,23 @@ public class HueHandler extends BaseHandler {
             for(final Map.Entry<String, Integer> adjustment : adjustments.entrySet()) {
                 if(text.toLowerCase().contains(adjustment.getKey())){
                     final Boolean isSuccessful = light.adjustBrightness(adjustment.getValue());
-                    response.put("color_temp_adjust", adjustment.getValue().toString());
+
+                    colorTempAdjust =  adjustment.getValue().toString();
 
                     if(isSuccessful) {
-                        response.put("result", Outcome.OK.getValue());
+                        final HueResult actualHueResult = new HueResult(lightOn, brightnessAdjust, colorTempAdjust);
                         hueResult = GenericResult.ok(SET_LIGHT_OK_RESPONSE);
-                        return new HandlerResult(HandlerType.HUE, command.getValue(), updateResponse(response, hueResult), Optional.of(hueResult));
+                        return HandlerResult.withHueResult(HandlerType.HUE, command.getValue(), hueResult, actualHueResult);
                     }
                 }
             }
         }
 
-        response.put("result", Outcome.FAIL.getValue());
+        final HueResult actualHueResult = new HueResult(lightOn, brightnessAdjust, colorTempAdjust);
         hueResult = GenericResult.failWithResponse("unknown command", SET_LIGHT_ERROR_RESPONSE);
-        return new HandlerResult(HandlerType.HUE, command.getValue(), updateResponse(response, hueResult), Optional.of(hueResult));
+        return HandlerResult.withHueResult(HandlerType.HUE, command.getValue(), hueResult, actualHueResult);
     }
+
     @Override
     public Integer matchAnnotations(final AnnotatedTranscript annotatedTranscript) {
         // TODO HueAnnotation
@@ -386,19 +379,6 @@ public class HueHandler extends BaseHandler {
             LOGGER.error("error=token-not-saved");
             return Optional.absent();
         }
-    }
-
-    public Map<String, String> updateResponse(final Map<String, String> response, final GenericResult result) {
-        response.put("result", result.outcome.getValue());
-        if (result.errorText.isPresent()) {
-            response.put("error", result.errorText.get());
-            if (result.responseText.isPresent()) {
-                response.put("text", result.responseText());
-            }
-        } else {
-            response.put("text", result.responseText());
-        }
-        return response;
     }
 
     @Override

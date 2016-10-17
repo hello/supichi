@@ -12,7 +12,6 @@ import com.hello.suripu.core.models.RingTime;
 import com.hello.suripu.core.models.UserInfo;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.results.GenericResult;
-import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -118,15 +117,12 @@ public class AlarmHandler extends BaseHandler {
     public HandlerResult executeCommand(final AnnotatedTranscript annotatedTranscript, final VoiceRequest request) {
         // TODO
         final Optional<SpeechCommand> optionalCommand = getCommand(annotatedTranscript.transcript);
-        final Map<String, String> response = Maps.newHashMap();
 
         final Long accountId = request.accountId;
         final String senseId = request.senseId;
 
         if (!optionalCommand.isPresent()) {
-            response.put("result", Outcome.FAIL.getValue());
-            response.put("error", "no alarm set");
-            return new HandlerResult(HandlerType.ALARM, EMPTY_COMMAND, response, Optional.absent());
+            return new HandlerResult(HandlerType.ALARM, EMPTY_COMMAND, GenericResult.fail("no alarm set"));
         }
 
         final String command = optionalCommand.get().getValue();
@@ -138,17 +134,7 @@ public class AlarmHandler extends BaseHandler {
             alarmResult = cancelAlarm(accountId, senseId, annotatedTranscript);
         }
 
-        response.put("result", alarmResult.outcome.getValue());
-        if (alarmResult.errorText.isPresent()) {
-            response.put("error", alarmResult.errorText.get());
-            if (alarmResult.responseText.isPresent()) {
-                response.put("text", alarmResult.responseText());
-            }
-        } else {
-            response.put("text", alarmResult.responseText());
-        }
-
-        return new HandlerResult(HandlerType.ALARM, command, response, Optional.of(alarmResult));
+        return new HandlerResult(HandlerType.ALARM, command, alarmResult);
     }
 
     /**
@@ -219,6 +205,8 @@ public class AlarmHandler extends BaseHandler {
                 return GenericResult.failWithResponse(DUPLICATE_ERROR, String.format(DUPLICATE_ALARM_RESPONSE, newAlarmString));
             }
         }
+
+        // TODO: remove voice alarms in the past to avoid filling up DDB item buffer
 
         // okay to set alarm
         try {

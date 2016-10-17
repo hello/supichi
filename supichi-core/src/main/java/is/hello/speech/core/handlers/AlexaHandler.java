@@ -3,7 +3,7 @@ package is.hello.speech.core.handlers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import is.hello.speech.core.db.SpeechCommandDAO;
-import is.hello.speech.core.handlers.results.Outcome;
+import is.hello.speech.core.handlers.results.GenericResult;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+
+import static is.hello.speech.core.handlers.ErrorText.COMMAND_NOT_FOUND;
 
 
 /**
@@ -46,19 +48,14 @@ public class AlexaHandler extends BaseHandler {
         final String text = annotatedTranscript.transcript;
 
         final Optional<SpeechCommand> optionalCommand = getCommand(text); // TODO: ensure that only valid commands are returned
-        final Map<String, String> response = Maps.newHashMap();
-        String command = HandlerResult.EMPTY_COMMAND;
-
         if (optionalCommand.isPresent()) {
-            command = optionalCommand.get().getValue();
             if (text.contains("ask Alexa")) {
                 final String truncated = annotatedTranscript.transcript.replace("ask Alexa", "");
-                response.put("result", Outcome.OK.getValue());
-                response.put("text", "Alexa!,  " + truncated);
+                return new HandlerResult(HandlerType.ALEXA, optionalCommand.get().getValue(), GenericResult.ok("Alexa!,  " + truncated));
             }
         }
 
-        return new HandlerResult(HandlerType.ALEXA, command, response, Optional.absent());
+        return new HandlerResult(HandlerType.ALEXA, HandlerResult.EMPTY_COMMAND, GenericResult.fail(COMMAND_NOT_FOUND));
     }
 
     @Override

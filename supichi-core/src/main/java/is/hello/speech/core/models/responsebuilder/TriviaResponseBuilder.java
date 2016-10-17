@@ -22,11 +22,10 @@ public class TriviaResponseBuilder implements ResponseBuilderInterface{
         String filename = FILENAME_PREFIX;
         final String responseText;
 
-        final Outcome outcome = ResponseUtils.getOutcome(handlerResult);
-        if (outcome.equals(Outcome.OK)) {
-            final String answer = handlerResult.responseParameters.get("answer");
-            filename += String.format("-%s-%s-%s-16k.wav", answer, voiceService, voiceName);
-            responseText = handlerResult.responseParameters.get("text");
+        if (handlerResult.outcome().equals(Outcome.OK) && handlerResult.fileMarker.isPresent()) {
+            final String marker = handlerResult.fileMarker.get();
+            filename += String.format("-%s-%s-%s-16k.wav", marker, voiceService, voiceName);
+            responseText = handlerResult.responseText();
 
         } else {
             // return generic response

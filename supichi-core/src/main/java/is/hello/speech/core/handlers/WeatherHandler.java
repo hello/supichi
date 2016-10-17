@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.models.AccountLocation;
 import is.hello.speech.core.db.SpeechCommandDAO;
+import is.hello.speech.core.handlers.results.GenericResult;
 import is.hello.speech.core.models.AnnotatedTranscript;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.HandlerType;
@@ -52,11 +53,11 @@ public class WeatherHandler extends BaseHandler {
 
         final Optional<AccountLocation> accountLocationOptional = accountLocationDAO.getLastLocationByAccountId(request.accountId);
         final Map<String,String> params = Maps.newHashMap();
-        final String defaultText = "Weather information is not available at this time";
-        params.put("text", defaultText);
+
         // 438 shotwell latitude: 37.761185, longitude: -122.416369
         LOGGER.info("action=weather-handler-execute account_id={} sense_id={} ip_address={}", request.accountId, request.senseId, request.ipAddress);
 
+        GenericResult result;
         if(accountLocationOptional.isPresent()) {
             LOGGER.info("action=get-location account_id={} result=found", request.accountId);
             final Double latitude = accountLocationOptional.isPresent() ? accountLocationOptional.get().latitude : 37.761185;
@@ -66,21 +67,20 @@ public class WeatherHandler extends BaseHandler {
 
             final String summary = report.get(latitude, longitude, request.accountId, request.senseId);
             LOGGER.info("action=get-forecast account_id={} result={}", request.accountId, summary);
-            params.put("text", summary);
+            result = GenericResult.ok(summary);
+
         } else {
             try {
                 final String summary = report.get(request.accountId, request.senseId, InetAddress.getByName(request.ipAddress));
                 LOGGER.info("action=get-forecast account_id={} result={}", request.accountId, summary);
-                params.put("text", summary);
+                result = GenericResult.ok(summary);
             } catch (UnknownHostException e) {
                 LOGGER.info("error=get-forecast account_id={} msg={}", request.accountId, e.getMessage());
-                params.put("text", "Server error.");
+                result = GenericResult.failWithResponse("weather not available", "Server error.");
             }
         }
 
-
-
-        return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), params, Optional.absent());
+        return new HandlerResult(HandlerType.WEATHER, SpeechCommand.WEATHER.getValue(), result);
     }
 
     @Override

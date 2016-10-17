@@ -44,7 +44,7 @@ public class UnigramHandlerExecutor implements HandlerExecutor {
                 final AnnotatedTranscript annotatedTranscript = new AnnotatedTranscript.Builder().withTranscript(commandText).build();
 
                 final HandlerResult executeResult = handler.executeCommand(annotatedTranscript, request);
-                LOGGER.debug("action=execute-command result={}", executeResult.responseParameters.toString());
+                LOGGER.debug("action=execute-command result={}", executeResult.outcome().getValue());
                 return executeResult;
             }
         }
