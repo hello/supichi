@@ -115,7 +115,7 @@ public class AudioRequestHandler {
 
         if (accounts.isEmpty()) {
             LOGGER.error("error=no-paired-sense-found sense_id={}", rawRequest.senseId());
-            final byte[] content = responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.REJECTED, executeResult, uploadData.request);
+            final byte[] content = responseBuilders.get(SupichiResponseType.S3).response(Response.SpeechResponse.Result.UNPAIRED_SENSE, executeResult, uploadData.request);
             return WrappedResponse.ok(content);
         }
 
