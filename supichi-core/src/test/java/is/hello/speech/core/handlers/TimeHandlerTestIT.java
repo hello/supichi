@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 /**
  * Created by ksg on 10/17/16
  */
-public class TimeHandlerTest {
+public class TimeHandlerTestIT {
     private final SpeechCommandDAO speechCommandDAO = mock(SpeechCommandDAO.class);
     private final TimeZoneHistoryDAODynamoDB timeZoneHistoryDAODynamoDB = mock(TimeZoneHistoryDAODynamoDB.class);
     private TimeHandler timeHandler;
