@@ -18,6 +18,7 @@ import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -80,6 +81,7 @@ import com.hello.suripu.coredropwizard.db.SleepHmmDAODynamoDB;
 import com.hello.suripu.coredropwizard.metrics.RegexMetricFilter;
 import com.hello.suripu.coredropwizard.timeline.InstrumentedTimelineProcessor;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
+import com.maxmind.geoip2.DatabaseReader;
 import io.dropwizard.Application;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
@@ -114,6 +116,7 @@ import is.hello.speech.core.models.HandlerType;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseType;
 import is.hello.speech.core.text2speech.Text2SpeechQueueConsumer;
+import is.hello.speech.core.utils.GeoUtils;
 import is.hello.speech.handler.AudioRequestHandler;
 import is.hello.speech.handler.SignedBodyHandler;
 import is.hello.speech.kinesis.KinesisData;
@@ -265,6 +268,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 deviceDAO,
                 sleepStatsDAO);
 
+        Optional<DatabaseReader> geoIPDatabase = GeoUtils.geoIPDatabase();
+
         final HandlerFactory handlerFactory = HandlerFactory.create(
                 speechCommandDAO,
                 messejiClient,
@@ -283,7 +288,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
                 alarmDAODynamoDB,
                 mergedUserInfoDynamoDB,
                 sleepStatsDAO,
-                timelineProcessor
+                timelineProcessor,
+                geoIPDatabase
         );
 
         final HandlerExecutor handlerExecutor = new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB) //new RegexHandlerExecutor()

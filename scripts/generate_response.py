@@ -141,9 +141,14 @@ def process_misc(env):
     # body["parameters"] = "retailer_best_buy"
     # r = post_request(env, body)
 
-    body["text"] = "Hello's favorite retailer is best buy."
-    body["parameters"] = "retailer_best_buy"
+    # body["text"] = "Hello's favorite retailer is best buy."
+    # body["parameters"] = "retailer_best_buy"
+    # r = post_request(env, body)
+
+    body["text"] = "Sorry, you do not have an account paired. Please pair your account to Sense and try again."
+    body["parameters"] = "default_unpaired";
     r = post_request(env, body)
+
 
 def process_time(env):
     body = {

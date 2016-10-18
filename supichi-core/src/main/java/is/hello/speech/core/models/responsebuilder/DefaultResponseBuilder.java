@@ -21,6 +21,7 @@ public class DefaultResponseBuilder implements ResponseBuilderInterface {
         put(Response.SpeechResponse.Result.REJECTED, "default_rejected-WATSON-ALLISON-16k.wav");
         put(Response.SpeechResponse.Result.TRY_AGAIN, "default_try_again-WATSON-ALLISON-16k.wav");
         put(Response.SpeechResponse.Result.UNKNOWN, "default_unknown-WATSON-ALLISON-16k.wav");
+        put(Response.SpeechResponse.Result.UNPAIRED_SENSE, "default_unpaired-WATSON-ALLISON-16k.wav");
     }};
 
     public final static Map<Response.SpeechResponse.Result, String> DEFAULT_TEXT = new HashMap<Response.SpeechResponse.Result, String>() {{
@@ -28,6 +29,7 @@ public class DefaultResponseBuilder implements ResponseBuilderInterface {
         put(Response.SpeechResponse.Result.REJECTED, "Sorry, your command is rejected");
         put(Response.SpeechResponse.Result.TRY_AGAIN, "Sorry, your command cannot be processed. Please try again.");
         put(Response.SpeechResponse.Result.UNKNOWN, "Sorry, we've encountered an error. Please try again later.");
+        put(Response.SpeechResponse.Result.UNPAIRED_SENSE, "Sorry, you do not have an account paired. Please pair your account to Sense and try again.");
     }};
 
 

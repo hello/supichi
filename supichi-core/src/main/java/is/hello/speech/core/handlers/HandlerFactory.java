@@ -1,9 +1,6 @@
 package is.hello.speech.core.handlers;
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.google.common.base.Optional;
 import com.hello.suripu.core.alarm.AlarmProcessor;
 import com.hello.suripu.core.db.AccountLocationDAO;
 import com.hello.suripu.core.db.AlarmDAODynamoDB;
@@ -25,9 +22,6 @@ import is.hello.gaibu.core.stores.PersistentExternalTokenStore;
 import is.hello.gaibu.weather.clients.DarkSky;
 import is.hello.gaibu.weather.interfaces.WeatherReport;
 import is.hello.speech.core.db.SpeechCommandDAO;
-
-import java.io.File;
-import java.io.IOException;
 
 /**
  * Created by ksg on 6/17/16
@@ -53,7 +47,7 @@ public class HandlerFactory {
     private final SleepStatsDAODynamoDB sleepStatsDAO;
 
     private final InstrumentedTimelineProcessor timelineProcessor;
-
+    private final Optional<DatabaseReader> geoIpDatabase;
 
     private HandlerFactory(final SpeechCommandDAO speechCommandDAO,
                            final MessejiClient messejiClient,
@@ -72,7 +66,8 @@ public class HandlerFactory {
                            final AlarmDAODynamoDB alarmDAODynamoDB,
                            final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
                            final SleepStatsDAODynamoDB sleepStatsDAO,
-                           final InstrumentedTimelineProcessor timelineProcessor) {
+                           final InstrumentedTimelineProcessor timelineProcessor,
+                           final Optional<DatabaseReader> geoIpDatabase) {
         this.speechCommandDAO = speechCommandDAO;
         this.messejiClient = messejiClient;
         this.sleepSoundsProcessor = sleepSoundsProcessor;
@@ -91,6 +86,7 @@ public class HandlerFactory {
         this.mergedUserInfoDynamoDB = mergedUserInfoDynamoDB;
         this.sleepStatsDAO = sleepStatsDAO;
         this.timelineProcessor = timelineProcessor;
+        this.geoIpDatabase = geoIpDatabase;
     }
 
     public static HandlerFactory create(final SpeechCommandDAO speechCommandDAO,
@@ -110,29 +106,23 @@ public class HandlerFactory {
                                         final AlarmDAODynamoDB alarmDAODynamoDB,
                                         final MergedUserInfoDynamoDB mergedUserInfoDynamoDB,
                                         final SleepStatsDAODynamoDB sleepStatsDAO,
-                                        final InstrumentedTimelineProcessor timelineProcessor
-    ) {
+                                        final InstrumentedTimelineProcessor timelineProcessor,
+                                        final Optional<DatabaseReader> geoIPDatabase
+                                        ) {
 
         return new HandlerFactory(speechCommandDAO, messejiClient, sleepSoundsProcessor, deviceDataDAODynamoDB,
                 deviceDAO, senseColorDAO, calibrationDAO,timeZoneHistoryDAODynamoDB, forecastio, accountLocationDAO,
             externalTokenStore, expansionStore, expansionDataStore, tokenKMSVault,
-                alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO, timelineProcessor);
+                alarmDAODynamoDB, mergedUserInfoDynamoDB, sleepStatsDAO,
+                timelineProcessor, geoIPDatabase);
     }
 
     public WeatherHandler weatherHandler() {
-        final File database = new File("/tmp/GeoLite2-City.mmdb");
-
-        if(!database.exists()) {
-            final AmazonS3 s3 = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
-            s3.getObject(new GetObjectRequest("hello-deploy", "runtime-dependencies/GeoLite2-City.mmdb"), database);
-        }
-        try {
-            final DatabaseReader reader = new DatabaseReader.Builder(database).build();
-            final WeatherReport weatherReport = DarkSky.create(forecastio, reader);
+        if (geoIpDatabase.isPresent()) {
+            final WeatherReport weatherReport = DarkSky.create(forecastio, geoIpDatabase.get());
             return WeatherHandler.create(speechCommandDAO, weatherReport, accountLocationDAO);
-        } catch (IOException io) {
-            throw new RuntimeException("Issues fetching geoip db. Bailing");
         }
+        throw new RuntimeException("Issues fetching geoip db. Bailing");
     }
 
     public AlarmHandler alarmHandler() {
@@ -141,7 +131,7 @@ public class HandlerFactory {
     }
 
     public TimeHandler timeHandler() {
-        return new TimeHandler(speechCommandDAO, timeZoneHistoryDAODynamoDB);
+        return new TimeHandler(speechCommandDAO, timeZoneHistoryDAODynamoDB, geoIpDatabase);
     }
 
     public TriviaHandler triviaHandler() {
