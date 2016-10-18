@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.UUID;
 
 import static com.codahale.metrics.MetricRegistry.name;
@@ -38,6 +39,9 @@ import static com.codahale.metrics.MetricRegistry.name;
 public class AudioRequestHandler {
 
     private static Logger LOGGER = LoggerFactory.getLogger(AudioRequestHandler.class);
+    private static String SNOOZE_STRING = "snooze";
+    private static String STOP_STRING = "stop";
+
     private final SpeechClient speechClient;
     private final SignedBodyHandler signedBodyHandler;
     private final HandlerExecutor handlerExecutor;
@@ -55,6 +59,7 @@ public class AudioRequestHandler {
     private Meter commandFail;
     private Meter commandTryAgain;
     private Meter commandRejected;
+    private Meter commandRejectSingleWord;
     private Meter requestInvalidBody;
     private Meter requestInvalidSignature;
     private Meter transcriptFail;
@@ -80,6 +85,7 @@ public class AudioRequestHandler {
         this.commandFail = metrics.meter(name(AudioRequestHandler.class, "command-fail"));
         this.commandTryAgain = metrics.meter(name(AudioRequestHandler.class, "command-try-again"));
         this.commandRejected = metrics.meter(name(AudioRequestHandler.class, "command-rejected"));
+        this.commandRejectSingleWord = metrics.meter(name(AudioRequestHandler.class, "command-rejected-single-word"));
         this.requestInvalidBody = metrics.meter(name(AudioRequestHandler.class, "invalid-body"));
         this.requestInvalidSignature = metrics.meter(name(AudioRequestHandler.class, "invalid-signature"));
         this.transcriptFail = metrics.meter(name(AudioRequestHandler.class, "transcript-fail"));
@@ -167,7 +173,13 @@ public class AudioRequestHandler {
 
             if (!resp.getTranscript().isPresent()) {
                 LOGGER.warn("action=google-transcript-failed sense_id={}", rawRequest.senseId());
+
                 this.transcriptFail.mark(1);
+                builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
+                        .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.TRY_AGAIN))
+                        .withResult(Result.TRY_AGAIN);
+                speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
+
                 return WrappedResponse.empty();
             }
 
@@ -176,6 +188,23 @@ public class AudioRequestHandler {
             builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
                     .withConfidence(resp.getConfidence())
                     .withText(transcribedText);
+
+
+            // reject command if there's only a single word that is not stop/snooze
+            final StringTokenizer tokenizer = new StringTokenizer(transcribedText);
+            if (tokenizer.countTokens() == 1) {
+                final String singleWord = tokenizer.nextToken();
+                if (!singleWord.contains(SNOOZE_STRING) && !singleWord.contains(STOP_STRING)) {
+                    this.commandRejectSingleWord.mark(1);
+                    builder.withUpdatedUTC(DateTime.now(DateTimeZone.UTC))
+                            .withResponseText(DefaultResponseBuilder.DEFAULT_TEXT.get(Response.SpeechResponse.Result.REJECTED))
+                            .withResult(Result.REJECTED);
+                    speechKinesisProducer.addResult(builder.build(), SpeechResultsKinesis.SpeechResultsData.Action.PUT_ITEM, EMPTY_BYTE);
+
+                    return WrappedResponse.empty();
+                }
+            }
+
 
             // try to execute text command
             executeResult = handlerExecutor.handle(new VoiceRequest(rawRequest.senseId(), accountId, transcribedText, rawRequest.ipAddress()));
@@ -217,6 +246,7 @@ public class AudioRequestHandler {
 
             final byte[] content = responseBuilder.response(Response.SpeechResponse.Result.TRY_AGAIN, executeResult, uploadData.request);
             return WrappedResponse.ok(content);
+
         } catch (Exception e) {
             LOGGER.error("action=streaming error={}", e.getMessage());
         }
