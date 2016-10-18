@@ -81,7 +81,7 @@ public final class Response {
      * status of the voice command
      * </pre>
      */
-    Response.SpeechResponse.Result getResult();
+    is.hello.speech.core.api.Response.SpeechResponse.Result getResult();
 
     // optional uint32 audio_stream_size = 4;
     /**
@@ -156,7 +156,7 @@ public final class Response {
             }
             case 24: {
               int rawValue = input.readEnum();
-              Response.SpeechResponse.Result value = Response.SpeechResponse.Result.valueOf(rawValue);
+              is.hello.speech.core.api.Response.SpeechResponse.Result value = is.hello.speech.core.api.Response.SpeechResponse.Result.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(3, rawValue);
               } else {
@@ -184,14 +184,14 @@ public final class Response {
     }
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return Response.internal_static_SpeechResponse_descriptor;
+      return is.hello.speech.core.api.Response.internal_static_SpeechResponse_descriptor;
     }
 
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return Response.internal_static_SpeechResponse_fieldAccessorTable
+      return is.hello.speech.core.api.Response.internal_static_SpeechResponse_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              Response.SpeechResponse.class, Response.SpeechResponse.Builder.class);
+              is.hello.speech.core.api.Response.SpeechResponse.class, is.hello.speech.core.api.Response.SpeechResponse.Builder.class);
     }
 
     public static com.google.protobuf.Parser<SpeechResponse> PARSER =
@@ -238,6 +238,14 @@ public final class Response {
        * </pre>
        */
       TRY_AGAIN(3, 3),
+      /**
+       * <code>UNPAIRED_SENSE = 4;</code>
+       *
+       * <pre>
+       * no sense paired
+       * </pre>
+       */
+      UNPAIRED_SENSE(4, 4),
       ;
 
       /**
@@ -264,6 +272,14 @@ public final class Response {
        * </pre>
        */
       public static final int TRY_AGAIN_VALUE = 3;
+      /**
+       * <code>UNPAIRED_SENSE = 4;</code>
+       *
+       * <pre>
+       * no sense paired
+       * </pre>
+       */
+      public static final int UNPAIRED_SENSE_VALUE = 4;
 
 
       public final int getNumber() { return value; }
@@ -274,6 +290,7 @@ public final class Response {
           case 1: return UNKNOWN;
           case 2: return REJECTED;
           case 3: return TRY_AGAIN;
+          case 4: return UNPAIRED_SENSE;
           default: return null;
         }
       }
@@ -300,7 +317,7 @@ public final class Response {
       }
       public static final com.google.protobuf.Descriptors.EnumDescriptor
           getDescriptor() {
-        return Response.SpeechResponse.getDescriptor().getEnumTypes().get(0);
+        return is.hello.speech.core.api.Response.SpeechResponse.getDescriptor().getEnumTypes().get(0);
       }
 
       private static final Result[] VALUES = values();
@@ -438,7 +455,7 @@ public final class Response {
 
     // optional .SpeechResponse.Result result = 3;
     public static final int RESULT_FIELD_NUMBER = 3;
-    private Response.SpeechResponse.Result result_;
+    private is.hello.speech.core.api.Response.SpeechResponse.Result result_;
     /**
      * <code>optional .SpeechResponse.Result result = 3;</code>
      *
@@ -456,7 +473,7 @@ public final class Response {
      * status of the voice command
      * </pre>
      */
-    public Response.SpeechResponse.Result getResult() {
+    public is.hello.speech.core.api.Response.SpeechResponse.Result getResult() {
       return result_;
     }
 
@@ -479,7 +496,7 @@ public final class Response {
     private void initFields() {
       url_ = "";
       text_ = "";
-      result_ = Response.SpeechResponse.Result.OK;
+      result_ = is.hello.speech.core.api.Response.SpeechResponse.Result.OK;
       audioStreamSize_ = 0;
     }
     private byte memoizedIsInitialized = -1;
@@ -543,53 +560,53 @@ public final class Response {
       return super.writeReplace();
     }
 
-    public static Response.SpeechResponse parseFrom(
+    public static is.hello.speech.core.api.Response.SpeechResponse parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static Response.SpeechResponse parseFrom(
+    public static is.hello.speech.core.api.Response.SpeechResponse parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static Response.SpeechResponse parseFrom(byte[] data)
+    public static is.hello.speech.core.api.Response.SpeechResponse parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static Response.SpeechResponse parseFrom(
+    public static is.hello.speech.core.api.Response.SpeechResponse parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static Response.SpeechResponse parseFrom(java.io.InputStream input)
+    public static is.hello.speech.core.api.Response.SpeechResponse parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
-    public static Response.SpeechResponse parseFrom(
+    public static is.hello.speech.core.api.Response.SpeechResponse parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static Response.SpeechResponse parseDelimitedFrom(java.io.InputStream input)
+    public static is.hello.speech.core.api.Response.SpeechResponse parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
-    public static Response.SpeechResponse parseDelimitedFrom(
+    public static is.hello.speech.core.api.Response.SpeechResponse parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
-    public static Response.SpeechResponse parseFrom(
+    public static is.hello.speech.core.api.Response.SpeechResponse parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
-    public static Response.SpeechResponse parseFrom(
+    public static is.hello.speech.core.api.Response.SpeechResponse parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -598,7 +615,7 @@ public final class Response {
 
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(Response.SpeechResponse prototype) {
+    public static Builder newBuilder(is.hello.speech.core.api.Response.SpeechResponse prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
@@ -614,17 +631,17 @@ public final class Response {
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements Response.SpeechResponseOrBuilder {
+       implements is.hello.speech.core.api.Response.SpeechResponseOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return Response.internal_static_SpeechResponse_descriptor;
+        return is.hello.speech.core.api.Response.internal_static_SpeechResponse_descriptor;
       }
 
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return Response.internal_static_SpeechResponse_fieldAccessorTable
+        return is.hello.speech.core.api.Response.internal_static_SpeechResponse_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                Response.SpeechResponse.class, Response.SpeechResponse.Builder.class);
+                is.hello.speech.core.api.Response.SpeechResponse.class, is.hello.speech.core.api.Response.SpeechResponse.Builder.class);
       }
 
       // Construct using is.hello.speech.core.api.Response.SpeechResponse.newBuilder()
@@ -651,7 +668,7 @@ public final class Response {
         bitField0_ = (bitField0_ & ~0x00000001);
         text_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
-        result_ = Response.SpeechResponse.Result.OK;
+        result_ = is.hello.speech.core.api.Response.SpeechResponse.Result.OK;
         bitField0_ = (bitField0_ & ~0x00000004);
         audioStreamSize_ = 0;
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -664,23 +681,23 @@ public final class Response {
 
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return Response.internal_static_SpeechResponse_descriptor;
+        return is.hello.speech.core.api.Response.internal_static_SpeechResponse_descriptor;
       }
 
-      public Response.SpeechResponse getDefaultInstanceForType() {
-        return Response.SpeechResponse.getDefaultInstance();
+      public is.hello.speech.core.api.Response.SpeechResponse getDefaultInstanceForType() {
+        return is.hello.speech.core.api.Response.SpeechResponse.getDefaultInstance();
       }
 
-      public Response.SpeechResponse build() {
-        Response.SpeechResponse result = buildPartial();
+      public is.hello.speech.core.api.Response.SpeechResponse build() {
+        is.hello.speech.core.api.Response.SpeechResponse result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
 
-      public Response.SpeechResponse buildPartial() {
-        Response.SpeechResponse result = new Response.SpeechResponse(this);
+      public is.hello.speech.core.api.Response.SpeechResponse buildPartial() {
+        is.hello.speech.core.api.Response.SpeechResponse result = new is.hello.speech.core.api.Response.SpeechResponse(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -705,16 +722,16 @@ public final class Response {
       }
 
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof Response.SpeechResponse) {
-          return mergeFrom((Response.SpeechResponse)other);
+        if (other instanceof is.hello.speech.core.api.Response.SpeechResponse) {
+          return mergeFrom((is.hello.speech.core.api.Response.SpeechResponse)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(Response.SpeechResponse other) {
-        if (other == Response.SpeechResponse.getDefaultInstance()) return this;
+      public Builder mergeFrom(is.hello.speech.core.api.Response.SpeechResponse other) {
+        if (other == is.hello.speech.core.api.Response.SpeechResponse.getDefaultInstance()) return this;
         if (other.hasUrl()) {
           bitField0_ |= 0x00000001;
           url_ = other.url_;
@@ -743,11 +760,11 @@ public final class Response {
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        Response.SpeechResponse parsedMessage = null;
+        is.hello.speech.core.api.Response.SpeechResponse parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (Response.SpeechResponse) e.getUnfinishedMessage();
+          parsedMessage = (is.hello.speech.core.api.Response.SpeechResponse) e.getUnfinishedMessage();
           throw e;
         } finally {
           if (parsedMessage != null) {
@@ -955,7 +972,7 @@ public final class Response {
       }
 
       // optional .SpeechResponse.Result result = 3;
-      private Response.SpeechResponse.Result result_ = Response.SpeechResponse.Result.OK;
+      private is.hello.speech.core.api.Response.SpeechResponse.Result result_ = is.hello.speech.core.api.Response.SpeechResponse.Result.OK;
       /**
        * <code>optional .SpeechResponse.Result result = 3;</code>
        *
@@ -973,7 +990,7 @@ public final class Response {
        * status of the voice command
        * </pre>
        */
-      public Response.SpeechResponse.Result getResult() {
+      public is.hello.speech.core.api.Response.SpeechResponse.Result getResult() {
         return result_;
       }
       /**
@@ -983,7 +1000,7 @@ public final class Response {
        * status of the voice command
        * </pre>
        */
-      public Builder setResult(Response.SpeechResponse.Result value) {
+      public Builder setResult(is.hello.speech.core.api.Response.SpeechResponse.Result value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -1001,7 +1018,7 @@ public final class Response {
        */
       public Builder clearResult() {
         bitField0_ = (bitField0_ & ~0x00000004);
-        result_ = Response.SpeechResponse.Result.OK;
+        result_ = is.hello.speech.core.api.Response.SpeechResponse.Result.OK;
         onChanged();
         return this;
       }
@@ -1064,12 +1081,12 @@ public final class Response {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\016response.proto\"\252\001\n\016SpeechResponse\022\013\n\003u" +
+      "\n\016response.proto\"\276\001\n\016SpeechResponse\022\013\n\003u" +
       "rl\030\001 \001(\t\022\014\n\004text\030\002 \001(\t\022&\n\006result\030\003 \001(\0162\026" +
       ".SpeechResponse.Result\022\031\n\021audio_stream_s" +
-      "ize\030\004 \001(\r\":\n\006Result\022\006\n\002OK\020\000\022\013\n\007UNKNOWN\020\001" +
-      "\022\014\n\010REJECTED\020\002\022\r\n\tTRY_AGAIN\020\003B\025\n\023is.hell" +
-      "o.speech.api"
+      "ize\030\004 \001(\r\"N\n\006Result\022\006\n\002OK\020\000\022\013\n\007UNKNOWN\020\001" +
+      "\022\014\n\010REJECTED\020\002\022\r\n\tTRY_AGAIN\020\003\022\022\n\016UNPAIRE" +
+      "D_SENSE\020\004B\032\n\030is.hello.speech.core.api"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
