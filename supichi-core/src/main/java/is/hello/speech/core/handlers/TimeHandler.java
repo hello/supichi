@@ -7,7 +7,6 @@ import com.hello.suripu.core.models.TimeZoneHistory;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
-import com.maxmind.geoip2.record.Location;
 import is.hello.speech.core.db.SpeechCommandDAO;
 import is.hello.speech.core.handlers.results.GenericResult;
 import is.hello.speech.core.models.AnnotatedTranscript;
@@ -65,23 +64,10 @@ public class TimeHandler extends BaseHandler {
 
         if (optionalCommand.isPresent()) {
             final String command = optionalCommand.get().getValue();
-            Optional<String> optionalTimeZoneId = getTimeZone(request.accountId);
+            Optional<String> optionalTimeZoneId = getTimeZone(request.accountId, request.ipAddress);
 
-            // TODO: use geoip
             if (!optionalTimeZoneId.isPresent()) {
-                if (!geoIPDatabase.isPresent()) {
-                    return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.fail(NO_TIMEZONE));
-                }
-
-                try {
-                    final CityResponse city = geoIPDatabase.get().city(InetAddress.getByName(request.ipAddress));
-                    final Location location = city.getLocation();
-                    optionalTimeZoneId = Optional.of(location.getTimeZone());
-
-                } catch (GeoIp2Exception | IOException e) {
-                    LOGGER.info("error=get-timezone-via-geoip-fail account_id={} msg={}", request.accountId, e.getMessage());
-                    return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.fail(NO_TIMEZONE));
-                }
+                return new HandlerResult(HandlerType.TIME_REPORT, command, GenericResult.fail(NO_TIMEZONE));
             }
 
             final DateTimeZone userTimeZone = DateTimeZone.forID(optionalTimeZoneId.get());
@@ -103,12 +89,20 @@ public class TimeHandler extends BaseHandler {
         return NO_ANNOTATION_SCORE;
     }
 
-    private Optional<String> getTimeZone(final Long accountId) {
+    private Optional<String> getTimeZone(final Long accountId, final String ipAddress) {
         final Optional<TimeZoneHistory> tzHistory = this.timeZoneHistoryDAODynamoDB.getCurrentTimeZone(accountId);
         if (tzHistory.isPresent()) {
             return Optional.of(tzHistory.get().timeZoneId);
         }
 
+        if (geoIPDatabase.isPresent()) {
+            try {
+                final CityResponse city = geoIPDatabase.get().city(InetAddress.getByName(ipAddress));
+                return Optional.of(city.getLocation().getTimeZone());
+            } catch (GeoIp2Exception | IOException e) {
+                LOGGER.info("error=get-timezone-via-geoip-fail account_id={} msg={}", accountId, e.getMessage());
+            }
+        }
         return Optional.absent();
     }
 }
