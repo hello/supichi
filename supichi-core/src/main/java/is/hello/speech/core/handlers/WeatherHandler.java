@@ -75,7 +75,7 @@ public class WeatherHandler extends BaseHandler {
                 LOGGER.info("action=get-forecast account_id={} result={}", request.accountId, summary);
                 result = GenericResult.ok(summary);
             } catch (UnknownHostException e) {
-                LOGGER.info("error=get-forecast account_id={} msg={}", request.accountId, e.getMessage());
+                LOGGER.info("error=get-time-geoip-fail account_id={} msg={}", request.accountId, e.getMessage());
                 result = GenericResult.failWithResponse("weather not available", "Server error.");
             }
         }

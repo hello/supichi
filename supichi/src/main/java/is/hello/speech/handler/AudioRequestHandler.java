@@ -205,9 +205,9 @@ public class AudioRequestHandler {
                 }
             }
 
-
             // try to execute text command
-            executeResult = handlerExecutor.handle(new VoiceRequest(rawRequest.senseId(), accountId, transcribedText, rawRequest.ipAddress()));
+            final VoiceRequest voiceRequest = new VoiceRequest(rawRequest.senseId(), accountId, transcribedText, rawRequest.ipAddress());
+            executeResult = handlerExecutor.handle(voiceRequest);
 
             final SupichiResponseType responseType = handlerMap.getOrDefault(executeResult.handlerType, SupichiResponseType.S3);
             final SupichiResponseBuilder responseBuilder = responseBuilders.get(responseType);

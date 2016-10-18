@@ -149,7 +149,8 @@ public class RegexAnnotationsHandlerExecutorTest {
                 alarmDAO,
                 mergedUserDAO,
                 sleepStatsDAODynamoDB,
-                timelineProcessor
+                timelineProcessor,
+                Optional.absent() // geoip DatabaseReader
         );
 
         return new RegexAnnotationsHandlerExecutor(timeZoneHistoryDAODynamoDB)
