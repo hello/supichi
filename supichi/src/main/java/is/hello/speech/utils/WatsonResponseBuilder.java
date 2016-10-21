@@ -3,12 +3,12 @@ package is.hello.speech.utils;
 import com.google.common.base.Optional;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.model.Voice;
-import is.hello.speech.core.api.Response;
-import is.hello.speech.core.api.Speech;
 import is.hello.speech.core.models.HandlerResult;
 import is.hello.speech.core.models.responsebuilder.DefaultResponseBuilder;
 import is.hello.speech.core.response.SupichiResponseBuilder;
 import is.hello.speech.core.text2speech.AudioUtils;
+import is.hello.supichi.api.Response;
+import is.hello.supichi.api.Speech;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

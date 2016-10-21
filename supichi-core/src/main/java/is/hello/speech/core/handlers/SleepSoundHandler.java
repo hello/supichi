@@ -2,6 +2,7 @@ package is.hello.speech.core.handlers;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+import com.hello.suripu.core.messeji.Sender;
 import com.hello.suripu.core.models.sleep_sounds.Duration;
 import com.hello.suripu.core.models.sleep_sounds.Sound;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
@@ -158,7 +159,7 @@ public class SleepSoundHandler extends BaseHandler {
         executor.schedule((Runnable) () -> {
             final Optional<Long> messageId = messejiClient.playAudio(
                     senseId,
-                    MessejiClient.Sender.fromAccountId(accountId),
+                    Sender.fromAccountId(accountId),
                     System.nanoTime(),
                     DEFAULT_SLEEP_SOUND_DURATION,
                     soundOptional.get(),
@@ -180,7 +181,7 @@ public class SleepSoundHandler extends BaseHandler {
     private GenericResult stopSleepSound(final String senseId, final Long accountId) {
         final Optional<Long> messageId = messejiClient.stopAudio(
                 senseId,
-                MessejiClient.Sender.fromAccountId(accountId),
+                Sender.fromAccountId(accountId),
                 System.nanoTime(),
                 FADE_OUT);
 

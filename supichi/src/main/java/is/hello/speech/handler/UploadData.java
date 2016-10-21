@@ -1,6 +1,7 @@
 package is.hello.speech.handler;
 
-import is.hello.speech.core.api.Speech;
+
+import is.hello.supichi.api.Speech;
 
 /**
  * Created by ksg on 9/8/16
