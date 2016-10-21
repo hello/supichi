@@ -183,6 +183,7 @@ if __name__ == '__main__':
         ENDPOINT = "http://localhost:8181/upload/text?response=%s" % (audio_type)
 
     elif env == 'local':
+        ENDPOINT = "http://localhost:9999/v2/upload/audio"
         ENDPOINT = "http://localhost:8181/v2/upload/audio"
 
     # dev endpoints

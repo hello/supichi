@@ -6,13 +6,10 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.buffered.AmazonSQSBufferedAsyncClient;
@@ -64,9 +61,7 @@ import com.hello.suripu.core.db.util.PostgresIntegerArrayArgumentFactory;
 import com.hello.suripu.core.processors.SleepSoundsProcessor;
 import com.hello.suripu.core.speech.KmsVault;
 import com.hello.suripu.core.speech.SpeechResultIngestDAODynamoDB;
-import com.hello.suripu.core.speech.SpeechTimelineIngestDAODynamoDB;
 import com.hello.suripu.core.speech.interfaces.SpeechResultIngestDAO;
-import com.hello.suripu.core.speech.interfaces.SpeechTimelineIngestDAO;
 import com.hello.suripu.core.speech.interfaces.Vault;
 import com.hello.suripu.coredropwizard.clients.AmazonDynamoDBClientFactory;
 import com.hello.suripu.coredropwizard.clients.MessejiClient;
@@ -103,7 +98,6 @@ import is.hello.speech.clients.SpeechClientManaged;
 import is.hello.speech.configuration.SpeechAppConfiguration;
 import is.hello.speech.core.api.Speech;
 import is.hello.speech.core.configuration.KMSConfiguration;
-import is.hello.speech.core.configuration.KinesisConsumerConfiguration;
 import is.hello.speech.core.configuration.KinesisProducerConfiguration;
 import is.hello.speech.core.configuration.KinesisStream;
 import is.hello.speech.core.configuration.SQSConfiguration;
@@ -120,7 +114,6 @@ import is.hello.speech.core.utils.GeoUtils;
 import is.hello.speech.handler.AudioRequestHandler;
 import is.hello.speech.handler.SignedBodyHandler;
 import is.hello.speech.kinesis.KinesisData;
-import is.hello.speech.kinesis.SpeechKinesisConsumer;
 import is.hello.speech.kinesis.SpeechKinesisProducer;
 import is.hello.speech.modules.RolloutSupichiModule;
 import is.hello.speech.resources.demo.DemoUploadResource;
@@ -132,7 +125,6 @@ import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.TimeZone;
@@ -405,44 +397,44 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
 
 
         // set up Kinesis Consumer
-        final KinesisConsumerConfiguration kinesisConsumerConfiguration = speechAppConfiguration.kinesisConsumerConfiguration();
-        final String workerId = InetAddress.getLocalHost().getCanonicalHostName();
-        final InitialPositionInStream initialPositionInStream = kinesisConsumerConfiguration.trimHorizon() ? InitialPositionInStream.TRIM_HORIZON : InitialPositionInStream.LATEST;
+//        final KinesisConsumerConfiguration kinesisConsumerConfiguration = speechAppConfiguration.kinesisConsumerConfiguration();
+//        final String workerId = InetAddress.getLocalHost().getCanonicalHostName();
+//        final InitialPositionInStream initialPositionInStream = kinesisConsumerConfiguration.trimHorizon() ? InitialPositionInStream.TRIM_HORIZON : InitialPositionInStream.LATEST;
+//
+//        final KinesisClientLibConfiguration kinesisClientLibConfiguration = new KinesisClientLibConfiguration(
+//                kinesisConsumerConfiguration.appName(),
+//                kinesisConsumerConfiguration.streams().get(kinesisStream),
+//                awsCredentialsProvider,
+//                workerId)
+//                .withKinesisEndpoint(kinesisConsumerConfiguration.endpoint())
+//                .withMaxRecords(kinesisConsumerConfiguration.maxRecord())
+//                .withInitialPositionInStream(initialPositionInStream);
+//
+//        final ExecutorService scheduledKinesisConsumer = environment.lifecycle().executorService("kinesis_consumer")
+//                .minThreads(1)
+//                .maxThreads(2)
+//                .keepAliveTime(Duration.seconds(2L)).build();
 
-        final KinesisClientLibConfiguration kinesisClientLibConfiguration = new KinesisClientLibConfiguration(
-                kinesisConsumerConfiguration.appName(),
-                kinesisConsumerConfiguration.streams().get(kinesisStream),
-                awsCredentialsProvider,
-                workerId)
-                .withKinesisEndpoint(kinesisConsumerConfiguration.endpoint())
-                .withMaxRecords(kinesisConsumerConfiguration.maxRecord())
-                .withInitialPositionInStream(initialPositionInStream);
-
-        final ExecutorService scheduledKinesisConsumer = environment.lifecycle().executorService("kinesis_consumer")
-                .minThreads(1)
-                .maxThreads(2)
-                .keepAliveTime(Duration.seconds(2L)).build();
-
-        final String senseUploadBucket = String.format("%s/%s",
-                speechAppConfiguration.senseUploadAudioConfiguration().getBucketName(),
-                speechAppConfiguration.senseUploadAudioConfiguration().getAudioPrefix());
-
-        final Vault kmsVault = new KmsVault(awskmsClient, kmsConfig.kmsKeys().uuid());
-
-        final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
-        final SpeechTimelineIngestDAO speechTimelineIngestDAO = SpeechTimelineIngestDAODynamoDB.create(speechTimelineClient, tableNames.get(DynamoDBTableName.SPEECH_TIMELINE), kmsVault);
-
-        final SSEAwsKeyManagementParams s3SSEKey = new SSEAwsKeyManagementParams(kmsConfig.kmsKeys().audio());
-
-        final SpeechKinesisConsumer speechKinesisConsumer = new SpeechKinesisConsumer(kinesisClientLibConfiguration,
-                scheduledKinesisConsumer,
-                amazonS3,
-                senseUploadBucket,
-                s3SSEKey,
-                speechTimelineIngestDAO,
-                speechResultIngestDAO);
-
-        environment.lifecycle().manage(speechKinesisConsumer);
+//        final String senseUploadBucket = String.format("%s/%s",
+//                speechAppConfiguration.senseUploadAudioConfiguration().getBucketName(),
+//                speechAppConfiguration.senseUploadAudioConfiguration().getAudioPrefix());
+//
+//        final Vault kmsVault = new KmsVault(awskmsClient, kmsConfig.kmsKeys().uuid());
+//
+//        final AmazonDynamoDB speechTimelineClient = dynamoDBClientFactory.getForTable(DynamoDBTableName.SPEECH_TIMELINE);
+//        final SpeechTimelineIngestDAO speechTimelineIngestDAO = SpeechTimelineIngestDAODynamoDB.create(speechTimelineClient, tableNames.get(DynamoDBTableName.SPEECH_TIMELINE), kmsVault);
+//
+//        final SSEAwsKeyManagementParams s3SSEKey = new SSEAwsKeyManagementParams(kmsConfig.kmsKeys().audio());
+//
+//        final SpeechKinesisConsumer speechKinesisConsumer = new SpeechKinesisConsumer(kinesisClientLibConfiguration,
+//                scheduledKinesisConsumer,
+//                amazonS3,
+//                senseUploadBucket,
+//                s3SSEKey,
+//                speechTimelineIngestDAO,
+//                speechResultIngestDAO);
+//
+//        environment.lifecycle().manage(speechKinesisConsumer);
 
 
         // set up speech client
@@ -473,7 +465,8 @@ public class SpeechApp extends Application<SpeechAppConfiguration> {
         final Map<HandlerType, SupichiResponseType> handlersToBuilders = handlerExecutor.responseBuilders();
 
         final AudioRequestHandler audioRequestHandler = new AudioRequestHandler(
-                client, signedBodyHandler, handlerExecutor, deviceDAO, speechKinesisProducer, responseBuilders, handlersToBuilders, environment.metrics()
+                client, signedBodyHandler, handlerExecutor, deviceDAO,
+                speechKinesisProducer, responseBuilders, handlersToBuilders, environment.metrics()
         );
 
         environment.jersey().register(new DemoUploadResource(audioRequestHandler));

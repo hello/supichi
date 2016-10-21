@@ -91,7 +91,6 @@
         <dependency>
             <groupId>is.hello.gaibu</groupId>
             <artifactId>home-automation</artifactId>
-
             <version>${gaibu.version}</version>
             <exclusions>
                 <exclusion>
