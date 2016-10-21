@@ -22,7 +22,7 @@ import com.hello.suripu.core.speech.models.SpeechResult;
 import com.hello.suripu.core.speech.models.SpeechTimeline;
 import com.hello.suripu.core.speech.models.SpeechToTextService;
 import com.hello.suripu.core.speech.models.WakeWord;
-import is.hello.speech.core.api.SpeechResultsKinesis;
+import is.hello.supichi.api.SpeechResultsKinesis;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;

@@ -1,8 +1,8 @@
 package is.hello.speech.core.response;
 
-import is.hello.speech.core.api.Response;
-import is.hello.speech.core.api.Speech;
 import is.hello.speech.core.models.HandlerResult;
+import is.hello.supichi.api.Response;
+import is.hello.supichi.api.Speech;
 
 public interface SupichiResponseBuilder {
 

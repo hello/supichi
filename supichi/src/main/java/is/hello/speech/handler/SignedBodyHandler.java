@@ -3,8 +3,8 @@ package is.hello.speech.handler;
 import com.google.common.base.Optional;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hello.suripu.core.db.KeyStore;
-import is.hello.speech.core.api.Speech;
 import is.hello.speech.utils.HmacSignedMessage;
+import is.hello.supichi.api.Speech;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
