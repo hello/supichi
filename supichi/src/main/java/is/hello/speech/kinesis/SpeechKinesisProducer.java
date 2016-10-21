@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
 import com.hello.suripu.core.speech.models.SpeechResult;
 import com.hello.suripu.core.speech.models.WakeWord;
-import is.hello.speech.core.api.SpeechResultsKinesis;
+import is.hello.supichi.api.SpeechResultsKinesis;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

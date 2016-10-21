@@ -1,7 +1,7 @@
 package is.hello.speech.kinesis;
 
 import com.hello.suripu.core.speech.models.SpeechResult;
-import is.hello.speech.core.api.SpeechResultsKinesis;
+import is.hello.supichi.api.SpeechResultsKinesis;
 
 /**
  * Created by ksg on 8/11/16

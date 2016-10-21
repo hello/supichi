@@ -1,7 +1,7 @@
 package is.hello.speech.core.models.responsebuilder;
 
-import is.hello.speech.core.api.Response;
 import is.hello.speech.core.models.HandlerResult;
+import is.hello.supichi.api.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

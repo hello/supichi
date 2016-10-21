@@ -2,11 +2,11 @@ package is.hello.speech.core.models.responsebuilder;
 
 import com.google.common.collect.Maps;
 import com.hello.suripu.core.models.Sensor;
-import is.hello.speech.core.api.Response;
 import is.hello.speech.core.handlers.ErrorText;
 import is.hello.speech.core.handlers.results.Outcome;
 import is.hello.speech.core.handlers.results.RoomConditionResult;
 import is.hello.speech.core.models.HandlerResult;
+import is.hello.supichi.api.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
